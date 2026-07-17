@@ -1,0 +1,92 @@
+/* 프라시아 전기 결사 관리 — 시안(결사관리_확정구조_시안_v5.html) 색상/컴포넌트 그대로 재사용 */
+:root{--bg:#f6f7f9;--card:#fff;--line:#e2e4e8;--txt:#1a1c20;--txt2:#5f5e5a;--txt3:#888780;
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-dk:#085041;
+  --amber-bg:#FAEEDA;--amber-tx:#854F0B;--amber-dk:#633806;--amber:#EF9F27;
+  --purple-bg:#EEEDFE;--purple-tx:#3C3489;--blue-bg:#E6F1FB;--blue-tx:#0C447C;--red-bg:#FCEBEB;--red-tx:#791F1F}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--txt);padding:24px 16px;line-height:1.5}
+.wrap{max-width:880px;margin:0 auto}
+.note{background:var(--amber-bg);color:var(--amber-dk);border:1px solid #FAC775;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:18px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+h1{font-size:19px;font-weight:600}
+.role-toggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;font-size:12px}
+.role-toggle button{border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;color:var(--txt2);font-size:12px}
+.role-toggle button.on{background:var(--green);color:#fff;font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 16px;border-radius:9px;font-size:13.5px;color:var(--txt2);background:var(--card);border:1px solid var(--line);cursor:pointer;user-select:none}
+.tab.on{background:var(--green);color:#fff;font-weight:600;border-color:var(--green)}
+.tab.staff{border-style:dashed}
+.staff-only{display:none!important}
+body.staff .staff-only{display:flex!important}
+body.staff .blk.staff-only{display:block!important}
+body.staff .cell.staff-only{display:table-cell!important}
+.divider{width:1px;background:var(--line);margin:4px 2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:600}
+.b-myth{background:var(--amber-bg);color:var(--amber-tx)}.b-legend{background:var(--purple-bg);color:var(--purple-tx)}
+.b-hero{background:var(--red-bg);color:var(--red-tx)}.b-rare{background:var(--blue-bg);color:var(--blue-tx)}
+.b-green{background:var(--green-bg);color:var(--green-dk)}.b-gray{background:#f1f2f4;color:var(--txt3)}
+.meta{font-size:12.5px;color:var(--txt3)}
+.btn{display:inline-block;border:0;background:var(--green);color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:9px;cursor:pointer}
+.btn.ghost{background:var(--card);color:var(--txt2);border:1px solid var(--line)}
+.btn.danger{background:#E24B4A;color:#fff}
+.btn.sm{padding:5px 12px;font-size:12px}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+table{width:100%;font-size:13.5px;border-collapse:collapse}
+th{color:var(--txt3);font-size:12px;font-weight:500;text-align:left;padding:6px 8px}
+td{padding:8px;border-top:1px solid #eceef1}
+tr.me td{background:var(--amber-bg);color:var(--amber-dk);font-weight:600}
+tr.won td{background:var(--green-bg)}
+.me-chip{font-size:10.5px;background:var(--amber);color:#412402;padding:2px 8px;border-radius:999px;margin-left:5px}
+.num{text-align:right}
+.cell{display:none}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filterbar input{flex:1;min-width:170px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:14px;background:var(--card)}
+.fchip{font-size:12.5px;padding:7px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--txt2);cursor:pointer;user-select:none}
+.fchip.on{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
+.list{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.irow{display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid #f1f2f4;font-size:13.5px;flex-wrap:wrap}
+.irow:first-child{border-top:0}
+.irow .nm{font-weight:600;min-width:140px}
+.irow .btn{margin-left:auto}
+.irow.applied .btn{background:var(--green-bg);color:var(--green-dk)}
+.sitem{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;padding:14px 18px}
+.sitem.done{border-color:#9FE1CB}
+.toast{position:sticky;top:8px;z-index:10;background:var(--green-bg);border:1px solid #9FE1CB;color:var(--green-dk);border-radius:10px;padding:11px 16px;font-size:13.5px;margin-bottom:12px;display:none}
+.toast.err{background:var(--red-bg);border-color:#F3B9B9;color:var(--red-tx)}
+.hist{display:flex;justify-content:space-between;padding:10px 4px;border-top:1px solid #eceef1;font-size:13.5px;flex-wrap:wrap;gap:6px}
+.hist:first-of-type{border-top:0}
+.screen{display:none}
+.screen.on{display:block}
+@media (max-width:560px){ h1{font-size:16px} .irow .nm{min-width:110px} }
+
+/* ── 신규 컴포넌트 (시안에 없던 화면: 로그인, 확인 모달) ── */
+.login-wrap{max-width:360px;margin:80px auto 0}
+.login-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 26px}
+.login-card h1{font-size:18px;margin-bottom:4px;text-align:center}
+.login-card .meta{text-align:center;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;color:var(--txt2);margin-bottom:6px;font-weight:500}
+.field input{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:14px;background:var(--bg)}
+.field input:focus{outline:2px solid var(--green);outline-offset:-1px}
+.login-card .btn{width:100%;padding:11px;font-size:14px;margin-top:6px}
+.err-msg{color:var(--red-tx);background:var(--red-bg);border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;display:none}
+.user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2)}
+.user-chip .role-badge{font-size:10.5px;padding:2px 9px;border-radius:999px;font-weight:600}
+.role-badge.관리자{background:var(--red-bg);color:var(--red-tx)}
+.role-badge.운영진{background:var(--blue-bg);color:var(--blue-tx)}
+.role-badge.결사원{background:#f1f2f4;color:var(--txt3)}
+.placeholder-card{text-align:center;padding:60px 20px;color:var(--txt3)}
+.placeholder-card .big{font-size:32px;margin-bottom:10px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,20,24,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-backdrop.on{display:flex}
+.modal{background:var(--card);border-radius:14px;padding:22px 24px;max-width:360px;width:90%}
+.modal h3{font-size:15px;margin-bottom:10px}
+.modal p{font-size:13.5px;color:var(--txt2);margin-bottom:18px}
+.modal .row{justify-content:flex-end}
+.hidden{display:none!important}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.qty-input{width:64px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:13px}

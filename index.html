@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프라시아 전기 — 결사 관리</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══ 로그인 화면 ═══ -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h1>⚔️ 프라시아 전기</h1>
+    <div class="meta">결사 관리 시스템 로그인</div>
+    <div class="err-msg" id="loginErr"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginId">아이디</label>
+        <input type="text" id="loginId" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPw">비밀번호</label>
+        <input type="password" id="loginPw" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="loginBtn">로그인</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ 메인 앱 ═══ -->
+<div class="wrap hidden" id="appScreen">
+  <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
+
+  <header>
+    <h1>⚔️ 프라시아 전기 — 결사 관리</h1>
+    <div class="user-chip">
+      <span id="userGreeting"></span>
+      <span class="role-badge" id="userRoleBadge"></span>
+      <button class="btn ghost sm" id="changePwBtn">비밀번호 변경</button>
+      <button class="btn ghost sm" id="logoutBtn">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" data-s="apply" onclick="Tabs.go('apply',this)">분배 신청</div>
+    <div class="tab" data-s="status" onclick="Tabs.go('status',this)">분배 현황</div>
+    <div class="tab" data-s="result" onclick="Tabs.go('result',this)">결과</div>
+    <div class="tab" data-s="history" onclick="Tabs.go('history',this)">이력</div>
+    <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)">공금 관리</div>
+    <div class="divider staff-only"></div>
+    <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)">결사원 관리</div>
+    <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)">재고 관리</div>
+    <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
+  </div>
+
+  <!-- ═══ 준비중 (2단계 이후 구현 예정) ═══ -->
+  <section class="screen on" id="s-apply"><div class="placeholder-card card"><div class="big">🚧</div><b>분배 신청</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+  <section class="screen" id="s-status"><div class="placeholder-card card"><div class="big">🚧</div><b>분배 현황</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+  <section class="screen" id="s-result"><div class="placeholder-card card"><div class="big">🚧</div><b>결과</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+  <section class="screen" id="s-history"><div class="placeholder-card card"><div class="big">🚧</div><b>이력</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+
+  <!-- ═══ 공금 관리 (실제 동작, 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
+  <section class="screen" id="s-treasury">
+    <div class="toast" id="treasuryToast"></div>
+
+    <div class="row" style="gap:10px;margin-bottom:10px">
+      <div class="card" style="flex:1;margin-bottom:0">
+        <div class="meta">결사 금고 현금</div>
+        <b id="cashBalance" style="font-size:20px">0</b>
+      </div>
+      <div class="card" style="flex:1;margin-bottom:0">
+        <div class="meta">다이아 합계</div>
+        <b id="diamondTotal" style="font-size:20px">0</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <b style="font-size:15px">운영진별 다이아 보유</b>
+      <div class="list" id="diamondList" style="margin-top:10px;border:0">
+        <div class="irow meta" id="diamondEmpty" style="display:none">보유 다이아가 없습니다.</div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="treasuryStaffForms">
+      <div class="row" style="gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <form id="cashTxForm" style="flex:1;min-width:220px">
+          <b style="font-size:14px">현금 입출금</b>
+          <div class="row" style="gap:8px;margin-top:8px">
+            <select id="cashDirection" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+              <option value="입금">입금</option>
+              <option value="출금">출금</option>
+            </select>
+            <input type="number" id="cashAmount" placeholder="금액" min="1" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+          </div>
+          <input type="text" id="cashDesc" placeholder="내용" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+          <button type="submit" class="btn sm" style="margin-top:8px" id="cashTxSubmitBtn">저장</button>
+        </form>
+
+        <form id="diamondTxForm" style="flex:1;min-width:220px">
+          <b style="font-size:14px">다이아 수동 입출금</b>
+          <div class="row" style="gap:8px;margin-top:8px">
+            <select id="diamondOwner" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 10px"></select>
+            <select id="diamondDirection" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+              <option value="입금">입금</option>
+              <option value="출금">출금</option>
+            </select>
+          </div>
+          <input type="number" id="diamondAmount" placeholder="수량" min="1" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+          <input type="text" id="diamondDesc" placeholder="내용" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
+          <button type="submit" class="btn sm" style="margin-top:8px" id="diamondTxSubmitBtn">저장</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <b style="font-size:15px">전체 이력</b>
+        <div class="row" style="gap:6px">
+          <span class="fchip on" data-hi="전체" onclick="Treasury.setHistoryFilter(this)">전체</span>
+          <span class="fchip" data-hi="입금" onclick="Treasury.setHistoryFilter(this)">입금</span>
+          <span class="fchip" data-hi="출금" onclick="Treasury.setHistoryFilter(this)">출금</span>
+        </div>
+      </div>
+      <div class="list" id="treasuryHistoryList" style="border:0">
+        <div class="irow meta" id="treasuryHistoryEmpty" style="display:none">이력이 없습니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 운영진: 결사원 관리 (실제 동작) ═══ -->
+  <section class="screen" id="s-members">
+    <div class="toast" id="membersToast"></div>
+    <div class="filterbar">
+      <input type="search" id="qm" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
+      <span class="fchip on" data-ri="전체" onclick="Members.setRole(this)">전체</span>
+      <span class="fchip" data-ri="결사원" onclick="Members.setRole(this)">결사원</span>
+      <span class="fchip" data-ri="운영진" onclick="Members.setRole(this)">운영진</span>
+      <span class="fchip" data-ri="관리자" onclick="Members.setRole(this)">관리자</span>
+      <button type="button" class="btn sm" id="memberAddBtn" style="margin-left:auto">+ 결사원 등록</button>
+    </div>
+    <div class="list" id="membersTable">
+      <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
+        <span class="nm" style="font-weight:500">닉네임</span>
+        <span style="width:90px">소속결사</span><span style="width:80px">직업</span>
+        <span style="width:50px">Lv</span><span style="width:80px">전투력</span>
+        <span style="width:56px">권한</span><span style="width:70px">기여점수</span>
+        <span style="margin-left:auto">관리</span>
+      </div>
+      <div class="irow meta" id="membersEmpty" style="display:none">등록된 결사원이 없습니다.</div>
+    </div>
+  </section>
+
+  <!-- ═══ 운영진: 재고 관리 (실제 동작) ═══ -->
+  <section class="screen" id="s-inv">
+    <div class="toast" id="invToast"></div>
+    <div class="filterbar">
+      <input type="search" id="qi" placeholder="🔍 아이템명 검색..." oninput="Inventory.filter()">
+      <span class="fchip on" data-gi="전체" onclick="Inventory.setGrade(this)">전체</span>
+      <span class="fchip" data-gi="신화" onclick="Inventory.setGrade(this)">신화</span>
+      <span class="fchip" data-gi="전설" onclick="Inventory.setGrade(this)">전설</span>
+      <span class="fchip" data-gi="영웅" onclick="Inventory.setGrade(this)">영웅</span>
+      <span class="fchip" data-gi="희귀" onclick="Inventory.setGrade(this)">희귀</span>
+      <span class="fchip" data-gi="미신청" onclick="Inventory.setGrade(this)">⚠️ 미신청</span>
+    </div>
+    <div class="list" id="invTable">
+      <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
+        <span style="width:56px">등급</span><span class="nm" style="font-weight:500">아이템명</span>
+        <span style="width:60px">재고</span><span style="width:60px">신청</span><span style="width:100px">룻자</span>
+        <span style="margin-left:auto">관리</span>
+      </div>
+      <div class="irow meta" id="invEmpty" style="display:none">등록된 재고가 없습니다.</div>
+    </div>
+  </section>
+
+  <!-- ═══ 운영진: 드랍 등록 (실제 동작) ═══ -->
+  <section class="screen" id="s-drop">
+    <div class="toast" id="dropToast"></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:14px"><b style="font-size:15px">드랍템 등록</b></div>
+      <form id="dropForm">
+        <div class="row" style="gap:10px;align-items:flex-start">
+          <div class="field" style="flex:2;min-width:160px">
+            <label for="dropName">아이템명</label>
+            <input type="text" id="dropName" list="itemMasterList" autocomplete="off" required>
+            <datalist id="itemMasterList"></datalist>
+          </div>
+          <div class="field" style="flex:1;min-width:110px">
+            <label for="dropGrade">등급</label>
+            <select id="dropGrade"></select>
+          </div>
+          <div class="field" style="flex:1;min-width:110px">
+            <label for="dropCategory">구분</label>
+            <select id="dropCategory"></select>
+          </div>
+        </div>
+        <div class="row" style="gap:10px;align-items:flex-start">
+          <div class="field" style="flex:1;min-width:90px">
+            <label for="dropQty">수량</label>
+            <input type="number" id="dropQty" min="1" value="1" required>
+          </div>
+          <div class="field" style="flex:2;min-width:140px">
+            <label for="dropLooter">룻자</label>
+            <input type="text" id="dropLooter" placeholder="닉네임">
+          </div>
+        </div>
+        <button type="submit" class="btn" id="dropSubmitBtn">등록</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <details id="logParseDetails">
+        <summary style="cursor:pointer;font-weight:700;font-size:15px;">텍스트 로그로 등록</summary>
+        <div style="margin-top:12px">
+          <div class="meta" style="margin-bottom:8px">게임 내 레이드 로그 또는 <b>아이템명 + 수량</b> 형식의 텍스트를 붙여넣으면 자동으로 파싱해 장바구니에 담습니다.</div>
+          <div class="field">
+            <label for="logDefaultLooter">기본 룻자 (로그에 룻자 정보가 없을 때 사용)</label>
+            <input type="text" id="logDefaultLooter" placeholder="닉네임">
+          </div>
+          <div class="field">
+            <label for="logText">텍스트 로그 붙여넣기</label>
+            <textarea id="logText" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;background:var(--bg);font-family:monospace;" placeholder="【단순 형식】&#10;허리띠 4&#10;목걸이 2&#10;&#10;【레이드 로그 형식】&#10;게임 내 처치 결과 전체를 그대로 붙여넣으세요"></textarea>
+          </div>
+          <button type="button" class="btn" id="logParseBtn">🔍 분석 후 장바구니에 담기</button>
+          <div class="toast" id="logResultToast" style="margin-top:10px"></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card hidden" id="dropCartCard">
+      <div class="row" style="margin-bottom:10px;justify-content:space-between">
+        <b style="font-size:15px">🛒 등록 대기 목록 (<span id="dropCartCount">0</span>건)</b>
+        <div class="row" style="gap:6px">
+          <button type="button" class="btn ghost sm" id="dropCartSelectAllBtn">전체 선택</button>
+          <button type="button" class="btn ghost sm" id="dropCartSelectNoneBtn">전체 해제</button>
+          <button type="button" class="btn ghost sm" id="dropCartClearBtn">전체 삭제</button>
+        </div>
+      </div>
+      <div class="meta" style="margin-bottom:8px">체크된 항목만 등록됩니다. 정확매칭은 기본 체크, 유사매칭은 직접 확인 후 체크해주세요.</div>
+      <div id="dropCartList"></div>
+      <button type="button" class="btn" id="dropCartSubmitBtn" style="margin-top:10px;width:100%">📦 체크한 항목 등록</button>
+    </div>
+
+    <div class="card hidden" id="unmatchedCard">
+      <div class="row" style="margin-bottom:10px;justify-content:space-between">
+        <b style="font-size:15px;color:var(--red-tx)">❌ 매칭 실패 (<span id="unmatchedCount">0</span>건) — 직접 등록 필요</b>
+        <button type="button" class="btn ghost sm" id="unmatchedClearBtn">닫기</button>
+      </div>
+      <div id="unmatchedList" style="max-height:360px;overflow-y:auto"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══ 일괄 등록 확인 모달 ═══ -->
+<div class="modal-backdrop" id="batchConfirmBackdrop">
+  <div class="modal" style="max-width:480px">
+    <h3>일괄 등록 확인</h3>
+    <div id="batchConfirmList" style="max-height:300px;overflow-y:auto;font-size:13px;margin-bottom:14px"></div>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="batchConfirmCancelBtn">취소</button>
+      <button type="button" class="btn sm" id="batchConfirmYesBtn">확인 — 등록 실행</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 수정 모달 ═══ -->
+<div class="modal-backdrop" id="editModalBackdrop">
+  <div class="modal">
+    <h3>아이템 수정</h3>
+    <form id="editForm">
+      <div class="field"><label for="editName">아이템명</label><input type="text" id="editName" list="itemMasterList" autocomplete="off" required></div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="editGrade">등급</label><select id="editGrade"></select></div>
+        <div class="field" style="flex:1"><label for="editCategory">구분</label><select id="editCategory"></select></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="editQty">수량</label><input type="number" id="editQty" min="0" required></div>
+        <div class="field" style="flex:1"><label for="editLooter">룻자</label><input type="text" id="editLooter"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="editCancelBtn">취소</button>
+        <button type="submit" class="btn sm" id="editSaveBtn">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ 공금 이력 삭제(역전) 확인 모달 ═══ -->
+<div class="modal-backdrop" id="treasuryDeleteModalBackdrop">
+  <div class="modal">
+    <h3>이력 삭제</h3>
+    <p id="treasuryDeleteModalMsg"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="treasuryDeleteCancelBtn">취소</button>
+      <button type="button" class="btn danger sm" id="treasuryDeleteConfirmBtn">삭제(잔액 되돌리기)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 결사원 등록/수정 모달 ═══ -->
+<div class="modal-backdrop" id="memberModalBackdrop">
+  <div class="modal">
+    <h3 id="memberModalTitle">결사원 등록</h3>
+    <form id="memberForm">
+      <div class="row" style="gap:10px" id="memberIdRow">
+        <div class="field" style="flex:1"><label for="memberUserId">아이디</label><input type="text" id="memberUserId" autocomplete="off"></div>
+        <div class="field" style="flex:1"><label for="memberPassword">비밀번호</label><input type="password" id="memberPassword" autocomplete="new-password"></div>
+      </div>
+      <div class="field"><label for="memberCurrentId">닉네임</label><input type="text" id="memberCurrentId" required></div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="memberGuild">소속결사</label><input type="text" id="memberGuild"></div>
+        <div class="field" style="flex:1"><label for="memberClass">직업</label><input type="text" id="memberClass"></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="memberLevel">레벨</label><input type="number" id="memberLevel" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="memberPower">전투력</label><input type="number" id="memberPower" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="memberRole">권한</label>
+          <select id="memberRole"><option value="결사원">결사원</option><option value="운영진">운영진</option><option value="관리자">관리자</option></select>
+        </div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="memberSubjRank">토벌순위</label><input type="text" id="memberSubjRank"></div>
+        <div class="field" style="flex:1"><label for="memberAbyss">심연</label><input type="text" id="memberAbyss"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="memberCancelBtn">취소</button>
+        <button type="submit" class="btn sm" id="memberSaveBtn">저장</button>
+      </div>
+    </form>
+    <div id="memberPwResetBox" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+      <div class="field">
+        <label for="memberNewPw">비밀번호 재설정 (관리자 전용, 별도 저장)</label>
+        <div class="row" style="gap:8px">
+          <input type="password" id="memberNewPw" placeholder="새 비밀번호 (4자 이상)" style="flex:1">
+          <button type="button" class="btn sm ghost" id="memberPwResetBtn">재설정</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 결사원 탈퇴 확인 모달 ═══ -->
+<div class="modal-backdrop" id="memberDeleteModalBackdrop">
+  <div class="modal">
+    <h3>결사원 탈퇴 처리</h3>
+    <p id="memberDeleteModalMsg"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="memberDeleteCancelBtn">취소</button>
+      <button type="button" class="btn danger sm" id="memberDeleteConfirmBtn">탈퇴 처리</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 삭제 확인 모달 ═══ -->
+<div class="modal-backdrop" id="deleteModalBackdrop">
+  <div class="modal">
+    <h3>아이템 삭제</h3>
+    <p id="deleteModalMsg"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="deleteCancelBtn">취소</button>
+      <button type="button" class="btn danger sm" id="deleteConfirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 비밀번호 변경 모달 ═══ -->
+<div class="modal-backdrop" id="pwModalBackdrop">
+  <div class="modal">
+    <h3>비밀번호 변경</h3>
+    <div class="err-msg" id="pwErr"></div>
+    <form id="pwForm">
+      <div class="field"><label for="oldPw">현재 비밀번호</label><input type="password" id="oldPw" required></div>
+      <div class="field"><label for="newPw">새 비밀번호</label><input type="password" id="newPw" required></div>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="pwCancelBtn">취소</button>
+        <button type="submit" class="btn sm" id="pwSaveBtn">변경</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/logParser.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/members.js"></script>
+<script src="js/treasury.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
