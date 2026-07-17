@@ -67,6 +67,7 @@ const Api = (() => {
     updateMember: (user_id, patch) => call("members", { method: "PUT", query: { user_id }, body: patch }),
     deleteMember: (user_id, confirmDelete) =>
       call("members", { method: "DELETE", query: { user_id, confirm: confirmDelete ? "true" : "false" } }),
+    getDashboard: () => call("dashboard", { method: "GET" }),
     getTreasuryBalances: () => call("treasury", { method: "GET", query: { view: "balances" } }),
     getTreasuryHistory: (filters) => call("treasury", { method: "GET", query: { view: "history", ...filters } }),
     createTreasuryTransaction: (tx) => call("treasury", { method: "POST", body: tx }),

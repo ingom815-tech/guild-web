@@ -12,6 +12,7 @@ const Tabs = (() => {
     if (id === "drop") Inventory.loadItemMaster();
     if (id === "members") Members.load();
     if (id === "treasury") Treasury.load();
+    if (id === "dashboard") Dashboard.load();
   }
   return { go };
 })();
@@ -26,7 +27,7 @@ const App = (() => {
     document.getElementById("loginScreen").classList.add("hidden");
     document.getElementById("appScreen").classList.remove("hidden");
     Auth.applyRoleUI(user);
-    Tabs.go("apply", document.querySelector('.tab[data-s="apply"]'));
+    Tabs.go("dashboard", document.querySelector('.tab[data-s="dashboard"]'));
   }
 
   function initLoginForm() {
@@ -92,6 +93,7 @@ const App = (() => {
     Inventory.init();
     Members.init();
     Treasury.init();
+    Dashboard.init();
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {
