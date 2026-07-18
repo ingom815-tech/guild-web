@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 
@@ -55,40 +55,94 @@
     <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
   </div>
 
-  <!-- ═══ 대시보드 (실제 동작, 전 회원) ═══ -->
+  <!-- ═══ 대시보드 (실제 동작, 전 회원 — 대시보드_최종통합_시안_v2 레이아웃) ═══ -->
   <section class="screen on" id="s-dashboard">
     <div class="toast" id="dashToast"></div>
-    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="kpis" id="kpiGrid"></div>
 
-    <div class="row" style="gap:10px;align-items:stretch;flex-wrap:wrap">
-      <div class="card" style="flex:1;min-width:260px;margin-bottom:10px">
-        <div class="row" style="justify-content:space-between;margin-bottom:10px">
-          <b style="font-size:14px">직업 분포</b>
-          <div class="row" style="gap:4px">
-            <span class="fchip on" data-ci="all" onclick="Dashboard.setClassTab(this)">전체</span>
-            <span class="fchip" data-ci="main" onclick="Dashboard.setClassTab(this)">주력</span>
-          </div>
-        </div>
+    <div class="cols">
+      <div class="panel">
+        <h3>직업 분포
+          <span class="row" style="gap:4px">
+            <span class="fchip on" data-ci="all" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">전체</span>
+            <span class="fchip" data-ci="main" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">주력</span>
+          </span>
+        </h3>
         <div id="classBars"></div>
       </div>
-      <div class="card" style="flex:2;min-width:300px;margin-bottom:10px">
-        <b style="font-size:14px">💎 주요 아퀴 보유 현황</b>
-        <div class="row" style="gap:8px;margin-top:10px;align-items:flex-start" id="keyAquiCards"></div>
+      <div class="panel">
+        <h3>신화 아퀴룬 보유 현황 <span class="meta" id="mythMeta"></span></h3>
+        <div class="myth-scroll">
+          <table id="mythTable"></table>
+        </div>
       </div>
     </div>
 
     <div class="filterbar">
-      <input type="search" id="qd" placeholder="🔍 닉네임 검색..." oninput="Dashboard.filter()">
+      <input type="search" id="qd" name="dash-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="닉네임 검색..." oninput="Dashboard.filter()">
       <select id="dashClassFilter" onchange="Dashboard.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <select id="dashGuildFilter" onchange="Dashboard.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
-      <select id="dashSort" onchange="Dashboard.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
+      <select id="dashSort" onchange="Dashboard.sortSelect()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
+      <div class="vtoggle">
+        <span class="on" data-vi="basic" onclick="Dashboard.setCardView(this)">기본</span>
+        <span data-vi="equip" onclick="Dashboard.setCardView(this)">장비</span>
+        <span data-vi="aqui" onclick="Dashboard.setCardView(this)">아퀴</span>
+      </div>
     </div>
-    <div class="member-grid" id="memberGrid"></div>
+
+    <div id="dashBasicWrap">
+      <div class="mtable"><table id="memberTable"></table></div>
+      <div class="gtext" id="dashPager" style="text-align:center;padding:10px"></div>
+    </div>
+    <div class="member-grid" id="memberGrid" style="display:none"></div>
     <div class="meta" id="memberGridEmpty" style="display:none;text-align:center;padding:30px">조건에 맞는 결사원이 없습니다.</div>
   </section>
 
-  <!-- ═══ 준비중 (2단계 이후 구현 예정) ═══ -->
-  <section class="screen" id="s-apply"><div class="placeholder-card card"><div class="big">🚧</div><b>분배 신청</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+  <!-- ═══ 분배 신청 (실제 동작, 전 회원) ═══ -->
+  <section class="screen" id="s-apply">
+    <div class="toast" id="applyToast"></div>
+
+    <div class="card" id="periodCard">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <b style="font-size:15px" id="periodStatusLabel">기간 정보를 불러오는 중...</b>
+          <div class="meta" id="periodTimeInfo"></div>
+        </div>
+        <div class="row" style="gap:6px" id="myApplyInfo"></div>
+      </div>
+      <div id="periodStaffBox" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap" id="periodSetForm">
+          <div class="field" style="margin-bottom:0"><label for="periodStart">시작</label><input type="datetime-local" id="periodStart"></div>
+          <div class="field" style="margin-bottom:0"><label for="periodEnd">마감</label><input type="datetime-local" id="periodEnd"></div>
+          <button type="button" class="btn sm" id="periodSetBtn">📅 기간 설정</button>
+        </div>
+        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px" id="periodActiveForm">
+          <div class="field" style="margin-bottom:0"><label for="periodNewEnd">마감 시각 변경</label><input type="datetime-local" id="periodNewEnd"></div>
+          <button type="button" class="btn ghost sm" id="periodExtendBtn">연장</button>
+          <button type="button" class="btn danger sm" id="periodCloseBtn">기간 종료 (자동확정 실행)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filterbar" id="applyTabs">
+      <span class="fchip on" data-ai="브로치" onclick="Distribution.setTab(this)">브로치</span>
+      <span class="fchip" data-ai="별빛심연석 및 조각" onclick="Distribution.setTab(this)">별빛심연석 및 조각</span>
+      <span class="fchip" data-ai="찬란한심연석" onclick="Distribution.setTab(this)">찬란한심연석</span>
+      <span class="fchip" data-ai="전퀴" onclick="Distribution.setTab(this)">전퀴</span>
+      <span class="fchip" data-ai="나머지" onclick="Distribution.setTab(this)">나머지</span>
+    </div>
+    <div class="member-grid" id="applyGrid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))"></div>
+    <div class="meta" id="applyEmpty" style="display:none;text-align:center;padding:30px">이 그룹에 신청 가능한 아이템이 없습니다.</div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <b style="font-size:15px">📝 내 신청 목록 (대기중)</b>
+      </div>
+      <div class="list" id="myRequestList" style="border:0">
+        <div class="irow meta" id="myRequestEmpty" style="display:none">대기 중인 신청이 없습니다.</div>
+      </div>
+    </div>
+  </section>
   <section class="screen" id="s-status"><div class="placeholder-card card"><div class="big">🚧</div><b>분배 현황</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
   <section class="screen" id="s-result"><div class="placeholder-card card"><div class="big">🚧</div><b>결과</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
   <section class="screen" id="s-history"><div class="placeholder-card card"><div class="big">🚧</div><b>이력</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
@@ -165,7 +219,7 @@
   <section class="screen" id="s-members">
     <div class="toast" id="membersToast"></div>
     <div class="filterbar">
-      <input type="search" id="qm" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
+      <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
       <span class="fchip on" data-ri="전체" onclick="Members.setRole(this)">전체</span>
       <span class="fchip" data-ri="결사원" onclick="Members.setRole(this)">결사원</span>
       <span class="fchip" data-ri="운영진" onclick="Members.setRole(this)">운영진</span>
@@ -188,7 +242,7 @@
   <section class="screen" id="s-inv">
     <div class="toast" id="invToast"></div>
     <div class="filterbar">
-      <input type="search" id="qi" placeholder="🔍 아이템명 검색..." oninput="Inventory.filter()">
+      <input type="search" id="qi" name="inv-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 아이템명 검색..." oninput="Inventory.filter()">
       <span class="fchip on" data-gi="전체" onclick="Inventory.setGrade(this)">전체</span>
       <span class="fchip" data-gi="신화" onclick="Inventory.setGrade(this)">신화</span>
       <span class="fchip" data-gi="전설" onclick="Inventory.setGrade(this)">전설</span>
@@ -318,6 +372,29 @@
   </div>
 </div>
 
+<!-- ═══ 분배 신청 모달 ═══ -->
+<div class="modal-backdrop" id="applyModalBackdrop">
+  <div class="modal">
+    <h3 id="applyModalTitle">아이템 신청</h3>
+    <div class="meta" id="applyModalMeta" style="margin-bottom:10px"></div>
+    <div class="toast" id="applyModalNote" style="position:static;margin-bottom:10px;display:none"></div>
+    <form id="applyForm">
+      <div class="field" id="applyQtyField">
+        <label for="applyQty">신청 수량</label>
+        <input type="number" id="applyQty" min="1" value="1">
+      </div>
+      <div id="applyPrefFields" class="hidden">
+        <div class="field"><label for="applyPref1">1순위 (필수)</label><input type="text" id="applyPref1" placeholder="예) 녹색"></div>
+        <div class="field"><label for="applyPref2">2순위 (선택)</label><input type="text" id="applyPref2"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn ghost sm" id="applyCancelBtn">취소</button>
+        <button type="submit" class="btn sm" id="applySubmitBtn">신청하기</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ═══ 공금 이력 삭제(역전) 확인 모달 ═══ -->
 <div class="modal-backdrop" id="treasuryDeleteModalBackdrop">
   <div class="modal">
@@ -332,7 +409,7 @@
 
 <!-- ═══ 결사원 등록/수정 모달 ═══ -->
 <div class="modal-backdrop" id="memberModalBackdrop">
-  <div class="modal">
+  <div class="modal" style="max-width:560px;max-height:88vh;overflow-y:auto">
     <h3 id="memberModalTitle">결사원 등록</h3>
     <form id="memberForm">
       <div class="row" style="gap:10px" id="memberIdRow">
@@ -355,6 +432,14 @@
         <div class="field" style="flex:1"><label for="memberSubjRank">토벌순위</label><input type="text" id="memberSubjRank"></div>
         <div class="field" style="flex:1"><label for="memberAbyss">심연</label><input type="text" id="memberAbyss"></div>
       </div>
+      <details id="memberEquipDetails" class="hidden" style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">⚔️ 장비 정보</summary>
+        <div class="equip-edit-grid" id="memberEquipGrid" style="margin-top:8px"></div>
+      </details>
+      <details id="memberAquiDetails" class="hidden" style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">🔮 아퀴룬 정보</summary>
+        <div id="memberAquiEdit" style="margin-top:8px"></div>
+      </details>
       <div class="row">
         <button type="button" class="btn ghost sm" id="memberCancelBtn">취소</button>
         <button type="submit" class="btn sm" id="memberSaveBtn">저장</button>
@@ -412,14 +497,16 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/logParser.js"></script>
-<script src="js/inventory.js"></script>
-<script src="js/members.js"></script>
-<script src="js/treasury.js"></script>
-<script src="js/dashboard.js"></script>
-<script src="js/app.js"></script>
+<script src="js/config.js?v=9"></script>
+<script src="js/api.js?v=9"></script>
+<script src="js/auth.js?v=9"></script>
+<script src="js/logParser.js?v=9"></script>
+<script src="js/gamedata.js?v=9"></script>
+<script src="js/inventory.js?v=9"></script>
+<script src="js/members.js?v=9"></script>
+<script src="js/treasury.js?v=9"></script>
+<script src="js/dashboard.js?v=9"></script>
+<script src="js/distribution.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

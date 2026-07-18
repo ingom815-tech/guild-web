@@ -125,7 +125,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: allMembers, error: membersErr } = await supabase
     .from("members")
-    .select("user_id, guild_name, current_id, level, class, power, role, participation_score, contribution_score, subjugation_rank, abyss_level, status_check");
+    .select("user_id, guild_name, current_id, level, class, power, role, participation_score, contribution_score, subjugation_rank, abyss_level, status_check, equipment_info");
   if (membersErr) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
 
   const { data: spRows, error: spErr } = await supabase
@@ -194,6 +194,8 @@ Deno.serve(async (req: Request) => {
       participation_score: m.participation_score,
       participation_rate: m.participation_rate,
       contribution_score: m.contribution_score,
+      equipment_info: m.equipment_info,
+      status_check: m.status_check,
     };
     if (staff) row.power = m.power;
     return row;

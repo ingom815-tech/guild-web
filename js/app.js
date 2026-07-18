@@ -13,6 +13,7 @@ const Tabs = (() => {
     if (id === "members") Members.load();
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();
+    if (id === "apply") Distribution.load();
   }
   return { go };
 })();
@@ -94,11 +95,24 @@ const App = (() => {
     Members.init();
     Treasury.init();
     Dashboard.init();
+    Distribution.init();
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {
       showLogin();
     }
+
+    // 브라우저가 저장된 로그인 아이디를 검색창에 자동완성으로 잘못 채우는 문제 방지.
+    // autocomplete="off"를 무시하고 늦게 채우는 경우가 있어, 부팅 직후 한 번 비워준다
+    // (이 시점엔 사용자가 아직 아무것도 입력하지 않았으므로 안전).
+    setTimeout(() => {
+      document.querySelectorAll('input[type="search"]').forEach((el) => {
+        if (el.value) {
+          el.value = "";
+          el.dispatchEvent(new Event("input"));
+        }
+      });
+    }, 400);
   }
 
   return { showLogin, showApp, boot };

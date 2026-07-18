@@ -87,6 +87,87 @@ const Members = (() => {
     render();
   }
 
+  // ── 장비/아퀴 편집 섹션 (수정 모달 내부, JS로 동적 생성) ──
+  function buildEquipEditGrid(equipMap) {
+    const grid = document.getElementById("memberEquipGrid");
+    grid.innerHTML = "";
+    GameData.EQUIPMENT_SLOTS.forEach((slot) => {
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.textContent = slot;
+      const sel = document.createElement("select");
+      sel.dataset.slot = slot;
+      sel.innerHTML = GameData.EQUIPMENT_GRADES.map((g) => `<option value="${g}">${g}</option>`).join("");
+      sel.value = GameData.EQUIPMENT_GRADES.includes(equipMap[slot]) ? equipMap[slot] : "희귀";
+      field.appendChild(label);
+      field.appendChild(sel);
+      grid.appendChild(field);
+    });
+  }
+
+  function buildAquiEditGrid(aquiMap, memberClass) {
+    const wrap = document.getElementById("memberAquiEdit");
+    wrap.innerHTML = "";
+    for (const group of ["A", "B", "C"]) {
+      const info = GameData.AQUI_GROUPS[group];
+      const head = document.createElement("div");
+      head.style.cssText = `font-weight:700;font-size:12px;margin:10px 0 6px;color:${info.color}`;
+      head.textContent = `${info.label} (${group})`;
+      wrap.appendChild(head);
+      const grid = document.createElement("div");
+      grid.className = "aqui-edit-grid";
+      GameData.AQUI_ITEMS[group].forEach((item) => {
+        const field = document.createElement("div");
+        field.className = "field";
+        const label = document.createElement("label");
+        label.textContent = GameData.skillLabel(item, memberClass);
+        label.title = GameData.skillLabel(item, memberClass);
+        const sel = document.createElement("select");
+        sel.dataset.aquiId = item.id;
+        const opts = [["", "미보유"], ["l", "전설"]];
+        if (GameData.canBeMythic(item, memberClass)) opts.push(["m", "신화"]);
+        sel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
+        const cur = aquiMap[item.id] || "";
+        sel.value = cur === "m" && !GameData.canBeMythic(item, memberClass) ? "l" : cur;
+        field.appendChild(label);
+        field.appendChild(sel);
+        grid.appendChild(field);
+      });
+      wrap.appendChild(grid);
+    }
+  }
+
+  function collectEquipAquiPayload() {
+    const payload = {};
+    const equipGrid = document.getElementById("memberEquipGrid");
+    if (equipGrid.children.length) {
+      const equip = {};
+      equipGrid.querySelectorAll("select[data-slot]").forEach((sel) => (equip[sel.dataset.slot] = sel.value));
+      payload.equipment_info = JSON.stringify(equip);
+    }
+    const aquiWrap = document.getElementById("memberAquiEdit");
+    if (aquiWrap.children.length) {
+      const owned = {};
+      aquiWrap.querySelectorAll("select[data-aqui-id]").forEach((sel) => {
+        if (sel.value) owned[sel.dataset.aquiId] = sel.value;
+      });
+      payload.status_check = GameData.buildAquiString(owned);
+    }
+    return payload;
+  }
+
+  // 직업이 바뀌면 아퀴 라벨/신화 선택지를 다시 그림 (현재 선택값 유지)
+  function refreshAquiForClass() {
+    const wrap = document.getElementById("memberAquiEdit");
+    if (!wrap.children.length) return;
+    const owned = {};
+    wrap.querySelectorAll("select[data-aqui-id]").forEach((sel) => {
+      if (sel.value) owned[sel.dataset.aquiId] = sel.value;
+    });
+    buildAquiEditGrid(owned, document.getElementById("memberClass").value.trim());
+  }
+
   // ── 등록/수정 모달 (하나의 폼을 두 모드로 재사용) ──
   function openCreate() {
     document.getElementById("memberForm").reset();
@@ -98,6 +179,12 @@ const Members = (() => {
     document.getElementById("memberPwResetBox").classList.add("hidden");
     document.getElementById("memberLevel").value = 0;
     document.getElementById("memberPower").value = 0;
+    document.getElementById("memberEquipDetails").classList.remove("hidden");
+    document.getElementById("memberEquipDetails").open = false;
+    document.getElementById("memberAquiDetails").classList.remove("hidden");
+    document.getElementById("memberAquiDetails").open = false;
+    buildEquipEditGrid({});
+    buildAquiEditGrid({}, "");
     document.getElementById("memberModalBackdrop").classList.add("on");
   }
 
@@ -121,6 +208,13 @@ const Members = (() => {
     document.getElementById("memberPwResetBox").classList.toggle("hidden", !isAdmin);
     document.getElementById("memberNewPw").value = "";
 
+    document.getElementById("memberEquipDetails").classList.remove("hidden");
+    document.getElementById("memberEquipDetails").open = false;
+    document.getElementById("memberAquiDetails").classList.remove("hidden");
+    document.getElementById("memberAquiDetails").open = false;
+    buildEquipEditGrid(GameData.parseEquipment(m.equipment_info));
+    buildAquiEditGrid(GameData.parseAqui(m.status_check, m.class || ""), m.class || "");
+
     document.getElementById("memberModalBackdrop").classList.add("on");
   }
 
@@ -131,6 +225,8 @@ const Members = (() => {
   function initMemberModal() {
     document.getElementById("memberAddBtn").addEventListener("click", openCreate);
     document.getElementById("memberCancelBtn").addEventListener("click", closeModal);
+    // 직업 변경 시 아퀴 스킬 라벨/신화 선택지 갱신
+    document.getElementById("memberClass").addEventListener("change", refreshAquiForClass);
 
     document.getElementById("memberForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -151,6 +247,7 @@ const Members = (() => {
             role: document.getElementById("memberRole").value,
             subjugation_rank: document.getElementById("memberSubjRank").value.trim(),
             abyss_level: document.getElementById("memberAbyss").value.trim(),
+            ...collectEquipAquiPayload(),
           };
           await Api.createMember(payload);
           toast(`✓ ${payload.current_id} 등록 완료`);
@@ -164,6 +261,7 @@ const Members = (() => {
             role: document.getElementById("memberRole").value,
             subjugation_rank: document.getElementById("memberSubjRank").value.trim(),
             abyss_level: document.getElementById("memberAbyss").value.trim(),
+            ...collectEquipAquiPayload(),
           };
           await Api.updateMember(form.dataset.userId, payload);
           toast("✓ 수정 완료");

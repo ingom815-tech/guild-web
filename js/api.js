@@ -68,6 +68,16 @@ const Api = (() => {
     deleteMember: (user_id, confirmDelete) =>
       call("members", { method: "DELETE", query: { user_id, confirm: confirmDelete ? "true" : "false" } }),
     getDashboard: () => call("dashboard", { method: "GET" }),
+    getDistributionItems: () => call("distribution", { method: "GET", query: { view: "items" } }),
+    getMyRequests: () => call("distribution", { method: "GET", query: { view: "my" } }),
+    createItemRequest: (reqBody) => call("distribution", { method: "POST", body: reqBody }),
+    cancelItemRequest: (id) => call("distribution", { method: "DELETE", query: { id } }),
+    setDistributionPeriod: (start_time, end_time) =>
+      call("distribution", { method: "POST", query: { action: "period" }, body: { start_time, end_time } }),
+    extendDistributionPeriod: (period_id, new_end) =>
+      call("distribution", { method: "PUT", query: { action: "period" }, body: { period_id, new_end } }),
+    closeDistributionPeriod: (period_id) =>
+      call("distribution", { method: "POST", query: { action: "close" }, body: { period_id } }),
     getTreasuryBalances: () => call("treasury", { method: "GET", query: { view: "balances" } }),
     getTreasuryHistory: (filters) => call("treasury", { method: "GET", query: { view: "history", ...filters } }),
     createTreasuryTransaction: (tx) => call("treasury", { method: "POST", body: tx }),

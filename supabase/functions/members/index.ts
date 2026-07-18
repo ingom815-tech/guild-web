@@ -75,6 +75,51 @@ function isAdmin(user: SessionUser | null): boolean {
 // 예전에 남은 값이라 실제로는 쓰이지 않음. 새 회원은 항상 아래 한글 값 중 하나로 명시적으로 저장한다.
 const ROLES = ["결사원", "운영진", "관리자"];
 
+// 장비/아퀴 필드 검증용 상수 (원본 app.py:703-774와 동일 목록 — 값 자체는 클라이언트가 만들지만
+// 형식이 깨진 문자열이 저장되면 분배 자격 판정이 오작동하므로 서버에서 형식을 강제한다).
+const EQUIPMENT_SLOTS = [
+  "주무기", "특화무기", "투구", "상의", "망토", "허리띠", "바지", "신발", "장갑",
+  "반지 1", "반지 2", "귀걸이 1", "귀걸이 2", "팔찌", "목걸이", "브로치", "가더",
+  "2층 부적", "3층 부적",
+];
+const EQUIPMENT_GRADES = ["희귀", "영웅", "전설", "신화", "절대자"];
+const AQUI_IDS = new Set(
+  ["A", "B", "C"].flatMap((g) => [
+    `${g}1`, `${g}2`, `${g}3`, `${g}4`, `${g}5`, `${g}6`,
+    `${g}_pot`, `${g}_s1`, `${g}_s2`, `${g}_s3`, `${g}_s4`, `${g}_s5`, `${g}_s6`,
+  ]),
+);
+
+function validateEquipmentInfo(raw: string): string | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "equipment_info 형식이 잘못됐습니다.";
+    for (const [slot, grade] of Object.entries(parsed)) {
+      if (!EQUIPMENT_SLOTS.includes(slot)) return `알 수 없는 장비 슬롯: ${slot}`;
+      if (!EQUIPMENT_GRADES.includes(String(grade))) return `알 수 없는 장비 등급: ${grade}`;
+    }
+    return null;
+  } catch {
+    return "equipment_info는 JSON 형식이어야 합니다.";
+  }
+}
+
+function validateStatusCheck(raw: string): string | null {
+  const m = raw.match(/^T:(\d+)\|(.*)$/);
+  if (!m) return "status_check 형식이 잘못됐습니다.";
+  const body = m[2];
+  if (!body) return Number(m[1]) === 0 ? null : "status_check 보유 수가 목록과 다릅니다.";
+  const tokens = body.split(",");
+  for (const t of tokens) {
+    const parts = t.split(":");
+    if (parts.length !== 2 || !AQUI_IDS.has(parts[0]) || !["l", "m"].includes(parts[1])) {
+      return `잘못된 아퀴 항목: ${t}`;
+    }
+  }
+  if (Number(m[1]) !== tokens.length) return "status_check 보유 수가 목록과 다릅니다.";
+  return null;
+}
+
 interface MemberPayload {
   current_id: string;
   guild_name: string | null;
@@ -155,7 +200,7 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await supabase
       .from("members")
       .select(
-        "user_id, current_id, guild_name, class, level, power, role, subjugation_rank, abyss_level, contribution_score, participation_score, registered_at",
+        "user_id, current_id, guild_name, class, level, power, role, subjugation_rank, abyss_level, contribution_score, participation_score, registered_at, equipment_info, status_check",
       )
       .order("current_id", { ascending: true });
     if (error) return jsonResponse({ error: "결사원 목록 조회에 실패했습니다." }, 500);
@@ -191,6 +236,19 @@ Deno.serve(async (req: Request) => {
     // 신규 회원은 참여점수가 0이므로 공식이 power*0.3으로 단순화됨(database.py의 재계산 공식 그대로).
     const contribution_score = Math.round(m.power * 0.3);
 
+    // 장비/아퀴 (선택 — 원본 가입 폼에도 있던 필드)
+    const insertExtra: Record<string, unknown> = {};
+    if (typeof body.equipment_info === "string" && body.equipment_info) {
+      const err = validateEquipmentInfo(body.equipment_info);
+      if (err) return jsonResponse({ error: err }, 400);
+      insertExtra.equipment_info = body.equipment_info;
+    }
+    if (typeof body.status_check === "string" && body.status_check) {
+      const err = validateStatusCheck(body.status_check);
+      if (err) return jsonResponse({ error: err }, 400);
+      insertExtra.status_check = body.status_check;
+    }
+
     const { data, error } = await supabase
       .from("members")
       .insert({
@@ -205,6 +263,7 @@ Deno.serve(async (req: Request) => {
         subjugation_rank: m.subjugation_rank,
         abyss_level: m.abyss_level,
         contribution_score,
+        ...insertExtra,
       })
       .select("user_id, current_id, guild_name, class, level, power, role, subjugation_rank, abyss_level, contribution_score")
       .single();
@@ -241,6 +300,18 @@ Deno.serve(async (req: Request) => {
       ...patch,
       contribution_score: Math.round((current.participation_score ?? 0) * 0.7 + nextPower * 0.3),
     };
+
+    // 장비/아퀴 정보 (선택 필드 — 형식 검증 후 반영)
+    if (typeof body.equipment_info === "string" && body.equipment_info) {
+      const err = validateEquipmentInfo(body.equipment_info);
+      if (err) return jsonResponse({ error: err }, 400);
+      updatePayload.equipment_info = body.equipment_info;
+    }
+    if (typeof body.status_check === "string" && body.status_check) {
+      const err = validateStatusCheck(body.status_check);
+      if (err) return jsonResponse({ error: err }, 400);
+      updatePayload.status_check = body.status_check;
+    }
 
     // 비밀번호 재설정은 관리자만 — 운영진은 나머지 정보 수정은 가능하지만 비번 재설정 권한은 없음.
     if (typeof body.new_password === "string" && body.new_password) {

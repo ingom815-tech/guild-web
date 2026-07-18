@@ -1,16 +1,27 @@
-// 대시보드: KPI + 직업 분포 + 주요 아퀴 보유 현황 + 회원 카드 목록 (전 회원 조회 가능)
+// 대시보드 — "대시보드_최종통합_시안_v2.html" 레이아웃 구현
+// KPI 4칸(무채색) / 직업분포 단색바 / 신화 아퀴룬 보유 표 / 멤버 정렬표+페이지네이션 / 장비·아퀴 인셋 패널 카드
 const Dashboard = (() => {
-  // 원본 app.py CLASS_ICONS 그대로.
-  const CLASS_ICONS = {
-    집행관: "🛡️", 향사수: "🏹", 주문각인사: "🪄", 환영검사: "⚔️",
-    태양감시자: "☀️", 심연추방자: "🌀", 야만투사: "🪓",
-    음유시인: "🎵", 사제: "✝️", 흑마법사: "🔮", 연금술사: "⚗️",
-    암살자: "🗡️", 광전사: "💢", 도적: "🥷", 레인저: "🌿",
+  const PAGE_SIZE = 20;
+
+  // 직업별 신화 아퀴룬 매핑 (0번 데이터 검증 결과와 대조 완료 — 표 컬럼명은 섹션 중립 "신화 1번/2번").
+  // 실제 저장 섹션은 룬마다 다름(PVP/지원/PVE 혼재) — 카드 아퀴 뷰는 DB 저장 섹션(ID 접두) 그대로 렌더링.
+  const MYTHIC_RUNES = {
+    향사수: ["향연의 덫", "관통하는 화살"],
+    집행관: ["맹렬한 돌격", "신의 방패"],
+    야만투사: ["신수의 발톱", null],
+    환영검사: ["암기 투척", "환영검 투척"],
+    태양감시자: ["점멸 습격", "황금률의 파도"],
+    주문각인사: ["유성 낙하", "고양의 영역"],
+    심연추방자: ["휘몰아치는 힘", "심연의 등불"],
   };
-  const BAR_COLORS = ["#60a5fa", "#f59e0b", "#34d399", "#a78bfa", "#f472b6", "#fb923c", "#38bdf8", "#4ade80", "#e879f9", "#facc15"];
+  const GROUP_LABELS = { A: "PVP", B: "지원", C: "PVE" };
 
   let data = null;
   let activeClassTab = "all";
+  let cardView = "basic"; // basic | equip | aqui
+  let sortKey = "contribution_score";
+  let sortDir = -1; // -1 desc, 1 asc
+  let page = 0;
 
   function toast(msg, isErr) {
     const t = document.getElementById("dashToast");
@@ -21,6 +32,17 @@ const Dashboard = (() => {
     toast._t = setTimeout(() => (t.style.display = "none"), 4000);
   }
 
+  // 룬 이름 → 해당 직업의 아퀴 ID (없으면 null)
+  function runeIdForClass(runeName, cls) {
+    if (!runeName || !cls) return null;
+    for (const g of ["A", "B", "C"]) {
+      for (const item of GameData.AQUI_ITEMS[g]) {
+        if (item[cls] === runeName) return item.id;
+      }
+    }
+    return null;
+  }
+
   async function load() {
     try {
       data = await Api.getDashboard();
@@ -28,31 +50,39 @@ const Dashboard = (() => {
       toast(e.message || "대시보드 조회 실패", true);
       return;
     }
+    sortKey = Auth.isStaff() ? "power" : "participation_score";
+    sortDir = -1;
+    page = 0;
     renderKpi();
     renderClassBars();
-    renderKeyAqui();
+    renderMythTable();
     initFilterOptions();
-    renderCards();
+    renderMemberArea();
   }
 
-  function kpiHtml(label, value, color, sub) {
-    return `<div class="kpi"><div class="lbl">${label}</div><div class="val" style="color:${color}">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
-  }
-
+  // ── KPI (4칸, 무채색 — 참여율은 전체/데이/나이트 3분할, 데이/나이트는 자리만) ──
   function renderKpi() {
     const k = data.kpi;
     const staff = Auth.isStaff();
+    const grid = document.getElementById("kpiGrid");
+    grid.className = "kpis" + (staff ? "" : " k3");
     const rate = k.avg_participation_rate != null ? `${k.avg_participation_rate}%` : "-";
-    let html = kpiHtml("전체 인원", `${k.total_members}명`, "#60a5fa", `${k.guild_count}개 결사`);
-    if (staff && k.avg_power != null) html += kpiHtml("평균 전투력", (k.avg_power || 0).toLocaleString(), "#f59e0b", "");
-    html += kpiHtml("평균 전체 참여율", rate, "#34d399", "");
-    html += kpiHtml("평균 기여점수", (k.avg_contribution || 0).toLocaleString(), "#a78bfa", "");
-    if (staff && k.pending_requests != null) {
-      html += kpiHtml("분배 대기", `${k.pending_requests}건`, k.pending_requests > 0 ? "#ef4444" : "#6b7280", "");
+
+    let html = `<div class="kpi"><div class="lb">전체 인원</div><div class="v">${k.total_members}</div><div class="sub">${k.guild_count}개 결사</div></div>`;
+    if (staff && k.avg_power != null) {
+      html += `<div class="kpi"><div class="lb">평균 전투력</div><div class="v">${(k.avg_power || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     }
-    document.getElementById("kpiGrid").innerHTML = html;
+    html += `<div class="kpi"><div class="lb">평균 참여율</div>
+      <div class="p3">
+        <div class="seg"><div class="sv">${rate}</div><div class="slb">전체</div></div>
+        <div class="seg"><div class="sv">—</div><div class="slb">데이</div></div>
+        <div class="seg"><div class="sv">—</div><div class="slb">나이트</div></div>
+      </div></div>`;
+    html += `<div class="kpi"><div class="lb">평균 기여점수</div><div class="v">${(k.avg_contribution || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
+    grid.innerHTML = html;
   }
 
+  // ── 직업 분포 (단색 초록, 최다 직업 = 100%) ──
   function setClassTab(el) {
     document.querySelectorAll(".fchip[data-ci]").forEach((c) => c.classList.remove("on"));
     el.classList.add("on");
@@ -61,42 +91,73 @@ const Dashboard = (() => {
   }
 
   function renderClassBars() {
-    const rows = (data.class_distribution && data.class_distribution[activeClassTab]) || [];
+    const rows = ((data.class_distribution && data.class_distribution[activeClassTab]) || [])
+      .slice()
+      .sort((a, b) => b.count - a.count);
     const el = document.getElementById("classBars");
     if (!rows.length) {
-      el.innerHTML = `<div class="meta">해당 결사원 없음</div>`;
+      el.innerHTML = `<div class="gtext">해당 결사원 없음</div>`;
       return;
     }
     const max = Math.max(...rows.map((r) => r.count));
     el.innerHTML = rows
-      .map((r, i) => {
+      .map((r) => {
         const w = max ? Math.round((r.count / max) * 100) : 0;
-        const color = BAR_COLORS[i % BAR_COLORS.length];
-        const icon = CLASS_ICONS[r.class] || "";
-        return `<div class="cbar-row">
-          <span class="cls">${icon} ${r.class}</span>
-          <span class="track"><span class="fill" style="width:${w}%;background:${color}"></span></span>
-          <span class="cnt">${r.count}</span>
-        </div>`;
+        return `<div class="jrow"><span class="nm"></span><div class="bar"><div style="width:${w}%"></div></div><span class="n">${r.count}</span></div>`;
       })
       .join("");
+    el.querySelectorAll(".jrow .nm").forEach((n, i) => (n.textContent = rows[i].class));
   }
 
-  function renderKeyAqui() {
-    const el = document.getElementById("keyAquiCards");
-    el.innerHTML = (data.key_aqui || [])
-      .map((t) => {
-        const owners = t.owners && t.owners.length
-          ? t.owners.map((n) => `<div>${n}</div>`).join("")
-          : `<div style="color:var(--txt3)">없음</div>`;
-        return `<div class="aqui-card" style="border-color:${t.color}55">
-          <div class="ttl" style="color:${t.color}">${t.label} <span style="color:var(--txt3);font-weight:500;font-size:11px">(${(t.owners || []).length}명)</span></div>
-          <div class="cls">${(t.classes || []).join(" / ")}</div>
-          <div class="owners">${owners}</div>
-        </div>`;
-      })
-      .join("");
+  // ── 신화 아퀴룬 보유 현황 표 ──
+  // 보유 판정: 해당 룬 ID가 신화 등급(:m)으로 저장된 경우만 (M1/M2 레거시 토큰 포함 — parseAqui가 m으로 해석).
+  // 신화 체크는 신규 오픈 후 수집 예정이라 현재는 대부분 미보유가 정상.
+  function renderMythTable() {
+    const members = (data.members || []).filter((m) => MYTHIC_RUNES[m.class]);
+    const rows = members.map((m) => {
+      const owned = GameData.parseAqui(m.status_check, m.class);
+      const [r1, r2] = MYTHIC_RUNES[m.class];
+      const has1 = r1 ? owned[runeIdForClass(r1, m.class)] === "m" : false;
+      const has2 = r2 ? owned[runeIdForClass(r2, m.class)] === "m" : false;
+      return { m, r1, r2, has1, has2, cnt: (has1 ? 1 : 0) + (has2 ? 1 : 0) };
+    });
+    rows.sort((a, b) => b.cnt - a.cnt || (b.m.contribution_score || 0) - (a.m.contribution_score || 0));
+
+    const holders = rows.filter((r) => r.cnt > 0).length;
+    document.getElementById("mythMeta").textContent = `${holders}명 보유 · 스크롤로 전체`;
+
+    const cell = (name, has, exists) => {
+      if (!exists) return `<span class="aq-none">해당 없음</span>`;
+      return has ? `<span class="aq-myth"></span>` : `<span class="aq-none">미보유</span>`;
+    };
+    const table = document.getElementById("mythTable");
+    table.innerHTML =
+      `<tr><th>아이디</th><th>직업</th><th>신화 1번</th><th>신화 2번</th></tr>` +
+      rows
+        .map(
+          (r) => `<tr>
+            <td><b class="nm"></b></td>
+            <td class="gtext cls"></td>
+            <td>${cell(r.r1, r.has1, !!r.r1)}</td>
+            <td>${cell(r.r2, r.has2, !!r.r2)}</td>
+          </tr>`,
+        )
+        .join("");
+    // 텍스트는 textContent로 안전하게 주입
+    const trs = table.querySelectorAll("tr");
+    rows.forEach((r, i) => {
+      const tr = trs[i + 1];
+      tr.querySelector(".nm").textContent = r.m.current_id || r.m.user_id;
+      tr.querySelector(".cls").textContent = r.m.class;
+      const badges = tr.querySelectorAll(".aq-myth");
+      let bi = 0;
+      if (r.has1) badges[bi++].textContent = r.r1;
+      if (r.has2) badges[bi++].textContent = r.r2;
+    });
   }
+
+  // ── 필터/정렬 옵션 ──
+  const SORT_MAP = { 전투력순: "power", 참여점수순: "participation_score", 기여점수순: "contribution_score" };
 
   function initFilterOptions() {
     const members = data.members || [];
@@ -104,64 +165,242 @@ const Dashboard = (() => {
 
     const classes = [...new Set(members.map((m) => m.class).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
     document.getElementById("dashClassFilter").innerHTML =
-      `<option value="전체">⚔️ 직업 전체</option>` + classes.map((c) => `<option value="${c}">${c}</option>`).join("");
+      `<option value="전체">직업 전체</option>` + classes.map((c) => `<option value="${c}">${c}</option>`).join("");
 
     const guilds = [...new Set(members.map((m) => m.guild_name).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
     document.getElementById("dashGuildFilter").innerHTML =
-      `<option value="전체">🏰 결사 전체</option>` + guilds.map((g) => `<option value="${g}">${g}</option>`).join("");
+      `<option value="전체">결사 전체</option>` + guilds.map((g) => `<option value="${g}">${g}</option>`).join("");
 
-    // 정렬 옵션: 운영진은 전투력순 포함, 일반 회원은 참여/기여만 (원본과 동일).
     const sorts = staff ? ["전투력순", "참여점수순", "기여점수순"] : ["참여점수순", "기여점수순"];
     document.getElementById("dashSort").innerHTML = sorts.map((s) => `<option value="${s}">${s}</option>`).join("");
   }
 
-  function renderCards() {
-    const grid = document.getElementById("memberGrid");
+  function sortSelect() {
+    const v = document.getElementById("dashSort").value;
+    sortKey = SORT_MAP[v] || "contribution_score";
+    sortDir = -1;
+    page = 0;
+    renderMemberArea();
+  }
+
+  function sortBy(key) {
+    if (sortKey === key) {
+      sortDir = -sortDir;
+    } else {
+      sortKey = key;
+      sortDir = key === "current_id" || key === "class" || key === "role" ? 1 : -1;
+    }
+    page = 0;
+    renderMemberArea();
+  }
+
+  function filteredMembers() {
     const q = (document.getElementById("qd").value || "").trim();
     const cls = document.getElementById("dashClassFilter").value || "전체";
     const guild = document.getElementById("dashGuildFilter").value || "전체";
-    const sort = document.getElementById("dashSort").value;
-    const staff = Auth.isStaff();
-
     let rows = (data.members || []).filter((m) => {
       if (q && !(m.current_id || "").includes(q)) return false;
       if (cls !== "전체" && m.class !== cls) return false;
       if (guild !== "전체" && m.guild_name !== guild) return false;
       return true;
     });
+    rows = rows.slice().sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === "string" || typeof bv === "string") {
+        return String(av || "").localeCompare(String(bv || ""), "ko") * sortDir;
+      }
+      return ((av || 0) - (bv || 0)) * sortDir;
+    });
+    return rows;
+  }
 
-    const key = sort === "전투력순" ? "power" : sort === "참여점수순" ? "participation_score" : "contribution_score";
-    rows = rows.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0));
+  function setCardView(el) {
+    document.querySelectorAll(".vtoggle span[data-vi]").forEach((c) => c.classList.remove("on"));
+    el.classList.add("on");
+    cardView = el.dataset.vi;
+    page = 0;
+    renderMemberArea();
+  }
 
-    document.getElementById("memberGridEmpty").style.display = rows.length ? "none" : "block";
+  function filter() {
+    page = 0;
+    renderMemberArea();
+  }
+
+  function renderMemberArea() {
+    const rows = filteredMembers();
+    const basicWrap = document.getElementById("dashBasicWrap");
+    const grid = document.getElementById("memberGrid");
+    const empty = document.getElementById("memberGridEmpty");
+
+    basicWrap.style.display = cardView === "basic" && rows.length ? "" : "none";
+    grid.style.display = cardView !== "basic" && rows.length ? "grid" : "none";
+    empty.style.display = rows.length ? "none" : "block";
+    if (!rows.length) return;
+
+    if (cardView === "basic") renderTable(rows);
+    else renderCards(rows);
+  }
+
+  // ── 기본 뷰: 정렬 가능한 표 + 20명 페이지네이션 ──
+  function renderTable(rows) {
+    const staff = Auth.isStaff();
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    page = Math.min(page, totalPages - 1);
+    const slice = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    const arrow = (key) => (sortKey === key ? (sortDir === -1 ? " ↓" : " ↑") : "");
+    const th = (label, key, num) =>
+      `<th class="${num ? "num" : ""}" onclick="Dashboard.sortBy('${key}')">${label}${arrow(key)}</th>`;
+
+    let header = "<tr>";
+    header += th("닉네임", "current_id");
+    header += th("구분", "role");
+    header += th("직업", "class");
+    header += th("Lv", "level", true);
+    if (staff) header += th("전투력", "power", true);
+    header += th("참여율", "participation_rate", true);
+    header += `<th class="num">데이</th><th class="num">나이트</th>`;
+    header += th("기여점수", "contribution_score", true);
+    header += "</tr>";
+
+    const bodyHtml = slice
+      .map((m) => {
+        const isStaffRole = m.role === "운영진" || m.role === "관리자";
+        const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
+        const rateHtml = m.participation_rate != null && m.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        return `<tr>
+          <td><b class="nm"></b></td>
+          <td><span class="role ${isStaffRole ? "r-staff" : "r-member"}"></span></td>
+          <td class="gtext cls"></td>
+          <td class="num">${m.level ?? 0}</td>
+          ${staff ? `<td class="num"><b>${m.power != null ? m.power.toLocaleString() : "—"}</b></td>` : ""}
+          <td class="num">${rateHtml}</td>
+          <td class="num gtext">—</td>
+          <td class="num gtext">—</td>
+          <td class="num">${(m.contribution_score ?? 0).toLocaleString()}</td>
+        </tr>`;
+      })
+      .join("");
+
+    const table = document.getElementById("memberTable");
+    table.innerHTML = header + bodyHtml;
+    const trs = table.querySelectorAll("tr");
+    slice.forEach((m, i) => {
+      const tr = trs[i + 1];
+      tr.querySelector(".nm").textContent = m.current_id || m.user_id;
+      tr.querySelector(".role").textContent = m.role || "";
+      tr.querySelector(".cls").textContent = `${m.class || "-"}${m.subjugation_rank ? " · 토벌 " + m.subjugation_rank : ""}`;
+    });
+
+    const from = page * PAGE_SIZE + 1;
+    const to = Math.min(rows.length, (page + 1) * PAGE_SIZE);
+    const pager = document.getElementById("dashPager");
+    pager.innerHTML =
+      `${page > 0 ? `<span style="cursor:pointer" onclick="Dashboard.goPage(-1)">◂ 이전 · </span>` : ""}` +
+      `${from}–${to} / ${rows.length}명` +
+      `${to < rows.length ? `<span style="cursor:pointer" onclick="Dashboard.goPage(1)"> · 다음 ▸</span>` : ""}`;
+  }
+
+  function goPage(delta) {
+    page += delta;
+    renderMemberArea();
+  }
+
+  // ── 장비/아퀴 카드 공통 헤더 ──
+  function cardShell(m) {
+    const staff = Auth.isStaff();
+    const isStaffRole = m.role === "운영진" || m.role === "관리자";
+    const card = document.createElement("div");
+    card.className = "mcard";
+    card.innerHTML = `
+      <div class="hd"><b class="nm"></b><span class="role ${isStaffRole ? "r-staff" : "r-member"}"></span></div>
+      <div class="sub"></div>`;
+    card.querySelector(".nm").textContent = m.current_id || m.user_id;
+    card.querySelector(".role").textContent = m.role || "";
+    const subParts = [m.class || "-"];
+    if (m.subjugation_rank) subParts.push(`토벌 ${m.subjugation_rank}`);
+    let subHtml = subParts.join(" · ");
+    if (staff && m.power != null) subHtml += ` · 전투력 <b>${m.power.toLocaleString()}</b>`;
+    card.querySelector(".sub").innerHTML = subHtml;
+    return card;
+  }
+
+  const GRADE_SLOT_CLASS = { 절대자: "abs", 신화: "myth", 전설: "leg", 영웅: "hero", 희귀: "rare" };
+  const GRADE_SUM_CLASS = { 절대자: "sa", 신화: "sm", 전설: "sl", 영웅: "sh", 희귀: "sr" };
+
+  // ── 장비 카드: 인셋 패널 + 정사각 슬롯 타일 + 등급 요약 ──
+  function gearPanelHtml(m) {
+    const equip = GameData.parseEquipment(m.equipment_info);
+    const counts = {};
+    const slots = GameData.EQUIPMENT_SLOTS.map((slot) => {
+      const grade = equip[slot];
+      if (grade) counts[grade] = (counts[grade] || 0) + 1;
+      const cls = grade ? GRADE_SLOT_CLASS[grade] || "" : "empty";
+      return `<div class="slot ${cls}"><span class="part">${slot}</span><span class="gr">${grade || "—"}</span></div>`;
+    }).join("");
+    const sum = ["절대자", "신화", "전설", "영웅", "희귀"]
+      .filter((g) => counts[g])
+      .map((g) => `<span class="${GRADE_SUM_CLASS[g]}">${g} <b>${counts[g]}</b></span>`)
+      .join("");
+    return `<div class="gearpanel">
+      <div class="slotgrid">${slots}</div>
+      <div class="gearsum">${sum || `<span>장비 정보 없음</span>`}</div>
+    </div>`;
+  }
+
+  // ── 아퀴 카드: 2층 구조 (액티브 3열 = DB 저장 섹션 그대로 / 패시브 줄 3개) ──
+  function aquiPanelHtml(m) {
+    const owned = GameData.parseAqui(m.status_check, m.class || "");
+    const cols = ["A", "B", "C"]
+      .map((g) => {
+        const skills = GameData.AQUI_ITEMS[g].filter((it) => !it.id.includes("_"));
+        const slotHtml = skills
+          .map((it) => {
+            const grade = owned[it.id];
+            const name = GameData.skillLabel(it, m.class);
+            if (!grade) return `<div class="aqslot empty"><div class="nm">미장착</div></div>`;
+            const cls = grade === "m" ? "myth" : "on";
+            return `<div class="aqslot ${cls}"><div class="nm" title="${name}">${name}</div></div>`;
+          })
+          .join("");
+        return `<div class="aqcol"><div class="ct">${GROUP_LABELS[g]}</div>${slotHtml}</div>`;
+      })
+      .join("");
+
+    const prows = ["A", "B", "C"]
+      .map((g) => {
+        const extras = GameData.AQUI_ITEMS[g].filter((it) => it.id.includes("_"));
+        let cnt = 0;
+        const dots = extras
+          .map((it) => {
+            const grade = owned[it.id];
+            if (grade) cnt++;
+            return `<span class="pd ${grade === "m" ? "m" : grade ? "f" : ""}"></span>`;
+          })
+          .join("");
+        return `<div class="prow"><span class="pl">${GROUP_LABELS[g]}</span><div class="pdots">${dots}</div><span class="pcnt">${cnt}/${extras.length}</span></div>`;
+      })
+      .join("");
+
+    return `<div class="aqpanel">
+      <div class="aqcols">${cols}</div>
+      <div class="passive">${prows}</div>
+    </div>`;
+  }
+
+  function renderCards(rows) {
+    const grid = document.getElementById("memberGrid");
     grid.innerHTML = "";
     rows.forEach((m) => {
-      const card = document.createElement("div");
-      card.className = "mcard";
-      const icon = CLASS_ICONS[m.class] || "";
-      card.innerHTML = `
-        <div class="hd">
-          <span class="nm"></span>
-          <span class="role-badge ${m.role || ""}"></span>
-        </div>
-        <div class="meta-line"></div>
-        <div class="stat"><span>Lv</span><b>${m.level ?? 0}</b></div>
-        ${staff ? `<div class="stat"><span>전투력</span><b>${(m.power ?? 0).toLocaleString()}</b></div>` : ""}
-        <div class="stat"><span>참여율</span><b>${m.participation_rate != null ? m.participation_rate + "%" : "-"}</b></div>
-        <div class="stat"><span>기여점수</span><b>${(m.contribution_score ?? 0).toLocaleString()}</b></div>`;
-      card.querySelector(".nm").textContent = m.current_id || m.user_id;
-      card.querySelector(".role-badge").textContent = m.role || "";
-      card.querySelector(".meta-line").textContent =
-        `${icon} ${m.class || "-"} · ${m.guild_name || "-"}` + (m.subjugation_rank ? ` · 토벌 ${m.subjugation_rank}` : "");
+      const card = cardShell(m);
+      card.insertAdjacentHTML("beforeend", cardView === "equip" ? gearPanelHtml(m) : aquiPanelHtml(m));
       grid.appendChild(card);
     });
   }
 
-  function filter() {
-    renderCards();
-  }
-
   function init() {}
 
-  return { init, load, filter, setClassTab };
+  return { init, load, filter, setClassTab, setCardView, sortSelect, sortBy, goPage };
 })();

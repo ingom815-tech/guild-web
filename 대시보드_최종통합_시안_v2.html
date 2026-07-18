@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대시보드 최종 통합 시안</title>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--line:#e5e7eb;--txt:#1a1c20;--txt2:#4b5563;--txt3:#9ca3af;
+    --green:#1D9E75;--green-bg:#E1F5EE;--green-dk:#085041;--red:#DC2626;
+    --gold-bg:#FAEEDA;--gold-tx:#854F0B;--myth-bd:#FAC775;
+    --panel:#20242e;--panel-line:#343a48;--slot:#2a2f3c;
+    --abs:#F0B03F;--leg:#9B8CFF;--hero:#F07070;--none:#4a5060}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--txt);padding:22px 18px;line-height:1.5;font-size:14px}
+  .wrap{max-width:1080px;margin:0 auto}
+  .note{background:var(--gold-bg);color:#633806;border:1px solid var(--myth-bd);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  h1{font-size:18px;font-weight:600}
+  .userbox{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2)}
+  .userbox .chip{background:var(--green-bg);color:var(--green-dk);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .userbox button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:12.5px;color:var(--txt2);cursor:pointer}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  .tab{padding:9px 14px;font-size:13.5px;color:var(--txt2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.on{color:var(--green-dk);border-bottom-color:var(--green);font-weight:600}
+  .kpis{display:grid;grid-template-columns:1fr 1.2fr 2fr 1.2fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  @media(max-width:760px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:var(--card);padding:14px 18px}
+  .kpi .lb{font-size:12px;color:var(--txt3);margin-bottom:2px}
+  .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.5px}
+  .kpi .sub{font-size:11.5px;color:var(--txt3)}
+  .p3{display:flex}
+  .p3 .seg{flex:1;text-align:center;border-left:1px solid #f1f2f4;padding:0 6px}
+  .p3 .seg:first-child{border-left:0;text-align:left;padding-left:0}
+  .p3 .slb{font-size:11px;color:var(--txt3)}
+  .p3 .sv{font-size:19px;font-weight:700}
+  .cols{display:grid;grid-template-columns:300px 1fr;gap:14px;margin-bottom:16px}
+  @media(max-width:860px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .panel h3{font-size:13.5px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+  .panel h3 .meta{font-size:12px;color:var(--txt3);font-weight:400}
+  .jrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+  .jrow .nm{width:70px;color:var(--txt2)}
+  .jrow .bar{flex:1;height:8px;background:#f1f2f4;border-radius:4px;overflow:hidden}
+  .jrow .bar>div{height:100%;background:var(--green);border-radius:4px}
+  .jrow .n{width:28px;text-align:right;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:12px;font-weight:500;color:var(--txt3);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card)}
+  td{padding:8px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap}
+  .num{text-align:right}
+  .myth-scroll{max-height:252px;overflow-y:auto;border:1px solid #f1f2f4;border-radius:8px}
+  .myth-scroll th{position:sticky;top:0;z-index:1}
+  .aq-myth{background:var(--gold-bg);color:var(--gold-tx);font-size:12px;padding:2px 9px;border-radius:6px;font-weight:600;border:1px solid var(--myth-bd)}
+  .aq-none{color:var(--txt3);font-size:12.5px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .toolbar input{flex:1;min-width:170px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13.5px;background:var(--card)}
+  .toolbar select{border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;background:var(--card);color:var(--txt2)}
+  .vtoggle{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card)}
+  .vtoggle span{padding:8px 14px;font-size:13px;color:var(--txt2);cursor:pointer;user-select:none}
+  .vtoggle span.on{background:var(--green);color:#fff;font-weight:600}
+  .mtable{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto}
+  .role{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
+  .r-staff{background:var(--green-bg);color:var(--green-dk)}
+  .r-member{background:#f1f2f4;color:var(--txt2)}
+  .low{color:var(--red);font-weight:600}
+  .gtext{font-size:12.5px;color:var(--txt2)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;display:flex;flex-direction:column}
+  .mcard .hd{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .mcard .hd b{font-size:15px}
+  .mcard .sub{font-size:12px;color:var(--txt3);margin-bottom:10px}
+  .mcard .sub b{color:var(--txt2)}
+  .gearpanel,.aqpanel{background:var(--panel);border:1px solid var(--panel-line);border-radius:11px;padding:12px;flex:1;min-height:420px;display:flex;flex-direction:column;justify-content:space-between}
+  .slotgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .slot{aspect-ratio:1;border-radius:9px;background:var(--slot);border:1.5px solid var(--none);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0}
+  .slot .part{font-size:10.5px;color:#aab0bf;white-space:nowrap}
+  .slot .gr{font-size:11.5px;font-weight:700}
+  .slot.abs{border-color:var(--abs);box-shadow:inset 0 0 10px rgba(240,176,63,.16)}
+  .slot.abs .gr{color:var(--abs)}
+  .slot.leg{border-color:var(--leg);box-shadow:inset 0 0 10px rgba(155,140,255,.16)}
+  .slot.leg .gr{color:var(--leg)}
+  .slot.hero{border-color:var(--hero);box-shadow:inset 0 0 10px rgba(240,112,112,.16)}
+  .slot.hero .gr{color:var(--hero)}
+  .slot.empty{border-style:dashed;opacity:.55}
+  .slot.empty .gr{color:#6a7183;font-weight:500}
+  .gearsum{display:flex;gap:10px;margin-top:auto;padding-top:9px;font-size:11.5px;color:#aab0bf;justify-content:center}
+  .gearsum .sa{color:var(--abs)}.gearsum .sl{color:var(--leg)}.gearsum .sh{color:var(--hero)}
+  .aqcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .aqcol .ct{font-size:11px;color:#8f96a8;text-align:center;margin-bottom:6px;letter-spacing:1px;font-weight:600}
+  .aqslot{border-radius:8px;background:var(--slot);border:1.5px solid var(--none);padding:5px 6px;margin-bottom:5px;text-align:center}
+  .aqslot .nm{font-size:11px;color:#cfd4e0;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aqslot.on{border-color:#5a6278}
+  .aqslot.myth{border-color:var(--abs);box-shadow:inset 0 0 8px rgba(240,176,63,.18)}
+  .aqslot.myth .nm{color:var(--abs);font-weight:700}
+  .aqslot.empty{border-style:dashed;opacity:.5}
+  .aqslot.empty .nm{color:#6a7183}
+  .passive{margin-top:auto;padding-top:10px;border-top:1px solid var(--panel-line)}
+  .prow{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+  .prow:last-child{margin-bottom:0}
+  .prow .pl{width:32px;font-size:10.5px;font-weight:700;color:#8f96a8}
+  .pdots{display:flex;gap:4px;flex-wrap:wrap}
+  .pd{width:15px;height:15px;border-radius:4px;background:var(--slot);border:1px solid var(--none)}
+  .pd.f{background:#8d7bf0;border-color:#9B8CFF}
+  .pd.m{background:#c9922e;border-color:var(--abs)}
+  .pcnt{margin-left:auto;font-size:10.5px;color:#8f96a8}
+  .screenview{display:none}
+  .screenview.on{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note">📐 최종 시안 v2 — 장비/아퀴 카드 크기 통일(동일 높이 패널), 아퀴는 원래 섹션 유지(신화는 자기 섹션 안에서 금색 강조). PVP 1번/2번 분류는 신화 보유 현황 표에서만 사용.</div>
+
+  <header>
+    <h1>프라시아 전기 — 결사 관리</h1>
+    <div class="userbox">안녕하세요, 관리자님 <span class="chip">관리자</span><button>비밀번호 변경</button><button>로그아웃</button></div>
+  </header>
+
+  <div class="tabs">
+    <span class="tab on">대시보드</span><span class="tab">분배 신청</span><span class="tab">분배 현황</span><span class="tab">결과</span><span class="tab">이력</span><span class="tab">공금 관리</span><span class="tab">결사원 관리</span><span class="tab">재고 관리</span><span class="tab">드랍 등록</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lb">전체 인원</div><div class="v">93</div><div class="sub">3개 결사</div></div>
+    <div class="kpi"><div class="lb">평균 전투력</div><div class="v">45,027</div><div class="sub">전기 대비 +2.1%</div></div>
+    <div class="kpi"><div class="lb">평균 참여율</div>
+      <div class="p3">
+        <div class="seg"><div class="sv">59%</div><div class="slb">전체</div></div>
+        <div class="seg"><div class="sv">64%</div><div class="slb">데이</div></div>
+        <div class="seg"><div class="sv">51%</div><div class="slb">나이트</div></div>
+      </div>
+    </div>
+    <div class="kpi"><div class="lb">평균 기여점수</div><div class="v">13,962</div><div class="sub">&nbsp;</div></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>직업 분포 <span class="meta">전체 93명</span></h3>
+      <div class="jrow"><span class="nm">주문각인사</span><div class="bar"><div style="width:100%"></div></div><span class="n">34</span></div>
+      <div class="jrow"><span class="nm">집행관</span><div class="bar"><div style="width:65%"></div></div><span class="n">22</span></div>
+      <div class="jrow"><span class="nm">향사수</span><div class="bar"><div style="width:53%"></div></div><span class="n">18</span></div>
+      <div class="jrow"><span class="nm">야만투사</span><div class="bar"><div style="width:32%"></div></div><span class="n">11</span></div>
+      <div class="jrow"><span class="nm">태양감시자</span><div class="bar"><div style="width:18%"></div></div><span class="n">6</span></div>
+      <div class="jrow"><span class="nm">심연추방자</span><div class="bar"><div style="width:3%"></div></div><span class="n">1</span></div>
+      <div class="jrow"><span class="nm">환영검사</span><div class="bar"><div style="width:3%"></div></div><span class="n">1</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>신화 아퀴룬 보유 현황 <span class="meta">12명 보유 · 스크롤로 전체</span></h3>
+      <div class="myth-scroll">
+        <table>
+          <tr><th>아이디</th><th>직업</th><th>PVP 1번</th><th>PVP 2번</th></tr>
+          <tr><td><b>꿀망치형</b></td><td class="gtext">집행관</td><td><span class="aq-myth">맹렬한 돌격</span></td><td><span class="aq-myth">신의 방패</span></td></tr>
+          <tr><td><b>빛두루</b></td><td class="gtext">집행관</td><td><span class="aq-myth">맹렬한 돌격</span></td><td><span class="aq-myth">신의 방패</span></td></tr>
+          <tr><td><b>키마</b></td><td class="gtext">주문각인사</td><td><span class="aq-myth">유성 낙하</span></td><td><span class="aq-myth">고양의 영역</span></td></tr>
+          <tr><td><b>쬐도리</b></td><td class="gtext">주문각인사</td><td><span class="aq-myth">유성 낙하</span></td><td><span class="aq-myth">고양의 영역</span></td></tr>
+          <tr><td><b>캡틴징기형</b></td><td class="gtext">향사수</td><td><span class="aq-myth">향연의 덫</span></td><td><span class="aq-myth">관통하는 화살</span></td></tr>
+          <tr><td><b>점멸형</b></td><td class="gtext">집행관</td><td><span class="aq-myth">맹렬한 돌격</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>왕무밍</b></td><td class="gtext">주문각인사</td><td><span class="aq-myth">유성 낙하</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>던힐형</b></td><td class="gtext">집행관</td><td><span class="aq-myth">맹렬한 돌격</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>알파</b></td><td class="gtext">주문각인사</td><td><span class="aq-myth">유성 낙하</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>별의키비</b></td><td class="gtext">집행관</td><td><span class="aq-myth">맹렬한 돌격</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>헤르</b></td><td class="gtext">주문각인사</td><td><span class="aq-myth">유성 낙하</span></td><td><span class="aq-none">미보유</span></td></tr>
+          <tr><td><b>굴맛사탕</b></td><td class="gtext">야만투사</td><td><span class="aq-myth">신수의 발톱</span></td><td><span class="aq-none">해당 없음</span></td></tr>
+          
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" placeholder="닉네임 검색...">
+    <select><option>직업 전체</option></select>
+    <select><option>결사 전체</option></select>
+    <select><option>전투력순</option></select>
+    <div class="vtoggle"><span class="on" onclick="setView('basic',this)">기본</span><span onclick="setView('gear',this)">장비</span><span onclick="setView('aqui',this)">아퀴</span></div>
+  </div>
+
+  <div class="screenview on" id="v-basic">
+    <div class="mtable">
+      <table>
+        <tr><th>닉네임</th><th>구분</th><th>직업</th><th class="num">Lv</th><th class="num">전투력 ↓</th><th class="num">참여율</th><th class="num">데이</th><th class="num">나이트</th><th class="num">기여점수</th></tr>
+        <tr><td><b>굴맛사탕</b></td><td><span class="role r-member">결사원</span></td><td class="gtext">야만투사 · 토벌 26</td><td class="num">93</td><td class="num"><b>53,500</b></td><td class="num">81.8%</td><td class="num gtext">88%</td><td class="num gtext">75%</td><td class="num">16,680</td></tr>
+        <tr><td><b>새로형</b></td><td><span class="role r-staff">운영진</span></td><td class="gtext">야만투사 · 토벌 26</td><td class="num">92</td><td class="num"><b>53,274</b></td><td class="num">81.8%</td><td class="num gtext">80%</td><td class="num gtext">83%</td><td class="num">16,612</td></tr>
+        <tr><td><b>붐붐붐</b></td><td><span class="role r-member">결사원</span></td><td class="gtext">주문각인사 · 토벌 25</td><td class="num">91</td><td class="num"><b>52,000</b></td><td class="num">100%</td><td class="num gtext">100%</td><td class="num gtext">100%</td><td class="num">16,370</td></tr>
+        <tr><td><b>곰형</b></td><td><span class="role r-staff">운영진</span></td><td class="gtext">주문각인사 · 토벌 25</td><td class="num">91</td><td class="num"><b>51,387</b></td><td class="num"><span class="low">54.5%</span></td><td class="num gtext">70%</td><td class="num"><span class="low">39%</span></td><td class="num">15,836</td></tr>
+        <tr><td><b>캡틴징기형</b></td><td><span class="role r-member">결사원</span></td><td class="gtext">향사수 · 토벌 25</td><td class="num">91</td><td class="num"><b>51,195</b></td><td class="num">72.7%</td><td class="num gtext">78%</td><td class="num gtext">66%</td><td class="num">15,919</td></tr>
+      </table>
+    </div>
+    <div style="text-align:center;padding:10px" class="gtext">1–20 / 93명 · 다음 ▸</div>
+  </div>
+
+  <div class="screenview" id="v-gear">
+    <div class="grid">
+      <div class="mcard">
+        <div class="hd"><b>굴맛사탕</b><span class="role r-member">결사원</span></div>
+        <div class="sub">야만투사 · 토벌 26 · 전투력 <b>53,500</b></div>
+        <div class="gearpanel">
+          <div class="slotgrid">
+            <div class="slot abs"><span class="part">주무기</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">특화무기</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">투구</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">상의</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">망토</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">허리띠</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">바지</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">신발</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">장갑</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">반지 1</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">반지 2</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">귀걸이 1</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">귀걸이 2</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">팔찌</span><span class="gr">절대자</span></div>
+            <div class="slot leg"><span class="part">목걸이</span><span class="gr">전설</span></div>
+            <div class="slot leg"><span class="part">브로치</span><span class="gr">전설</span></div>
+            <div class="slot leg"><span class="part">가더</span><span class="gr">전설</span></div>
+            <div class="slot hero"><span class="part">2층 부적</span><span class="gr">영웅</span></div>
+            <div class="slot hero"><span class="part">3층 부적</span><span class="gr">영웅</span></div>
+            <div class="slot empty"><span class="part">1층 부적</span><span class="gr">—</span></div>
+          </div>
+          <div class="gearsum"><span class="sa">절대자 <b>14</b></span><span class="sl">전설 <b>3</b></span><span class="sh">영웅 <b>2</b></span></div>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="hd"><b>곰형</b><span class="role r-staff">운영진</span></div>
+        <div class="sub">주문각인사 · 토벌 25 · 전투력 <b>51,387</b></div>
+        <div class="gearpanel">
+          <div class="slotgrid">
+            <div class="slot abs"><span class="part">주무기</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">특화무기</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">투구</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">상의</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">망토</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">허리띠</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">바지</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">신발</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">장갑</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">반지 1</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">반지 2</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">귀걸이 1</span><span class="gr">절대자</span></div>
+            <div class="slot abs"><span class="part">귀걸이 2</span><span class="gr">절대자</span></div>
+            <div class="slot leg"><span class="part">팔찌</span><span class="gr">전설</span></div>
+            <div class="slot leg"><span class="part">목걸이</span><span class="gr">전설</span></div>
+            <div class="slot leg"><span class="part">브로치</span><span class="gr">전설</span></div>
+            <div class="slot hero"><span class="part">가더</span><span class="gr">영웅</span></div>
+            <div class="slot hero"><span class="part">2층 부적</span><span class="gr">영웅</span></div>
+            <div class="slot empty"><span class="part">3층 부적</span><span class="gr">—</span></div>
+            <div class="slot empty"><span class="part">1층 부적</span><span class="gr">—</span></div>
+          </div>
+          <div class="gearsum"><span class="sa">절대자 <b>13</b></span><span class="sl">전설 <b>3</b></span><span class="sh">영웅 <b>2</b></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screenview" id="v-aqui">
+    <div class="grid">
+      <div class="mcard">
+        <div class="hd"><b>붐붐붐</b><span class="role r-member">결사원</span></div>
+        <div class="sub">주문각인사 · 토벌 25 · 전투력 <b>52,000</b></div>
+        <div class="aqpanel">
+          <div class="aqcols">
+            <div class="aqcol">
+              <div class="ct">PVP</div>
+              <div class="aqslot on"><div class="nm">주문 각인 창</div></div>
+              <div class="aqslot on"><div class="nm">약점 공략</div></div>
+              <div class="aqslot on"><div class="nm">눈보라</div></div>
+              <div class="aqslot myth"><div class="nm">유성 낙하</div></div>
+              <div class="aqslot on"><div class="nm">주문강타</div></div>
+              <div class="aqslot on"><div class="nm">얼음 방패</div></div>
+            </div>
+            <div class="aqcol">
+              <div class="ct">지원</div>
+              <div class="aqslot on"><div class="nm">무형 방패</div></div>
+              <div class="aqslot on"><div class="nm">보호의 축복</div></div>
+              <div class="aqslot myth"><div class="nm">고양의 영역</div></div>
+              <div class="aqslot on"><div class="nm">집중 치유</div></div>
+              <div class="aqslot on"><div class="nm">구원의 빛</div></div>
+              <div class="aqslot on"><div class="nm">정화의 빛</div></div>
+            </div>
+            <div class="aqcol">
+              <div class="ct">PVE</div>
+              <div class="aqslot on"><div class="nm">소소리 바람</div></div>
+              <div class="aqslot on"><div class="nm">지식의 완성</div></div>
+              <div class="aqslot on"><div class="nm">돌풍 회오리</div></div>
+              <div class="aqslot on"><div class="nm">바람 장벽</div></div>
+              <div class="aqslot on"><div class="nm">태풍의 눈</div></div>
+              <div class="aqslot on"><div class="nm">환기</div></div>
+            </div>
+          </div>
+          <div class="passive">
+            <div class="prow"><span class="pl">PVP</span><div class="pdots"><span class="pd m"></span><span class="pd m"></span><span class="pd f"></span><span class="pd f"></span><span class="pd"></span><span class="pd"></span><span class="pd f"></span><span class="pd"></span></div><span class="pcnt">5/8</span></div>
+            <div class="prow"><span class="pl">지원</span><div class="pdots"><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span></div><span class="pcnt">4/8</span></div>
+            <div class="prow"><span class="pl">PVE</span><div class="pdots"><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span></div><span class="pcnt">8/8</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="hd"><b>캡틴징기형</b><span class="role r-member">결사원</span></div>
+        <div class="sub">향사수 · 토벌 25 · 전투력 <b>51,195</b></div>
+        <div class="aqpanel">
+          <div class="aqcols">
+            <div class="aqcol">
+              <div class="ct">PVP</div>
+              <div class="aqslot on"><div class="nm">파쇄 화살</div></div>
+              <div class="aqslot on"><div class="nm">보호의 향연</div></div>
+              <div class="aqslot myth"><div class="nm">향연의 덫</div></div>
+              <div class="aqslot on"><div class="nm">고속 연사</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+            </div>
+            <div class="aqcol">
+              <div class="ct">지원</div>
+              <div class="aqslot on"><div class="nm">능숙한 견제</div></div>
+              <div class="aqslot on"><div class="nm">저격 자세</div></div>
+              <div class="aqslot on"><div class="nm">회심의 일격</div></div>
+              <div class="aqslot myth"><div class="nm">관통하는 화살</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+            </div>
+            <div class="aqcol">
+              <div class="ct">PVE</div>
+              <div class="aqslot on"><div class="nm">향연 방사</div></div>
+              <div class="aqslot on"><div class="nm">가로막는 장벽</div></div>
+              <div class="aqslot on"><div class="nm">얽힘 석궁</div></div>
+              <div class="aqslot on"><div class="nm">얽힘 과부하</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+              <div class="aqslot empty"><div class="nm">미장착</div></div>
+            </div>
+          </div>
+          <div class="passive">
+            <div class="prow"><span class="pl">PVP</span><div class="pdots"><span class="pd m"></span><span class="pd m"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span></div><span class="pcnt">5/8</span></div>
+            <div class="prow"><span class="pl">지원</span><div class="pdots"><span class="pd f"></span><span class="pd f"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span><span class="pd"></span></div><span class="pcnt">2/8</span></div>
+            <div class="prow"><span class="pl">PVE</span><div class="pdots"><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd f"></span><span class="pd"></span><span class="pd"></span></div><span class="pcnt">6/8</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setView(v, el){
+  document.querySelectorAll('.vtoggle span').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.screenview').forEach(s=>s.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+}
+</script>
+</body>
+</html>
