@@ -1,126 +1,126 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=34">
-<link rel="stylesheet" href="css/style.css?v=34">
+<title>?꾨씪?쒖븘 ?꾧린 ??寃곗궗 愿由?/title>
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=35">
+<link rel="stylesheet" href="css/style.css?v=35">
 </head>
 <body>
 
-<!-- ═══ 로그인 화면 (로그인화면_개선시안_v4.html) ═══ -->
+<!-- ?먥븧??濡쒓렇???붾㈃ (濡쒓렇?명솕硫?媛쒖꽑?쒖븞_v4.html) ?먥븧??-->
 <div class="lg-screen" id="loginScreen">
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=34" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
-    <h1>프라시아 전기 결사 관리</h1>
-    <div class="lg-sub">결사원 전용 시스템입니다</div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=35" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='?뷂툘'"></div>
+    <h1>?꾨씪?쒖븘 ?꾧린 寃곗궗 愿由?/h1>
+    <div class="lg-sub">寃곗궗???꾩슜 ?쒖뒪?쒖엯?덈떎</div>
     <div class="err-msg" id="loginErr"></div>
     <form id="loginForm">
-      <label for="loginId">아이디</label>
+      <label for="loginId">?꾩씠??/label>
       <input type="text" id="loginId" autocomplete="username" required>
-      <label for="loginPw">비밀번호</label>
+      <label for="loginPw">鍮꾨?踰덊샇</label>
       <input type="password" id="loginPw" autocomplete="current-password" required>
-      <button type="submit" class="lg-btn" id="loginBtn">로그인</button>
+      <button type="submit" class="lg-btn" id="loginBtn">濡쒓렇??/button>
     </form>
-    <div class="lg-foot">아직 계정이 없나요? <a href="#" id="showRegisterLink">가입 신청</a></div>
+    <div class="lg-foot">?꾩쭅 怨꾩젙???녿굹?? <a href="#" id="showRegisterLink">媛???좎껌</a></div>
   </div>
 </div>
 
-<!-- ═══ 가입 신청 화면 ═══ -->
+<!-- ?먥븧??媛???좎껌 ?붾㈃ ?먥븧??-->
 <div class="login-wrap hidden" id="registerScreen" style="max-width:640px">
   <div class="login-card">
-    <h1>📝 결사 가입 신청</h1>
-    <div class="meta" style="text-align:center;margin-bottom:16px">운영진 승인 후 로그인할 수 있습니다.</div>
+    <h1>?뱷 寃곗궗 媛???좎껌</h1>
+    <div class="meta" style="text-align:center;margin-bottom:16px">?댁쁺吏??뱀씤 ??濡쒓렇?명븷 ???덉뒿?덈떎.</div>
     <div class="err-msg" id="registerErr"></div>
     <form id="registerForm">
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regUserId">아이디 (고정)</label><input type="text" id="regUserId" autocomplete="off" required></div>
-        <div class="field" style="flex:1"><label for="regNick">닉네임 (게임 내)</label><input type="text" id="regNick" required></div>
+        <div class="field" style="flex:1"><label for="regUserId">?꾩씠??(怨좎젙)</label><input type="text" id="regUserId" autocomplete="off" required></div>
+        <div class="field" style="flex:1"><label for="regNick">?됰꽕??(寃뚯엫 ??</label><input type="text" id="regNick" required></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regPw">비밀번호 (4자 이상)</label><input type="password" id="regPw" autocomplete="new-password" required></div>
-        <div class="field" style="flex:1"><label for="regPw2">비밀번호 확인</label><input type="password" id="regPw2" autocomplete="new-password" required></div>
+        <div class="field" style="flex:1"><label for="regPw">鍮꾨?踰덊샇 (4???댁긽)</label><input type="password" id="regPw" autocomplete="new-password" required></div>
+        <div class="field" style="flex:1"><label for="regPw2">鍮꾨?踰덊샇 ?뺤씤</label><input type="password" id="regPw2" autocomplete="new-password" required></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regRole">권한</label>
-          <select id="regRole" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="결사원">결사원</option><option value="운영진">운영진</option></select>
+        <div class="field" style="flex:1"><label for="regRole">沅뚰븳</label>
+          <select id="regRole" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="寃곗궗??>寃곗궗??/option><option value="?댁쁺吏?>?댁쁺吏?/option></select>
         </div>
-        <div class="field" style="flex:1"><label for="regGuild">소속결사</label><input type="text" id="regGuild"></div>
-        <div class="field" style="flex:1"><label for="regRank">토벌순위</label><input type="text" id="regRank"></div>
+        <div class="field" style="flex:1"><label for="regGuild">?뚯냽寃곗궗</label><input type="text" id="regGuild"></div>
+        <div class="field" style="flex:1"><label for="regRank">?좊쾶?쒖쐞</label><input type="text" id="regRank"></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regClass">직업</label><select id="regClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
-        <div class="field" style="flex:1"><label for="regLevel">레벨</label><input type="number" id="regLevel" min="0" value="0"></div>
-        <div class="field" style="flex:1"><label for="regAbyss">심연</label><input type="text" id="regAbyss"></div>
-        <div class="field" style="flex:1"><label for="regPower">전투력</label><input type="number" id="regPower" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="regClass">吏곸뾽</label><select id="regClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+        <div class="field" style="flex:1"><label for="regLevel">?덈꺼</label><input type="number" id="regLevel" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="regAbyss">?ъ뿰</label><input type="text" id="regAbyss"></div>
+        <div class="field" style="flex:1"><label for="regPower">?꾪닾??/label><input type="number" id="regPower" min="0" value="0"></div>
       </div>
 
       <details style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">⚔️ 장비 정보</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">?뷂툘 ?λ퉬 ?뺣낫</summary>
         <div class="equip-edit-grid" id="regEquipGrid" style="margin-top:8px"></div>
       </details>
       <details style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">🔮 아퀴룬 정보</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">?뵰 ?꾪대， ?뺣낫</summary>
         <div id="regAquiEdit" style="margin-top:8px"></div>
       </details>
 
       <div class="field">
-        <label for="regPowerImg">전투력 스샷 (1장)</label>
+        <label for="regPowerImg">?꾪닾???ㅼ꺑 (1??</label>
         <input type="file" id="regPowerImg" accept="image/*">
         <div class="row" id="regPowerPreview" style="gap:6px;margin-top:6px;flex-wrap:wrap"></div>
       </div>
       <div class="field">
-        <label for="regAquiImg">아퀴룬 스샷 (5~10장)</label>
+        <label for="regAquiImg">?꾪대， ?ㅼ꺑 (5~10??</label>
         <input type="file" id="regAquiImg" accept="image/*" multiple>
         <div class="row" id="regAquiPreview" style="gap:6px;margin-top:6px;flex-wrap:wrap"></div>
       </div>
 
-      <button type="submit" class="btn" id="regSubmitBtn">가입 신청</button>
+      <button type="submit" class="btn" id="regSubmitBtn">媛???좎껌</button>
     </form>
     <div class="meta" style="text-align:center;margin-top:14px">
-      <a href="#" id="backToLoginLink" style="color:var(--txt2)">← 로그인으로 돌아가기</a>
+      <a href="#" id="backToLoginLink" style="color:var(--txt2)">??濡쒓렇?몄쑝濡??뚯븘媛湲?/a>
     </div>
   </div>
 </div>
 
-<!-- ═══ 메인 앱 ═══ -->
+<!-- ?먥븧??硫붿씤 ???먥븧??-->
 <div class="wrap hidden" id="appScreen">
-  <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
+  <div class="note">?뱪 1?④퀎 ?뚯씪?????댁쁺吏??뚯뒪???꾩슜?낅땲?? ?ш퀬 愿由?/ ?쒕엻 ?깅줉 ????? ?ㅼ쓬 ?④퀎?먯꽌 ?쒓났?⑸땲??</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=34" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기 — 결사 관리</h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=35" alt="" style="height:24px;width:auto" onerror="this.remove()">?꾨씪?쒖븘 ?꾧린 ??寃곗궗 愿由?/h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
-      <button class="btn ghost sm" id="changePwBtn">비밀번호 변경</button>
-      <button class="btn ghost sm" id="logoutBtn">로그아웃</button>
+      <button class="btn ghost sm" id="changePwBtn">鍮꾨?踰덊샇 蹂寃?/button>
+      <button class="btn ghost sm" id="logoutBtn">濡쒓렇?꾩썐</button>
     </div>
   </header>
 
   <div class="tabs">
-    <div class="tab on" data-s="dashboard" onclick="Tabs.go('dashboard',this)">대시보드</div>
-    <div class="tab" data-s="dist" onclick="Tabs.go('dist',this)">분배</div>
-    <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)">공금 관리</div>
-    <div class="tab" data-s="profile" onclick="Tabs.go('profile',this)">내 정보</div>
+    <div class="tab on" data-s="dashboard" onclick="Tabs.go('dashboard',this)">??쒕낫??/div>
+    <div class="tab" data-s="dist" onclick="Tabs.go('dist',this)">遺꾨같</div>
+    <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)">怨듦툑 愿由?/div>
+    <div class="tab" data-s="profile" onclick="Tabs.go('profile',this)">???뺣낫</div>
     <div class="divider staff-only"></div>
-    <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)">결사원 관리</div>
-    <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)">참여율 관리</div>
-    <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)">재고 관리</div>
-    <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
+    <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)">寃곗궗??愿由?/div>
+    <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)">李몄뿬??愿由?/div>
+    <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)">?ш퀬 愿由?/div>
+    <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">?쒕엻 ?깅줉</div>
   </div>
 
-  <!-- 분배 하위 탭 (분배 상위 탭 선택 시에만 표시) -->
+  <!-- 遺꾨같 ?섏쐞 ??(遺꾨같 ?곸쐞 ???좏깮 ?쒖뿉留??쒖떆) -->
   <div class="row hidden" id="distSubtabs" style="gap:6px;margin:-8px 0 16px;justify-content:flex-start">
-    <span class="fchip on" data-ds="apply" onclick="Tabs.goDist('apply')">분배 신청</span>
-    <span class="fchip" data-ds="status" onclick="Tabs.goDist('status')">분배 현황</span>
-    <span class="fchip" data-ds="result" onclick="Tabs.goDist('result')">결과</span>
-    <span class="fchip" data-ds="history" onclick="Tabs.goDist('history')">이력</span>
+    <span class="fchip on" data-ds="apply" onclick="Tabs.goDist('apply')">遺꾨같 ?좎껌</span>
+    <span class="fchip" data-ds="status" onclick="Tabs.goDist('status')">遺꾨같 ?꾪솴</span>
+    <span class="fchip" data-ds="result" onclick="Tabs.goDist('result')">寃곌낵</span>
+    <span class="fchip" data-ds="history" onclick="Tabs.goDist('history')">?대젰</span>
   </div>
 
-  <!-- ═══ 대시보드 (실제 동작, 전 회원 — 대시보드_최종통합_시안_v2 레이아웃) ═══ -->
+  <!-- ?먥븧????쒕낫??(?ㅼ젣 ?숈옉, ???뚯썝 ????쒕낫??理쒖쥌?듯빀_?쒖븞_v2 ?덉씠?꾩썐) ?먥븧??-->
   <section class="screen on" id="s-dashboard">
     <div class="toast" id="dashToast"></div>
     <div class="kpis" id="kpiGrid"></div>
@@ -128,16 +128,16 @@
 
     <div class="cols">
       <div class="panel">
-        <h3>직업 분포
+        <h3>吏곸뾽 遺꾪룷
           <span class="row" style="gap:4px">
-            <span class="fchip on" data-ci="all" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">전체</span>
-            <span class="fchip" data-ci="main" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">주력</span>
+            <span class="fchip on" data-ci="all" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">?꾩껜</span>
+            <span class="fchip" data-ci="main" onclick="Dashboard.setClassTab(this)" style="padding:4px 10px;font-size:11.5px">二쇰젰</span>
           </span>
         </h3>
         <div id="classBars"></div>
       </div>
       <div class="panel">
-        <h3>신화 아퀴룬 보유 현황 <span class="meta" id="mythMeta"></span></h3>
+        <h3>?좏솕 ?꾪대， 蹂댁쑀 ?꾪솴 <span class="meta" id="mythMeta"></span></h3>
         <div class="myth-scroll">
           <table id="mythTable"></table>
         </div>
@@ -145,14 +145,14 @@
     </div>
 
     <div class="filterbar">
-      <input type="search" id="qd" name="dash-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="닉네임 검색..." oninput="Dashboard.filter()">
+      <input type="search" id="qd" name="dash-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="?됰꽕??寃??.." oninput="Dashboard.filter()">
       <select id="dashClassFilter" onchange="Dashboard.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <select id="dashGuildFilter" onchange="Dashboard.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <select id="dashSort" onchange="Dashboard.sortSelect()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <div class="vtoggle">
-        <span class="on" data-vi="basic" onclick="Dashboard.setCardView(this)">기본</span>
-        <span data-vi="equip" onclick="Dashboard.setCardView(this)">장비</span>
-        <span data-vi="aqui" onclick="Dashboard.setCardView(this)">아퀴</span>
+        <span class="on" data-vi="basic" onclick="Dashboard.setCardView(this)">湲곕낯</span>
+        <span data-vi="equip" onclick="Dashboard.setCardView(this)">?λ퉬</span>
+        <span data-vi="aqui" onclick="Dashboard.setCardView(this)">?꾪?/span>
       </div>
     </div>
 
@@ -161,98 +161,98 @@
       <div class="gtext" id="dashPager" style="text-align:center;padding:10px"></div>
     </div>
     <div class="member-grid" id="memberGrid" style="display:none"></div>
-    <div class="meta" id="memberGridEmpty" style="display:none;text-align:center;padding:30px">조건에 맞는 결사원이 없습니다.</div>
+    <div class="meta" id="memberGridEmpty" style="display:none;text-align:center;padding:30px">議곌굔??留욌뒗 寃곗궗?먯씠 ?놁뒿?덈떎.</div>
   </section>
 
-  <!-- ═══ 분배 신청 (실제 동작, 전 회원) ═══ -->
+  <!-- ?먥븧??遺꾨같 ?좎껌 (?ㅼ젣 ?숈옉, ???뚯썝) ?먥븧??-->
   <section class="screen" id="s-apply">
     <div class="toast" id="applyToast"></div>
 
     <div class="card" id="periodCard">
       <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div>
-          <b style="font-size:15px" id="periodStatusLabel">기간 정보를 불러오는 중...</b>
+          <b style="font-size:15px" id="periodStatusLabel">湲곌컙 ?뺣낫瑜?遺덈윭?ㅻ뒗 以?..</b>
           <div class="meta" id="periodTimeInfo"></div>
         </div>
         <div class="row" style="gap:6px" id="myApplyInfo"></div>
       </div>
       <div id="periodStaffBox" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
         <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap" id="periodSetForm">
-          <div class="field" style="margin-bottom:0"><label for="periodStart">시작</label><input type="datetime-local" id="periodStart"></div>
-          <div class="field" style="margin-bottom:0"><label for="periodEnd">마감</label><input type="datetime-local" id="periodEnd"></div>
-          <button type="button" class="btn sm" id="periodSetBtn">📅 기간 설정</button>
+          <div class="field" style="margin-bottom:0"><label for="periodStart">?쒖옉</label><input type="datetime-local" id="periodStart"></div>
+          <div class="field" style="margin-bottom:0"><label for="periodEnd">留덇컧</label><input type="datetime-local" id="periodEnd"></div>
+          <button type="button" class="btn sm" id="periodSetBtn">?뱟 湲곌컙 ?ㅼ젙</button>
         </div>
         <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px" id="periodActiveForm">
-          <div class="field" style="margin-bottom:0"><label for="periodNewEnd">마감 시각 변경</label><input type="datetime-local" id="periodNewEnd"></div>
-          <button type="button" class="btn ghost sm" id="periodExtendBtn">연장</button>
-          <button type="button" class="btn danger sm" id="periodCloseBtn">기간 종료 (자동확정 실행)</button>
+          <div class="field" style="margin-bottom:0"><label for="periodNewEnd">留덇컧 ?쒓컖 蹂寃?/label><input type="datetime-local" id="periodNewEnd"></div>
+          <button type="button" class="btn ghost sm" id="periodExtendBtn">?곗옣</button>
+          <button type="button" class="btn danger sm" id="periodCloseBtn">湲곌컙 醫낅즺 (?먮룞?뺤젙 ?ㅽ뻾)</button>
         </div>
       </div>
     </div>
 
     <div class="filterbar" id="applyTabs">
-      <span class="fchip on" data-ai="브로치" onclick="Distribution.setTab(this)">브로치</span>
-      <span class="fchip" data-ai="별빛심연석 및 조각" onclick="Distribution.setTab(this)">별빛심연석 및 조각</span>
-      <span class="fchip" data-ai="찬란한심연석" onclick="Distribution.setTab(this)">찬란한심연석</span>
-      <span class="fchip" data-ai="전퀴" onclick="Distribution.setTab(this)">전퀴</span>
-      <span class="fchip" data-ai="나머지" onclick="Distribution.setTab(this)">나머지</span>
+      <span class="fchip on" data-ai="釉뚮줈移? onclick="Distribution.setTab(this)">釉뚮줈移?/span>
+      <span class="fchip" data-ai="蹂꾨튆?ъ뿰??諛?議곌컖" onclick="Distribution.setTab(this)">蹂꾨튆?ъ뿰??諛?議곌컖</span>
+      <span class="fchip" data-ai="李щ??쒖떖?곗꽍" onclick="Distribution.setTab(this)">李щ??쒖떖?곗꽍</span>
+      <span class="fchip" data-ai="?꾪? onclick="Distribution.setTab(this)">?꾪?/span>
+      <span class="fchip" data-ai="?섎㉧吏" onclick="Distribution.setTab(this)">?섎㉧吏</span>
     </div>
     <div class="member-grid" id="applyGrid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))"></div>
-    <div class="meta" id="applyEmpty" style="display:none;text-align:center;padding:30px">이 그룹에 신청 가능한 아이템이 없습니다.</div>
+    <div class="meta" id="applyEmpty" style="display:none;text-align:center;padding:30px">??洹몃９???좎껌 媛?ν븳 ?꾩씠?쒖씠 ?놁뒿?덈떎.</div>
 
     <div class="card" style="margin-top:14px">
       <div class="row" style="justify-content:space-between;margin-bottom:10px">
-        <b style="font-size:15px">📝 내 신청 목록 (대기중)</b>
+        <b style="font-size:15px">?뱷 ???좎껌 紐⑸줉 (?湲곗쨷)</b>
       </div>
       <div class="list" id="myRequestList" style="border:0">
-        <div class="irow meta" id="myRequestEmpty" style="display:none">대기 중인 신청이 없습니다.</div>
+        <div class="irow meta" id="myRequestEmpty" style="display:none">?湲?以묒씤 ?좎껌???놁뒿?덈떎.</div>
       </div>
     </div>
   </section>
-  <!-- ═══ 분배 현황 (신청 현황 — 전 회원 조회, 확정은 운영진) ═══ -->
+  <!-- ?먥븧??遺꾨같 ?꾪솴 (?좎껌 ?꾪솴 ?????뚯썝 議고쉶, ?뺤젙? ?댁쁺吏? ?먥븧??-->
   <section class="screen" id="s-status">
     <div class="toast" id="statusToast"></div>
     <div class="card">
       <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div><b style="font-size:15px">📋 신청 현황</b> <span class="meta" id="statusMeta"></span></div>
-        <button type="button" class="btn ghost sm" onclick="DistManage.loadStatus()">새로고침</button>
+        <div><b style="font-size:15px">?뱥 ?좎껌 ?꾪솴</b> <span class="meta" id="statusMeta"></span></div>
+        <button type="button" class="btn ghost sm" onclick="DistManage.loadStatus()">?덈줈怨좎묠</button>
       </div>
     </div>
     <div class="card hidden" id="statusIneligCard">
-      <b style="font-size:14px;color:#A32D2D">⚠️ 자격 미달 신청 (<span id="statusIneligCount">0</span>건)</b>
+      <b style="font-size:14px;color:#A32D2D">?좑툘 ?먭꺽 誘몃떖 ?좎껌 (<span id="statusIneligCount">0</span>嫄?</b>
       <div class="list" id="statusIneligList" style="border:0;margin-top:8px"></div>
       <div class="row" style="justify-content:flex-end;margin-top:8px">
-        <button type="button" class="btn danger sm" id="statusBulkCancelBtn">자격 미달 일괄 취소</button>
+        <button type="button" class="btn danger sm" id="statusBulkCancelBtn">?먭꺽 誘몃떖 ?쇨큵 痍⑥냼</button>
       </div>
     </div>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <span id="statusTabs" style="display:inline-flex;gap:6px;flex-wrap:wrap"></span>
       <select id="statusSort" onchange="DistManage.renderStatus()" style="margin-left:auto;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
-        <option value="comp">경쟁률순</option>
-        <option value="name">아이템명순</option>
-        <option value="score">기여도순</option>
+        <option value="comp">寃쎌웳瑜좎닚</option>
+        <option value="name">?꾩씠?쒕챸??/option>
+        <option value="score">湲곗뿬?꾩닚</option>
       </select>
     </div>
     <div id="statusList"></div>
   </section>
 
-  <!-- ═══ 결과 (일반: 내 확정 내역 / 운영진: 확정 처리 파이프라인) ═══ -->
+  <!-- ?먥븧??寃곌낵 (?쇰컲: ???뺤젙 ?댁뿭 / ?댁쁺吏? ?뺤젙 泥섎━ ?뚯씠?꾨씪?? ?먥븧??-->
   <section class="screen" id="s-result">
     <div class="toast" id="resultToast"></div>
     <div id="resultMine"></div>
     <div id="resultStaff" class="hidden">
       <div class="row" style="justify-content:flex-end;margin-bottom:10px">
-        <button type="button" class="btn ghost sm" onclick="DistManage.loadResult()">새로고침</button>
+        <button type="button" class="btn ghost sm" onclick="DistManage.loadResult()">?덈줈怨좎묠</button>
       </div>
       <div id="resultWaitPane"></div>
     </div>
   </section>
 
-  <!-- ═══ 이력 (전 회원 조회 / 분배취소·삭제는 관리자) ═══ -->
+  <!-- ?먥븧???대젰 (???뚯썝 議고쉶 / 遺꾨같痍⑥냼쨌??젣??愿由ъ옄) ?먥븧??-->
   <section class="screen" id="s-history">
     <div class="toast" id="historyToast"></div>
     <div class="filterbar">
-      <input type="search" id="qh" name="history-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 품명/룻자/수령자 검색..." oninput="DistManage.renderHistory()">
+      <input type="search" id="qh" name="history-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="?뵇 ?덈챸/猷살옄/?섎졊??寃??.." oninput="DistManage.renderHistory()">
       <select id="hCatFilter" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <select id="hGradeFilter" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <input type="date" id="hFrom" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
@@ -260,79 +260,79 @@
     </div>
     <div class="card">
       <div class="row" style="gap:18px;flex-wrap:wrap">
-        <span class="meta">총 <b id="hCount" style="color:var(--txt)">0</b>건</span>
-        <span class="meta">💎 다이아 합계 <b id="hDiaSum" style="color:var(--txt)">0</b></span>
-        <span class="meta">💵 현금 합계 <b id="hCashSum" style="color:var(--txt)">0</b>원</span>
+        <span class="meta">珥?<b id="hCount" style="color:var(--txt)">0</b>嫄?/span>
+        <span class="meta">?뭿 ?ㅼ씠???⑷퀎 <b id="hDiaSum" style="color:var(--txt)">0</b></span>
+        <span class="meta">?뮫 ?꾧툑 ?⑷퀎 <b id="hCashSum" style="color:var(--txt)">0</b>??/span>
       </div>
     </div>
     <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
   </section>
 
-  <!-- ═══ 공금 관리 (공금관리_개선시안.html — 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
+  <!-- ?먥븧??怨듦툑 愿由?(怨듦툑愿由?媛쒖꽑?쒖븞.html ?????뚯썝 議고쉶 媛??/ ?낆텧湲덉? ?댁쁺吏??댁긽) ?먥븧??-->
   <section class="screen" id="s-treasury">
     <div class="toast" id="treasuryToast"></div>
 
     <div class="kpis k2">
       <div class="kpi">
-        <div class="lb"><span class="abadge a-cash">현금</span> 결사 금고</div>
-        <div class="v" id="cashBalance">0 <small>원</small></div>
+        <div class="lb"><span class="abadge a-cash">?꾧툑</span> 寃곗궗 湲덇퀬</div>
+        <div class="v" id="cashBalance">0 <small>??/small></div>
       </div>
       <div class="kpi">
-        <div class="lb"><span class="abadge a-dia">다이아</span> 전체 합계</div>
-        <div class="v" id="diamondTotal">0 <small>개</small></div>
+        <div class="lb"><span class="abadge a-dia">?ㅼ씠??/span> ?꾩껜 ?⑷퀎</div>
+        <div class="v" id="diamondTotal">0 <small>媛?/small></div>
       </div>
     </div>
 
     <div class="tcols solo" id="treasuryCols">
       <div class="panel">
-        <h3>운영진별 다이아 보유 <span class="meta" id="diamondSumMeta"></span></h3>
+        <h3>?댁쁺吏꾨퀎 ?ㅼ씠??蹂댁쑀 <span class="meta" id="diamondSumMeta"></span></h3>
         <div id="diamondList">
-          <div class="hrow meta" id="diamondEmpty" style="display:none">보유 다이아가 없습니다.</div>
+          <div class="hrow meta" id="diamondEmpty" style="display:none">蹂댁쑀 ?ㅼ씠?꾧? ?놁뒿?덈떎.</div>
         </div>
       </div>
 
       <div class="panel hidden" id="treasuryStaffForms">
-        <h3>입출금 등록</h3>
+        <h3>?낆텧湲??깅줉</h3>
         <form id="txForm">
           <div class="fseg" id="txAssetSeg">
-            <span class="on" data-asset="현금">현금</span>
-            <span data-asset="다이아">다이아</span>
+            <span class="on" data-asset="?꾧툑">?꾧툑</span>
+            <span data-asset="?ㅼ씠??>?ㅼ씠??/span>
           </div>
           <div class="frow">
             <select id="diamondOwner" class="hidden"></select>
             <select id="txDirection" style="flex:0 0 110px">
-              <option value="입금">입금</option>
-              <option value="출금">출금</option>
+              <option value="?낃툑">?낃툑</option>
+              <option value="異쒓툑">異쒓툑</option>
             </select>
-            <input type="number" id="txAmount" min="1" required placeholder="금액 (원)">
+            <input type="number" id="txAmount" min="1" required placeholder="湲덉븸 (??">
           </div>
-          <div class="frow"><input type="text" id="txDesc" placeholder="내용 (예: 거점 대전 분배)"></div>
-          <div style="text-align:right"><button type="submit" class="btn" id="txSubmitBtn">저장</button></div>
+          <div class="frow"><input type="text" id="txDesc" placeholder="?댁슜 (?? 嫄곗젏 ???遺꾨같)"></div>
+          <div style="text-align:right"><button type="submit" class="btn" id="txSubmitBtn">???/button></div>
         </form>
       </div>
     </div>
 
     <div class="panel">
-      <h3 style="flex-wrap:wrap;gap:8px">전체 이력
+      <h3 style="flex-wrap:wrap;gap:8px">?꾩껜 ?대젰
         <span class="row" style="gap:6px">
-          <span class="fchip" data-tp="this" onclick="Treasury.setPeriod(this)">이번 달</span>
-          <span class="fchip" data-tp="last" onclick="Treasury.setPeriod(this)">지난 달</span>
-          <span class="fchip on" data-tp="all" onclick="Treasury.setPeriod(this)">전체</span>
+          <span class="fchip" data-tp="this" onclick="Treasury.setPeriod(this)">?대쾲 ??/span>
+          <span class="fchip" data-tp="last" onclick="Treasury.setPeriod(this)">吏????/span>
+          <span class="fchip on" data-tp="all" onclick="Treasury.setPeriod(this)">?꾩껜</span>
           <span class="fdiv"></span>
-          <span class="fchip on" data-ta="전체" onclick="Treasury.setAssetFilter(this)">전체</span>
-          <span class="fchip" data-ta="현금" onclick="Treasury.setAssetFilter(this)">현금</span>
-          <span class="fchip" data-ta="다이아" onclick="Treasury.setAssetFilter(this)">다이아</span>
+          <span class="fchip on" data-ta="?꾩껜" onclick="Treasury.setAssetFilter(this)">?꾩껜</span>
+          <span class="fchip" data-ta="?꾧툑" onclick="Treasury.setAssetFilter(this)">?꾧툑</span>
+          <span class="fchip" data-ta="?ㅼ씠?? onclick="Treasury.setAssetFilter(this)">?ㅼ씠??/span>
           <span class="fdiv"></span>
-          <span class="fchip on" data-hi="전체" onclick="Treasury.setHistoryFilter(this)">입출 전체</span>
-          <span class="fchip" data-hi="입금" onclick="Treasury.setHistoryFilter(this)">입금</span>
-          <span class="fchip" data-hi="출금" onclick="Treasury.setHistoryFilter(this)">출금</span>
+          <span class="fchip on" data-hi="?꾩껜" onclick="Treasury.setHistoryFilter(this)">?낆텧 ?꾩껜</span>
+          <span class="fchip" data-hi="?낃툑" onclick="Treasury.setHistoryFilter(this)">?낃툑</span>
+          <span class="fchip" data-hi="異쒓툑" onclick="Treasury.setHistoryFilter(this)">異쒓툑</span>
         </span>
       </h3>
       <div class="tsummary" id="treasurySummary" style="display:none"></div>
       <div style="overflow-x:auto">
         <table class="ttable">
           <thead>
-            <tr><th style="width:64px">자산</th><th style="width:110px;text-align:right">금액</th><th>내용</th><th style="width:80px">처리자</th><th style="width:110px">일시</th><th style="width:56px"></th></tr>
+            <tr><th style="width:64px">?먯궛</th><th style="width:110px;text-align:right">湲덉븸</th><th>?댁슜</th><th style="width:80px">泥섎━??/th><th style="width:110px">?쇱떆</th><th style="width:56px"></th></tr>
           </thead>
           <tbody id="treasuryHistoryBody"></tbody>
         </table>
@@ -341,12 +341,12 @@
     </div>
   </section>
 
-  <!-- ═══ 내 정보 (실제 동작, 전 회원) ═══ -->
+  <!-- ?먥븧?????뺣낫 (?ㅼ젣 ?숈옉, ???뚯썝) ?먥븧??-->
   <section class="screen" id="s-profile">
     <div class="toast" id="profileToast"></div>
-    <div class="note hidden" id="profileLockBanner">🔒 분배 신청 기간 진행 중에는 프로필을 수정할 수 없습니다. (조회만 가능)</div>
+    <div class="note hidden" id="profileLockBanner">?뵏 遺꾨같 ?좎껌 湲곌컙 吏꾪뻾 以묒뿉???꾨줈?꾩쓣 ?섏젙?????놁뒿?덈떎. (議고쉶留?媛??</div>
 
-    <!-- 프로필 요약 카드 -->
+    <!-- ?꾨줈???붿빟 移대뱶 -->
     <div class="pf-profile">
       <div class="avatar" id="pfAvatar">?</div>
       <div class="pmain">
@@ -354,281 +354,281 @@
         <div class="sub" id="pfSumSub"></div>
       </div>
       <div class="pf-stats">
-        <div class="stat"><b id="pfStatContrib">0</b><span>기여점수</span></div>
-        <div class="stat"><b id="pfStatPart">0</b><span>참여점수</span></div>
-        <div class="stat"><b id="pfStatPower">0</b><span>전투력</span></div>
+        <div class="stat"><b id="pfStatContrib">0</b><span>湲곗뿬?먯닔</span></div>
+        <div class="stat"><b id="pfStatPart">0</b><span>李몄뿬?먯닔</span></div>
+        <div class="stat"><b id="pfStatPower">0</b><span>?꾪닾??/span></div>
       </div>
     </div>
 
     <div class="subtabs">
-      <span class="stab on" data-pi="info" onclick="Profile.setTab(this)">기본정보</span>
-      <span class="stab" data-pi="equip" onclick="Profile.setTab(this)">장비</span>
-      <span class="stab" data-pi="aqui" onclick="Profile.setTab(this)">아퀴룬</span>
-      <span class="stab" data-pi="imgs" onclick="Profile.setTab(this)">인증샷</span>
-      <span class="stab" data-pi="history" onclick="Profile.setTab(this)">내 분배이력</span>
+      <span class="stab on" data-pi="info" onclick="Profile.setTab(this)">湲곕낯?뺣낫</span>
+      <span class="stab" data-pi="equip" onclick="Profile.setTab(this)">?λ퉬</span>
+      <span class="stab" data-pi="aqui" onclick="Profile.setTab(this)">?꾪대，</span>
+      <span class="stab" data-pi="imgs" onclick="Profile.setTab(this)">?몄쬆??/span>
+      <span class="stab" data-pi="history" onclick="Profile.setTab(this)">??遺꾨같?대젰</span>
     </div>
 
-    <!-- 기본정보 (쟁지원조 카드는 이 탭에만) -->
+    <!-- 湲곕낯?뺣낫 (?곸??먯“ 移대뱶??????뿉留? -->
     <div id="profilePaneInfo">
       <div class="panel">
-        <h3>기본 정보</h3>
+        <h3>湲곕낯 ?뺣낫</h3>
         <form id="profileInfoForm">
           <div class="row" style="gap:10px">
-            <div class="field" style="flex:1"><label for="pfNick">닉네임</label><input type="text" id="pfNick" required></div>
-            <div class="field" style="flex:1"><label for="pfGuild">소속결사</label><input type="text" id="pfGuild"></div>
-            <div class="field" style="flex:1"><label for="pfRank">토벌순위</label><input type="text" id="pfRank"></div>
+            <div class="field" style="flex:1"><label for="pfNick">?됰꽕??/label><input type="text" id="pfNick" required></div>
+            <div class="field" style="flex:1"><label for="pfGuild">?뚯냽寃곗궗</label><input type="text" id="pfGuild"></div>
+            <div class="field" style="flex:1"><label for="pfRank">?좊쾶?쒖쐞</label><input type="text" id="pfRank"></div>
           </div>
           <div class="row" style="gap:10px">
-            <div class="field" style="flex:1"><label for="pfClass">직업</label><select id="pfClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
-            <div class="field" style="flex:1"><label for="pfLevel">레벨</label><input type="number" id="pfLevel" min="0"></div>
-            <div class="field" style="flex:1"><label for="pfAbyss">심연</label><input type="text" id="pfAbyss"></div>
-            <div class="field" style="flex:1"><label for="pfPower">전투력</label><input type="number" id="pfPower" min="0"></div>
+            <div class="field" style="flex:1"><label for="pfClass">吏곸뾽</label><select id="pfClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+            <div class="field" style="flex:1"><label for="pfLevel">?덈꺼</label><input type="number" id="pfLevel" min="0"></div>
+            <div class="field" style="flex:1"><label for="pfAbyss">?ъ뿰</label><input type="text" id="pfAbyss"></div>
+            <div class="field" style="flex:1"><label for="pfPower">?꾪닾??/label><input type="number" id="pfPower" min="0"></div>
           </div>
-          <div class="field"><label for="pfNewPw">비밀번호 변경 (빈칸이면 유지)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)"></div>
-          <button type="submit" class="btn sm" id="pfInfoSaveBtn">기본정보 저장</button>
+          <div class="field"><label for="pfNewPw">鍮꾨?踰덊샇 蹂寃?(鍮덉뭏?대㈃ ?좎?)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="??鍮꾨?踰덊샇 (4???댁긽)"></div>
+          <button type="submit" class="btn sm" id="pfInfoSaveBtn">湲곕낯?뺣낫 ???/button>
         </form>
       </div>
 
       <div class="panel" id="shiftCard">
-        <h3>쟁지원조</h3>
-        <div class="meta" style="margin:0 0 10px">쟁 지원(긴급 소집)이 주로 가능한 시간대를 선택하세요. 데이 09:00~17:59 / 나이트 18:00~08:59</div>
+        <h3>?곸??먯“</h3>
+        <div class="meta" style="margin:0 0 10px">??吏??湲닿툒 ?뚯쭛)??二쇰줈 媛?ν븳 ?쒓컙?瑜??좏깮?섏꽭?? ?곗씠 09:00~17:59 / ?섏씠??18:00~08:59</div>
         <div class="row" style="gap:8px;flex-wrap:wrap">
           <div class="vtoggle" id="shiftToggle">
-            <span data-sh="day" onclick="Profile.selectShift(this)">☀️ 데이조</span>
-            <span data-sh="night" onclick="Profile.selectShift(this)">🌙 나이트조</span>
+            <span data-sh="day" onclick="Profile.selectShift(this)">?截??곗씠議?/span>
+            <span data-sh="night" onclick="Profile.selectShift(this)">?뙔 ?섏씠?몄“</span>
           </div>
           <span class="meta" id="shiftPendingNote"></span>
         </div>
-        <div class="meta" style="margin-top:8px;color:var(--txt3)">※ 조 변경은 다음 정산 회차(시즌)부터 참여율 계산에 반영됩니다.</div>
+        <div class="meta" style="margin-top:8px;color:var(--txt3)">??議?蹂寃쎌? ?ㅼ쓬 ?뺤궛 ?뚯감(?쒖쫵)遺??李몄뿬??怨꾩궛??諛섏쁺?⑸땲??</div>
         <div id="shiftMetricBox" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"></div>
       </div>
     </div>
 
-    <!-- 장비: 등급색 셀렉트 + 라이브 미리보기 -->
+    <!-- ?λ퉬: ?깃툒????됲듃 + ?쇱씠釉?誘몃━蹂닿린 -->
     <div class="hidden" id="profilePaneEquip">
       <div class="panel">
-        <h3>장비 입력 <span class="meta">등급을 고르면 색과 미리보기가 즉시 반영됩니다</span></h3>
+        <h3>?λ퉬 ?낅젰 <span class="meta">?깃툒??怨좊Ⅴ硫??됯낵 誘몃━蹂닿린媛 利됱떆 諛섏쁺?⑸땲??/span></h3>
         <div class="gearwrap">
           <div class="gform" id="pfEquipGrid"></div>
           <div class="gpreview">
-            <div class="pt">미리보기</div>
+            <div class="pt">誘몃━蹂닿린</div>
             <div class="pslots" id="pfEquipPreview"></div>
           </div>
         </div>
-        <div class="savebar"><span class="hint" id="pfEquipHint"></span><button type="button" class="btn" id="pfEquipSaveBtn">장비 저장</button></div>
+        <div class="savebar"><span class="hint" id="pfEquipHint"></span><button type="button" class="btn" id="pfEquipSaveBtn">?λ퉬 ???/button></div>
       </div>
     </div>
 
-    <!-- 아퀴룬: 3단 순환 칩 -->
+    <!-- ?꾪대，: 3???쒗솚 移?-->
     <div class="hidden" id="profilePaneAqui">
       <div class="panel">
-        <h3>아퀴룬 보유 입력 <span class="meta">클릭 순환: 미보유 → <b style="color:#3C3489">전설</b> → <b style="color:#854F0B">신화</b> → 미보유</span></h3>
+        <h3>?꾪대， 蹂댁쑀 ?낅젰 <span class="meta">?대┃ ?쒗솚: 誘몃낫????<b style="color:#3C3489">?꾩꽕</b> ??<b style="color:#854F0B">?좏솕</b> ??誘몃낫??/span></h3>
         <div id="pfAquiEdit"></div>
-        <div class="savebar"><span class="hint" id="pfAquiHint">변경사항 0건</span><button type="button" class="btn" id="pfAquiSaveBtn">아퀴룬 저장</button></div>
+        <div class="savebar"><span class="hint" id="pfAquiHint">蹂寃쎌궗??0嫄?/span><button type="button" class="btn" id="pfAquiSaveBtn">?꾪대， ???/button></div>
       </div>
     </div>
 
-    <!-- 인증샷: 드롭존 + 썸네일 -->
+    <!-- ?몄쬆?? ?쒕∼議?+ ?몃꽕??-->
     <div class="hidden" id="profilePaneImgs">
       <div class="panel">
-        <h3>전투력 스샷 <span class="meta">1장 · 업로드 시 기존 교체</span></h3>
+        <h3>?꾪닾???ㅼ꺑 <span class="meta">1??쨌 ?낅줈????湲곗〈 援먯껜</span></h3>
         <div class="row" id="pfPowerGallery" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
-        <div class="dropzone" id="pfPowerDrop"><b>이미지를 끌어다 놓거나 클릭해서 업로드</b>PNG·JPG · 1장</div>
+        <div class="dropzone" id="pfPowerDrop"><b>?대?吏瑜??뚯뼱???볤굅???대┃?댁꽌 ?낅줈??/b>PNG쨌JPG 쨌 1??/div>
         <input type="file" id="pfPowerImg" accept="image/*" class="hidden">
         <div class="thumbs" id="pfPowerPending"></div>
-        <div class="savebar hidden" id="pfPowerSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfPowerUploadBtn">업로드 (기존 교체)</button></div>
+        <div class="savebar hidden" id="pfPowerSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfPowerUploadBtn">?낅줈??(湲곗〈 援먯껜)</button></div>
       </div>
       <div class="panel">
-        <h3>아퀴룬 스샷 <span class="meta">5~10장 · 업로드 시 기존 전체 교체</span></h3>
+        <h3>?꾪대， ?ㅼ꺑 <span class="meta">5~10??쨌 ?낅줈????湲곗〈 ?꾩껜 援먯껜</span></h3>
         <div class="row" id="pfAquiGallery" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
-        <div class="dropzone" id="pfAquiDrop"><b>이미지를 끌어다 놓거나 클릭해서 업로드</b>여러 장 한 번에 선택 가능</div>
+        <div class="dropzone" id="pfAquiDrop"><b>?대?吏瑜??뚯뼱???볤굅???대┃?댁꽌 ?낅줈??/b>?щ윭 ????踰덉뿉 ?좏깮 媛??/div>
         <input type="file" id="pfAquiImg" accept="image/*" multiple class="hidden">
         <div class="thumbs" id="pfAquiPending"></div>
-        <div class="savebar hidden" id="pfAquiSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfAquiUploadBtn">업로드 (기존 전체 교체)</button></div>
+        <div class="savebar hidden" id="pfAquiSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfAquiUploadBtn">?낅줈??(湲곗〈 ?꾩껜 援먯껜)</button></div>
       </div>
     </div>
 
-    <!-- 내 분배이력 -->
+    <!-- ??遺꾨같?대젰 -->
     <div class="hidden" id="profilePaneHistory">
       <div class="panel">
-        <h3>내 분배 이력</h3>
+        <h3>??遺꾨같 ?대젰</h3>
         <div class="list" id="pfHistoryList" style="border:0">
           <div id="pfHistoryEmpty" style="display:none;text-align:center;padding:26px;color:var(--txt3);font-size:13px">
-            <div style="font-size:26px;margin-bottom:6px">🎁</div>
-            아직 분배받은 이력이 없습니다<br><span style="font-size:12px">분배 신청은 [분배] 탭에서 할 수 있어요</span>
+            <div style="font-size:26px;margin-bottom:6px">?럞</div>
+            ?꾩쭅 遺꾨같諛쏆? ?대젰???놁뒿?덈떎<br><span style="font-size:12px">遺꾨같 ?좎껌? [遺꾨같] ??뿉???????덉뼱??/span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══ 운영진: 결사원 관리 (실제 동작) ═══ -->
+  <!-- ?먥븧???댁쁺吏? 寃곗궗??愿由?(?ㅼ젣 ?숈옉) ?먥븧??-->
   <section class="screen" id="s-members">
     <div class="toast" id="membersToast"></div>
 
     <div class="card hidden" id="regRequestsCard">
-      <b style="font-size:15px;color:var(--amber-dk)">📮 가입 신청 (<span id="regRequestsCount">0</span>건 대기)</b>
+      <b style="font-size:15px;color:var(--amber-dk)">?벍 媛???좎껌 (<span id="regRequestsCount">0</span>嫄??湲?</b>
       <div class="list" id="regRequestsList" style="border:0;margin-top:8px"></div>
     </div>
 
     <div class="filterbar">
-      <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
+      <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="?뵇 ?됰꽕???뚯냽寃곗궗/吏곸뾽 寃??.." oninput="Members.filter()">
       <select id="qmClass" onchange="Members.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
-      <span class="fchip on" data-ri="전체" onclick="Members.setRole(this)">전체</span>
-      <span class="fchip" data-ri="결사원" onclick="Members.setRole(this)">결사원</span>
-      <span class="fchip" data-ri="운영진" onclick="Members.setRole(this)">운영진</span>
-      <span class="fchip" data-ri="관리자" onclick="Members.setRole(this)">관리자</span>
-      <button type="button" class="btn sm" id="memberAddBtn" style="margin-left:auto">+ 결사원 등록</button>
+      <span class="fchip on" data-ri="?꾩껜" onclick="Members.setRole(this)">?꾩껜</span>
+      <span class="fchip" data-ri="寃곗궗?? onclick="Members.setRole(this)">寃곗궗??/span>
+      <span class="fchip" data-ri="?댁쁺吏? onclick="Members.setRole(this)">?댁쁺吏?/span>
+      <span class="fchip" data-ri="愿由ъ옄" onclick="Members.setRole(this)">愿由ъ옄</span>
+      <button type="button" class="btn sm" id="memberAddBtn" style="margin-left:auto">+ 寃곗궗???깅줉</button>
     </div>
     <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <div class="vtoggle" id="memberViewToggle">
-        <span class="on" data-mv="general" onclick="Members.setView(this)">일반정보</span>
-        <span data-mv="equip" onclick="Members.setView(this)">장비정보</span>
-        <span data-mv="aqui" onclick="Members.setView(this)">아퀴정보</span>
+        <span class="on" data-mv="general" onclick="Members.setView(this)">?쇰컲?뺣낫</span>
+        <span data-mv="equip" onclick="Members.setView(this)">?λ퉬?뺣낫</span>
+        <span data-mv="aqui" onclick="Members.setView(this)">?꾪댁젙蹂?/span>
       </div>
       <span class="aqui-tools hidden" id="aquiTools">
         <select id="qmRune" onchange="Members.setRuneFilter()"></select>
-        <span class="onlyno hidden" id="qmOnlyNo" onclick="Members.toggleOnlyNo()">☐ 미보유만</span>
+        <span class="onlyno hidden" id="qmOnlyNo" onclick="Members.toggleOnlyNo()">??誘몃낫?좊쭔</span>
         <div class="vtoggle" id="aquiViewSwitch">
-          <span class="on" data-av="p" onclick="Members.setAquiView(this)">사람별</span>
-          <span data-av="r" onclick="Members.setAquiView(this)">룬별 현황</span>
+          <span class="on" data-av="p" onclick="Members.setAquiView(this)">?щ엺蹂?/span>
+          <span data-av="r" onclick="Members.setAquiView(this)">猷щ퀎 ?꾪솴</span>
         </div>
-        <button type="button" class="btn sm ghost" id="aquiMapBtn">📖 아퀴 매핑</button>
+        <button type="button" class="btn sm ghost" id="aquiMapBtn">?뱰 ?꾪?留ㅽ븨</button>
       </span>
     </div>
     <div class="list" id="membersTable">
       <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
-        <span class="nm" style="font-weight:500">닉네임</span>
-        <span style="width:110px">고정아이디</span>
-        <span style="width:90px">소속결사</span><span style="width:96px">직업</span>
-        <span style="width:50px">Lv</span><span style="width:80px">전투력</span>
-        <span style="width:56px">권한</span><span style="width:70px">기여점수</span>
-        <span style="width:108px">스샷</span>
-        <span style="margin-left:auto">관리</span>
+        <span class="nm" style="font-weight:500">?됰꽕??/span>
+        <span style="width:110px">怨좎젙?꾩씠??/span>
+        <span style="width:90px">?뚯냽寃곗궗</span><span style="width:96px">吏곸뾽</span>
+        <span style="width:50px">Lv</span><span style="width:80px">?꾪닾??/span>
+        <span style="width:56px">沅뚰븳</span><span style="width:70px">湲곗뿬?먯닔</span>
+        <span style="width:108px">?ㅼ꺑</span>
+        <span style="margin-left:auto">愿由?/span>
       </div>
-      <div class="irow meta" id="membersEmpty" style="display:none">등록된 결사원이 없습니다.</div>
+      <div class="irow meta" id="membersEmpty" style="display:none">?깅줉??寃곗궗?먯씠 ?놁뒿?덈떎.</div>
     </div>
     <div class="mtable mgmt-scroll hidden" id="membersEquipTable"></div>
     <div class="hidden" id="membersAquiTable"></div>
   </section>
 
-  <!-- ═══ 운영진: 참여율 관리 (실제 동작) ═══ -->
+  <!-- ?먥븧???댁쁺吏? 李몄뿬??愿由?(?ㅼ젣 ?숈옉) ?먥븧??-->
   <section class="screen" id="s-part">
     <div class="toast" id="partToast"></div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div>
-          <b style="font-size:15px" id="partSeasonLabel">시즌 정보를 불러오는 중...</b>
+          <b style="font-size:15px" id="partSeasonLabel">?쒖쫵 ?뺣낫瑜?遺덈윭?ㅻ뒗 以?..</b>
           <div class="meta" id="partSeasonInfo"></div>
         </div>
         <div class="row" style="gap:6px;align-items:flex-end;flex-wrap:wrap">
-          <div class="field" style="margin-bottom:0"><label for="partSeasonInput">시즌 번호</label><input type="number" id="partSeasonInput" min="1" style="width:80px"></div>
-          <button type="button" class="btn ghost sm" id="partSetSeasonBtn">시즌 변경</button>
-          <button type="button" class="btn sm" id="partCloseSeasonBtn">시즌 마감</button>
-          <button type="button" class="btn danger sm hidden" id="partResetBtn">참여점수 초기화</button>
+          <div class="field" style="margin-bottom:0"><label for="partSeasonInput">?쒖쫵 踰덊샇</label><input type="number" id="partSeasonInput" min="1" style="width:80px"></div>
+          <button type="button" class="btn ghost sm" id="partSetSeasonBtn">?쒖쫵 蹂寃?/button>
+          <button type="button" class="btn sm" id="partCloseSeasonBtn">?쒖쫵 留덇컧</button>
+          <button type="button" class="btn danger sm hidden" id="partResetBtn">李몄뿬?먯닔 珥덇린??/button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <b style="font-size:15px">➕ 출석 입력</b>
-      <div class="meta" style="margin:6px 0 8px">게임 출석 로그(또는 카카오톡 내보내기 텍스트)를 붙여넣으세요. 활동 태그(!본토/!시틈/!유니/!결던/!별봉/!긴급)가 각 로그 끝에 있어야 합니다.</div>
+      <b style="font-size:15px">??異쒖꽍 ?낅젰</b>
+      <div class="meta" style="margin:6px 0 8px">寃뚯엫 異쒖꽍 濡쒓렇(?먮뒗 移댁뭅?ㅽ넚 ?대낫?닿린 ?띿뒪??瑜?遺숈뿬?ｌ쑝?몄슂. ?쒕룞 ?쒓렇(!蹂명넗/!?쒗땲/!?좊땲/!寃곕뜕/!蹂꾨큺/!湲닿툒)媛 媛?濡쒓렇 ?앹뿉 ?덉뼱???⑸땲??</div>
       <textarea id="partLogText" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;background:var(--bg);font-family:monospace"></textarea>
       <div class="row" style="margin-top:8px;gap:8px">
-        <button type="button" class="btn" id="partParseBtn">🔍 분석</button>
-        <button type="button" class="btn hidden" id="partSaveBtn">💾 저장</button>
+        <button type="button" class="btn" id="partParseBtn">?뵇 遺꾩꽍</button>
+        <button type="button" class="btn hidden" id="partSaveBtn">?뮶 ???/button>
       </div>
       <div id="partPreview" style="margin-top:10px"></div>
     </div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <b style="font-size:15px">📊 참여 현황</b>
-        <input type="search" id="qp" name="part-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="닉네임 검색..." style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;min-width:160px">
+        <b style="font-size:15px">?뱤 李몄뿬 ?꾪솴</b>
+        <input type="search" id="qp" name="part-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="?됰꽕??寃??.." style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;min-width:160px">
       </div>
       <div class="mtable" style="max-height:420px;overflow:auto"><table id="partStatusTable"></table></div>
     </div>
 
     <div class="card">
-      <b style="font-size:15px">🗂️ 입력 이력</b>
+      <b style="font-size:15px">?뾺截??낅젰 ?대젰</b>
       <div class="list" id="partLogList" style="border:0;margin-top:8px">
-        <div class="irow meta" id="partLogEmpty" style="display:none">이번 시즌 입력된 로그가 없습니다.</div>
+        <div class="irow meta" id="partLogEmpty" style="display:none">?대쾲 ?쒖쫵 ?낅젰??濡쒓렇媛 ?놁뒿?덈떎.</div>
       </div>
     </div>
   </section>
 
-  <!-- ═══ 운영진: 재고 관리 (실제 동작) ═══ -->
+  <!-- ?먥븧???댁쁺吏? ?ш퀬 愿由?(?ㅼ젣 ?숈옉) ?먥븧??-->
   <section class="screen" id="s-inv">
     <div class="toast" id="invToast"></div>
     <div class="filterbar">
-      <input type="search" id="qi" name="inv-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 아이템명 검색..." oninput="Inventory.filter()">
-      <span class="fchip on" data-gi="전체" onclick="Inventory.setGrade(this)">전체</span>
-      <span class="fchip" data-gi="신화" onclick="Inventory.setGrade(this)">신화</span>
-      <span class="fchip" data-gi="전설" onclick="Inventory.setGrade(this)">전설</span>
-      <span class="fchip" data-gi="영웅" onclick="Inventory.setGrade(this)">영웅</span>
-      <span class="fchip" data-gi="희귀" onclick="Inventory.setGrade(this)">희귀</span>
-      <span class="fchip" data-gi="미신청" onclick="Inventory.setGrade(this)">⚠️ 미신청</span>
+      <input type="search" id="qi" name="inv-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="?뵇 ?꾩씠?쒕챸 寃??.." oninput="Inventory.filter()">
+      <span class="fchip on" data-gi="?꾩껜" onclick="Inventory.setGrade(this)">?꾩껜</span>
+      <span class="fchip" data-gi="?좏솕" onclick="Inventory.setGrade(this)">?좏솕</span>
+      <span class="fchip" data-gi="?꾩꽕" onclick="Inventory.setGrade(this)">?꾩꽕</span>
+      <span class="fchip" data-gi="?곸썒" onclick="Inventory.setGrade(this)">?곸썒</span>
+      <span class="fchip" data-gi="?ш?" onclick="Inventory.setGrade(this)">?ш?</span>
+      <span class="fchip" data-gi="誘몄떊泥? onclick="Inventory.setGrade(this)">?좑툘 誘몄떊泥?/span>
     </div>
     <div class="list" id="invTable">
       <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
-        <span style="width:56px">등급</span><span class="nm" style="font-weight:500">아이템명</span>
-        <span style="width:60px">재고</span><span style="width:60px">신청</span><span style="width:100px">룻자</span>
-        <span style="margin-left:auto">관리</span>
+        <span style="width:56px">?깃툒</span><span class="nm" style="font-weight:500">?꾩씠?쒕챸</span>
+        <span style="width:60px">?ш퀬</span><span style="width:60px">?좎껌</span><span style="width:100px">猷살옄</span>
+        <span style="margin-left:auto">愿由?/span>
       </div>
-      <div class="irow meta" id="invEmpty" style="display:none">등록된 재고가 없습니다.</div>
+      <div class="irow meta" id="invEmpty" style="display:none">?깅줉???ш퀬媛 ?놁뒿?덈떎.</div>
     </div>
   </section>
 
-  <!-- ═══ 운영진: 드랍 등록 (실제 동작) ═══ -->
+  <!-- ?먥븧???댁쁺吏? ?쒕엻 ?깅줉 (?ㅼ젣 ?숈옉) ?먥븧??-->
   <section class="screen" id="s-drop">
     <div class="toast" id="dropToast"></div>
     <div class="card">
-      <div class="row" style="margin-bottom:14px"><b style="font-size:15px">드랍템 등록</b></div>
+      <div class="row" style="margin-bottom:14px"><b style="font-size:15px">?쒕엻???깅줉</b></div>
       <form id="dropForm">
         <div class="row" style="gap:10px;align-items:flex-start">
           <div class="field" style="flex:2;min-width:160px">
-            <label for="dropName">아이템명</label>
+            <label for="dropName">?꾩씠?쒕챸</label>
             <input type="text" id="dropName" list="itemMasterList" autocomplete="off" required>
             <datalist id="itemMasterList"></datalist>
           </div>
           <div class="field" style="flex:1;min-width:110px">
-            <label for="dropGrade">등급</label>
+            <label for="dropGrade">?깃툒</label>
             <select id="dropGrade"></select>
           </div>
           <div class="field" style="flex:1;min-width:110px">
-            <label for="dropCategory">구분</label>
+            <label for="dropCategory">援щ텇</label>
             <select id="dropCategory"></select>
           </div>
         </div>
         <div class="row" style="gap:10px;align-items:flex-start">
           <div class="field" style="flex:1;min-width:90px">
-            <label for="dropQty">수량</label>
+            <label for="dropQty">?섎웾</label>
             <input type="number" id="dropQty" min="1" value="1" required>
           </div>
           <div class="field" style="flex:2;min-width:140px">
-            <label for="dropLooter">룻자</label>
-            <input type="text" id="dropLooter" placeholder="닉네임">
+            <label for="dropLooter">猷살옄</label>
+            <input type="text" id="dropLooter" placeholder="?됰꽕??>
           </div>
         </div>
-        <button type="submit" class="btn" id="dropSubmitBtn">등록</button>
+        <button type="submit" class="btn" id="dropSubmitBtn">?깅줉</button>
       </form>
     </div>
 
     <div class="card">
       <details id="logParseDetails">
-        <summary style="cursor:pointer;font-weight:700;font-size:15px;">텍스트 로그로 등록</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:15px;">?띿뒪??濡쒓렇濡??깅줉</summary>
         <div style="margin-top:12px">
-          <div class="meta" style="margin-bottom:8px">게임 내 레이드 로그 또는 <b>아이템명 + 수량</b> 형식의 텍스트를 붙여넣으면 자동으로 파싱해 장바구니에 담습니다.</div>
+          <div class="meta" style="margin-bottom:8px">寃뚯엫 ???덉씠??濡쒓렇 ?먮뒗 <b>?꾩씠?쒕챸 + ?섎웾</b> ?뺤떇???띿뒪?몃? 遺숈뿬?ｌ쑝硫??먮룞?쇰줈 ?뚯떛???λ컮援щ땲???댁뒿?덈떎.</div>
           <div class="field">
-            <label for="logDefaultLooter">기본 룻자 (로그에 룻자 정보가 없을 때 사용)</label>
-            <input type="text" id="logDefaultLooter" placeholder="닉네임">
+            <label for="logDefaultLooter">湲곕낯 猷살옄 (濡쒓렇??猷살옄 ?뺣낫媛 ?놁쓣 ???ъ슜)</label>
+            <input type="text" id="logDefaultLooter" placeholder="?됰꽕??>
           </div>
           <div class="field">
-            <label for="logText">텍스트 로그 붙여넣기</label>
-            <textarea id="logText" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;background:var(--bg);font-family:monospace;" placeholder="【단순 형식】&#10;허리띠 4&#10;목걸이 2&#10;&#10;【레이드 로그 형식】&#10;게임 내 처치 결과 전체를 그대로 붙여넣으세요"></textarea>
+            <label for="logText">?띿뒪??濡쒓렇 遺숈뿬?ｊ린</label>
+            <textarea id="logText" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;background:var(--bg);font-family:monospace;" placeholder="?먮떒???뺤떇??#10;?덈━??4&#10;紐⑷구??2&#10;&#10;?먮젅?대뱶 濡쒓렇 ?뺤떇??#10;寃뚯엫 ??泥섏튂 寃곌낵 ?꾩껜瑜?洹몃?濡?遺숈뿬?ｌ쑝?몄슂"></textarea>
           </div>
-          <button type="button" class="btn" id="logParseBtn">🔍 분석 후 장바구니에 담기</button>
+          <button type="button" class="btn" id="logParseBtn">?뵇 遺꾩꽍 ???λ컮援щ땲???닿린</button>
           <div class="toast" id="logResultToast" style="margin-top:10px"></div>
         </div>
       </details>
@@ -636,268 +636,268 @@
 
     <div class="card hidden" id="dropCartCard">
       <div class="row" style="margin-bottom:10px;justify-content:space-between">
-        <b style="font-size:15px">🛒 등록 대기 목록 (<span id="dropCartCount">0</span>건)</b>
+        <b style="font-size:15px">?썟 ?깅줉 ?湲?紐⑸줉 (<span id="dropCartCount">0</span>嫄?</b>
         <div class="row" style="gap:6px">
-          <button type="button" class="btn ghost sm" id="dropCartSelectAllBtn">전체 선택</button>
-          <button type="button" class="btn ghost sm" id="dropCartSelectNoneBtn">전체 해제</button>
-          <button type="button" class="btn ghost sm" id="dropCartClearBtn">전체 삭제</button>
+          <button type="button" class="btn ghost sm" id="dropCartSelectAllBtn">?꾩껜 ?좏깮</button>
+          <button type="button" class="btn ghost sm" id="dropCartSelectNoneBtn">?꾩껜 ?댁젣</button>
+          <button type="button" class="btn ghost sm" id="dropCartClearBtn">?꾩껜 ??젣</button>
         </div>
       </div>
-      <div class="meta" style="margin-bottom:8px">체크된 항목만 등록됩니다. 정확매칭은 기본 체크, 유사매칭은 직접 확인 후 체크해주세요.</div>
+      <div class="meta" style="margin-bottom:8px">泥댄겕????ぉ留??깅줉?⑸땲?? ?뺥솗留ㅼ묶? 湲곕낯 泥댄겕, ?좎궗留ㅼ묶? 吏곸젒 ?뺤씤 ??泥댄겕?댁＜?몄슂.</div>
       <div id="dropCartList"></div>
-      <button type="button" class="btn" id="dropCartSubmitBtn" style="margin-top:10px;width:100%">📦 체크한 항목 등록</button>
+      <button type="button" class="btn" id="dropCartSubmitBtn" style="margin-top:10px;width:100%">?벀 泥댄겕????ぉ ?깅줉</button>
     </div>
 
     <div class="card hidden" id="unmatchedCard">
       <div class="row" style="margin-bottom:10px;justify-content:space-between">
-        <b style="font-size:15px;color:var(--red-tx)">❌ 매칭 실패 (<span id="unmatchedCount">0</span>건) — 직접 등록 필요</b>
-        <button type="button" class="btn ghost sm" id="unmatchedClearBtn">닫기</button>
+        <b style="font-size:15px;color:var(--red-tx)">??留ㅼ묶 ?ㅽ뙣 (<span id="unmatchedCount">0</span>嫄? ??吏곸젒 ?깅줉 ?꾩슂</b>
+        <button type="button" class="btn ghost sm" id="unmatchedClearBtn">?リ린</button>
       </div>
       <div id="unmatchedList" style="max-height:360px;overflow-y:auto"></div>
     </div>
   </section>
 </div>
 
-<!-- ═══ 일괄 등록 확인 모달 ═══ -->
+<!-- ?먥븧???쇨큵 ?깅줉 ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="batchConfirmBackdrop">
   <div class="modal" style="max-width:480px">
-    <h3>일괄 등록 확인</h3>
+    <h3>?쇨큵 ?깅줉 ?뺤씤</h3>
     <div id="batchConfirmList" style="max-height:300px;overflow-y:auto;font-size:13px;margin-bottom:14px"></div>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="batchConfirmCancelBtn">취소</button>
-      <button type="button" class="btn sm" id="batchConfirmYesBtn">확인 — 등록 실행</button>
+      <button type="button" class="btn ghost sm" id="batchConfirmCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn sm" id="batchConfirmYesBtn">?뺤씤 ???깅줉 ?ㅽ뻾</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 수정 모달 ═══ -->
+<!-- ?먥븧???섏젙 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="editModalBackdrop">
   <div class="modal">
-    <h3>아이템 수정</h3>
+    <h3>?꾩씠???섏젙</h3>
     <form id="editForm">
-      <div class="field"><label for="editName">아이템명</label><input type="text" id="editName" list="itemMasterList" autocomplete="off" required></div>
+      <div class="field"><label for="editName">?꾩씠?쒕챸</label><input type="text" id="editName" list="itemMasterList" autocomplete="off" required></div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="editGrade">등급</label><select id="editGrade"></select></div>
-        <div class="field" style="flex:1"><label for="editCategory">구분</label><select id="editCategory"></select></div>
+        <div class="field" style="flex:1"><label for="editGrade">?깃툒</label><select id="editGrade"></select></div>
+        <div class="field" style="flex:1"><label for="editCategory">援щ텇</label><select id="editCategory"></select></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="editQty">수량</label><input type="number" id="editQty" min="0" required></div>
-        <div class="field" style="flex:1"><label for="editLooter">룻자</label><input type="text" id="editLooter"></div>
+        <div class="field" style="flex:1"><label for="editQty">?섎웾</label><input type="number" id="editQty" min="0" required></div>
+        <div class="field" style="flex:1"><label for="editLooter">猷살옄</label><input type="text" id="editLooter"></div>
       </div>
       <div class="row">
-        <button type="button" class="btn ghost sm" id="editCancelBtn">취소</button>
-        <button type="submit" class="btn sm" id="editSaveBtn">저장</button>
+        <button type="button" class="btn ghost sm" id="editCancelBtn">痍⑥냼</button>
+        <button type="submit" class="btn sm" id="editSaveBtn">???/button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- ═══ 분배 신청 모달 ═══ -->
+<!-- ?먥븧??遺꾨같 ?좎껌 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="applyModalBackdrop">
   <div class="modal">
-    <h3 id="applyModalTitle">아이템 신청</h3>
+    <h3 id="applyModalTitle">?꾩씠???좎껌</h3>
     <div class="meta" id="applyModalMeta" style="margin-bottom:10px"></div>
     <div class="toast" id="applyModalNote" style="position:static;margin-bottom:10px;display:none"></div>
     <form id="applyForm">
       <div class="field" id="applyQtyField">
-        <label for="applyQty">신청 수량</label>
+        <label for="applyQty">?좎껌 ?섎웾</label>
         <input type="number" id="applyQty" min="1" value="1">
       </div>
       <div id="applyPrefFields" class="hidden">
-        <div class="field"><label for="applyPref1">1순위 (필수)</label><input type="text" id="applyPref1" placeholder="예) 녹색"></div>
-        <div class="field"><label for="applyPref2">2순위 (선택)</label><input type="text" id="applyPref2"></div>
+        <div class="field"><label for="applyPref1">1?쒖쐞 (?꾩닔)</label><input type="text" id="applyPref1" placeholder="?? ?뱀깋"></div>
+        <div class="field"><label for="applyPref2">2?쒖쐞 (?좏깮)</label><input type="text" id="applyPref2"></div>
       </div>
       <div class="row">
-        <button type="button" class="btn ghost sm" id="applyCancelBtn">취소</button>
-        <button type="submit" class="btn sm" id="applySubmitBtn">신청하기</button>
+        <button type="button" class="btn ghost sm" id="applyCancelBtn">痍⑥냼</button>
+        <button type="submit" class="btn sm" id="applySubmitBtn">?좎껌?섍린</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- ═══ 가입 신청 승인/거절 확인 모달 ═══ -->
+<!-- ?먥븧??媛???좎껌 ?뱀씤/嫄곗젅 ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="regConfirmBackdrop">
   <div class="modal">
-    <h3 id="regConfirmTitle">확인</h3>
+    <h3 id="regConfirmTitle">?뺤씤</h3>
     <p id="regConfirmMsg"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="regConfirmCancelBtn">취소</button>
-      <button type="button" class="btn sm" id="regConfirmYesBtn">실행</button>
+      <button type="button" class="btn ghost sm" id="regConfirmCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn sm" id="regConfirmYesBtn">?ㅽ뻾</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 참여율 관리 확인 모달 (시즌 마감/초기화/로그 삭제 공용) ═══ -->
+<!-- ?먥븧??李몄뿬??愿由??뺤씤 紐⑤떖 (?쒖쫵 留덇컧/珥덇린??濡쒓렇 ??젣 怨듭슜) ?먥븧??-->
 <div class="modal-backdrop" id="partConfirmBackdrop">
   <div class="modal">
-    <h3 id="partConfirmTitle">확인</h3>
+    <h3 id="partConfirmTitle">?뺤씤</h3>
     <p id="partConfirmMsg"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="partConfirmCancelBtn">취소</button>
-      <button type="button" class="btn danger sm" id="partConfirmYesBtn">실행</button>
+      <button type="button" class="btn ghost sm" id="partConfirmCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn danger sm" id="partConfirmYesBtn">?ㅽ뻾</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 공금 이력 삭제(역전) 확인 모달 ═══ -->
+<!-- ?먥븧??怨듦툑 ?대젰 ??젣(??쟾) ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="treasuryDeleteModalBackdrop">
   <div class="modal">
-    <h3>이력 삭제</h3>
+    <h3>?대젰 ??젣</h3>
     <p id="treasuryDeleteModalMsg"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="treasuryDeleteCancelBtn">취소</button>
-      <button type="button" class="btn danger sm" id="treasuryDeleteConfirmBtn">삭제(잔액 되돌리기)</button>
+      <button type="button" class="btn ghost sm" id="treasuryDeleteCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn danger sm" id="treasuryDeleteConfirmBtn">??젣(?붿븸 ?섎룎由ш린)</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 결사원 등록/수정 모달 ═══ -->
+<!-- ?먥븧??寃곗궗???깅줉/?섏젙 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="memberModalBackdrop">
   <div class="modal" style="max-width:560px;max-height:88vh;overflow-y:auto">
-    <h3 id="memberModalTitle">결사원 등록</h3>
+    <h3 id="memberModalTitle">寃곗궗???깅줉</h3>
     <form id="memberForm">
       <div class="row" style="gap:10px" id="memberIdRow">
-        <div class="field" style="flex:1"><label for="memberUserId">아이디</label><input type="text" id="memberUserId" autocomplete="off"></div>
-        <div class="field" style="flex:1"><label for="memberPassword">비밀번호</label><input type="password" id="memberPassword" autocomplete="new-password"></div>
+        <div class="field" style="flex:1"><label for="memberUserId">?꾩씠??/label><input type="text" id="memberUserId" autocomplete="off"></div>
+        <div class="field" style="flex:1"><label for="memberPassword">鍮꾨?踰덊샇</label><input type="password" id="memberPassword" autocomplete="new-password"></div>
       </div>
-      <div class="field"><label for="memberCurrentId">닉네임</label><input type="text" id="memberCurrentId" required></div>
+      <div class="field"><label for="memberCurrentId">?됰꽕??/label><input type="text" id="memberCurrentId" required></div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="memberGuild">소속결사</label><input type="text" id="memberGuild"></div>
-        <div class="field" style="flex:1"><label for="memberClass">직업</label><input type="text" id="memberClass"></div>
+        <div class="field" style="flex:1"><label for="memberGuild">?뚯냽寃곗궗</label><input type="text" id="memberGuild"></div>
+        <div class="field" style="flex:1"><label for="memberClass">吏곸뾽</label><input type="text" id="memberClass"></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="memberLevel">레벨</label><input type="number" id="memberLevel" min="0" value="0"></div>
-        <div class="field" style="flex:1"><label for="memberPower">전투력</label><input type="number" id="memberPower" min="0" value="0"></div>
-        <div class="field" style="flex:1"><label for="memberRole">권한</label>
-          <select id="memberRole"><option value="결사원">결사원</option><option value="운영진">운영진</option><option value="관리자">관리자</option></select>
+        <div class="field" style="flex:1"><label for="memberLevel">?덈꺼</label><input type="number" id="memberLevel" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="memberPower">?꾪닾??/label><input type="number" id="memberPower" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="memberRole">沅뚰븳</label>
+          <select id="memberRole"><option value="寃곗궗??>寃곗궗??/option><option value="?댁쁺吏?>?댁쁺吏?/option><option value="愿由ъ옄">愿由ъ옄</option></select>
         </div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="memberSubjRank">토벌순위</label><input type="text" id="memberSubjRank"></div>
-        <div class="field" style="flex:1"><label for="memberAbyss">심연</label><input type="text" id="memberAbyss"></div>
+        <div class="field" style="flex:1"><label for="memberSubjRank">?좊쾶?쒖쐞</label><input type="text" id="memberSubjRank"></div>
+        <div class="field" style="flex:1"><label for="memberAbyss">?ъ뿰</label><input type="text" id="memberAbyss"></div>
       </div>
       <details id="memberEquipDetails" class="hidden" style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">⚔️ 장비 정보</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">?뷂툘 ?λ퉬 ?뺣낫</summary>
         <div class="equip-edit-grid" id="memberEquipGrid" style="margin-top:8px"></div>
       </details>
       <details id="memberAquiDetails" class="hidden" style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">🔮 아퀴룬 정보</summary>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">?뵰 ?꾪대， ?뺣낫</summary>
         <div id="memberAquiEdit" style="margin-top:8px"></div>
       </details>
       <div class="row">
-        <button type="button" class="btn ghost sm" id="memberCancelBtn">취소</button>
-        <button type="submit" class="btn sm" id="memberSaveBtn">저장</button>
+        <button type="button" class="btn ghost sm" id="memberCancelBtn">痍⑥냼</button>
+        <button type="submit" class="btn sm" id="memberSaveBtn">???/button>
       </div>
     </form>
     <div id="memberPwResetBox" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
       <div class="field">
-        <label for="memberNewPw">비밀번호 재설정 (관리자 전용, 별도 저장)</label>
+        <label for="memberNewPw">鍮꾨?踰덊샇 ?ъ꽕??(愿由ъ옄 ?꾩슜, 蹂꾨룄 ???</label>
         <div class="row" style="gap:8px">
-          <input type="password" id="memberNewPw" placeholder="새 비밀번호 (4자 이상)" style="flex:1">
-          <button type="button" class="btn sm ghost" id="memberPwResetBtn">재설정</button>
+          <input type="password" id="memberNewPw" placeholder="??鍮꾨?踰덊샇 (4???댁긽)" style="flex:1">
+          <button type="button" class="btn sm ghost" id="memberPwResetBtn">?ъ꽕??/button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══ 분배 관리 공용 확인 모달 ═══ -->
+<!-- ?먥븧??遺꾨같 愿由?怨듭슜 ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="dmConfirmBackdrop">
   <div class="modal">
-    <h3 id="dmConfirmTitle">확인</h3>
+    <h3 id="dmConfirmTitle">?뺤씤</h3>
     <p id="dmConfirmMsg" style="white-space:pre-line"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="dmConfirmCancelBtn">취소</button>
-      <button type="button" class="btn sm" id="dmConfirmYesBtn">확인</button>
+      <button type="button" class="btn ghost sm" id="dmConfirmCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn sm" id="dmConfirmYesBtn">?뺤씤</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 아퀴 매핑 조회 모달 (운영진) ═══ -->
+<!-- ?먥븧???꾪?留ㅽ븨 議고쉶 紐⑤떖 (?댁쁺吏? ?먥븧??-->
 <div class="modal-backdrop" id="aquiMapBackdrop">
   <div class="modal" style="max-width:780px;max-height:88vh;overflow-y:auto">
-    <h3>📖 아퀴 매핑 (직업 × 슬롯코드 → 룬 이름)</h3>
+    <h3>?뱰 ?꾪?留ㅽ븨 (吏곸뾽 횞 ?щ’肄붾뱶 ??猷??대쫫)</h3>
     <div class="meta" style="margin:4px 0 10px">
-      기존 시스템에서 이전된 매핑을 단일 출처로 사용합니다. 게임 업데이트로 룬 이름이 바뀌면
-      운영진이 변경 내용을 개발 요청으로 전달해 이 매핑에 반영합니다 (반영 즉시 전 화면 적용).
+      湲곗〈 ?쒖뒪?쒖뿉???댁쟾??留ㅽ븨???⑥씪 異쒖쿂濡??ъ슜?⑸땲?? 寃뚯엫 ?낅뜲?댄듃濡?猷??대쫫??諛붾뚮㈃
+      ?댁쁺吏꾩씠 蹂寃??댁슜??媛쒕컻 ?붿껌?쇰줈 ?꾨떖????留ㅽ븨??諛섏쁺?⑸땲??(諛섏쁺 利됱떆 ???붾㈃ ?곸슜).
     </div>
-    <div class="field"><label>직업 선택 (최대 3개 — 초과 선택 시 가장 먼저 고른 직업이 해제됩니다)</label>
+    <div class="field"><label>吏곸뾽 ?좏깮 (理쒕? 3媛???珥덇낵 ?좏깮 ??媛??癒쇱? 怨좊Ⅸ 吏곸뾽???댁젣?⑸땲??</label>
       <div id="aquiMapClasses" class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-start"></div>
     </div>
     <div class="mtable" style="max-height:54vh;overflow:auto"><table id="aquiMapTable"></table></div>
     <div class="row" style="margin-top:12px">
-      <button type="button" class="btn ghost sm" id="aquiMapCloseBtn">닫기</button>
+      <button type="button" class="btn ghost sm" id="aquiMapCloseBtn">?リ린</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 결사원 스크린샷 보기 모달 ═══ -->
+<!-- ?먥븧??寃곗궗???ㅽ겕由곗꺑 蹂닿린 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="shotModalBackdrop">
   <div class="modal" style="max-width:760px;max-height:88vh;overflow-y:auto">
-    <h3 id="shotModalTitle">첨부 스크린샷</h3>
+    <h3 id="shotModalTitle">泥⑤? ?ㅽ겕由곗꺑</h3>
     <div id="shotModalBody"></div>
     <div class="row" style="margin-top:12px">
-      <button type="button" class="btn ghost sm" id="shotCloseBtn">닫기</button>
+      <button type="button" class="btn ghost sm" id="shotCloseBtn">?リ린</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 결사원 탈퇴 확인 모달 ═══ -->
+<!-- ?먥븧??寃곗궗???덊눜 ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="memberDeleteModalBackdrop">
   <div class="modal">
-    <h3>결사원 탈퇴 처리</h3>
+    <h3>寃곗궗???덊눜 泥섎━</h3>
     <p id="memberDeleteModalMsg"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="memberDeleteCancelBtn">취소</button>
-      <button type="button" class="btn danger sm" id="memberDeleteConfirmBtn">탈퇴 처리</button>
+      <button type="button" class="btn ghost sm" id="memberDeleteCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn danger sm" id="memberDeleteConfirmBtn">?덊눜 泥섎━</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 삭제 확인 모달 ═══ -->
+<!-- ?먥븧????젣 ?뺤씤 紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="deleteModalBackdrop">
   <div class="modal">
-    <h3>아이템 삭제</h3>
+    <h3>?꾩씠????젣</h3>
     <p id="deleteModalMsg"></p>
     <div class="row">
-      <button type="button" class="btn ghost sm" id="deleteCancelBtn">취소</button>
-      <button type="button" class="btn danger sm" id="deleteConfirmBtn">삭제</button>
+      <button type="button" class="btn ghost sm" id="deleteCancelBtn">痍⑥냼</button>
+      <button type="button" class="btn danger sm" id="deleteConfirmBtn">??젣</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ 비밀번호 변경 모달 ═══ -->
+<!-- ?먥븧??鍮꾨?踰덊샇 蹂寃?紐⑤떖 ?먥븧??-->
 <div class="modal-backdrop" id="pwModalBackdrop">
   <div class="modal">
-    <h3>비밀번호 변경</h3>
+    <h3>鍮꾨?踰덊샇 蹂寃?/h3>
     <div class="err-msg" id="pwErr"></div>
     <form id="pwForm">
-      <div class="field"><label for="oldPw">현재 비밀번호</label><input type="password" id="oldPw" required></div>
-      <div class="field"><label for="newPw">새 비밀번호</label><input type="password" id="newPw" required></div>
+      <div class="field"><label for="oldPw">?꾩옱 鍮꾨?踰덊샇</label><input type="password" id="oldPw" required></div>
+      <div class="field"><label for="newPw">??鍮꾨?踰덊샇</label><input type="password" id="newPw" required></div>
       <div class="row">
-        <button type="button" class="btn ghost sm" id="pwCancelBtn">취소</button>
-        <button type="submit" class="btn sm" id="pwSaveBtn">변경</button>
+        <button type="button" class="btn ghost sm" id="pwCancelBtn">痍⑥냼</button>
+        <button type="submit" class="btn sm" id="pwSaveBtn">蹂寃?/button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="js/config.js?v=34"></script>
-<script src="js/api.js?v=34"></script>
-<script src="js/auth.js?v=34"></script>
-<script src="js/logParser.js?v=34"></script>
-<script src="js/gamedata.js?v=34"></script>
-<script src="js/imageUtil.js?v=34"></script>
-<script src="js/inventory.js?v=34"></script>
-<script src="js/members.js?v=34"></script>
-<script src="js/treasury.js?v=34"></script>
-<script src="js/dashboard.js?v=34"></script>
-<script src="js/distribution.js?v=34"></script>
-<script src="js/distManage.js?v=34"></script>
-<script src="js/participationParser.js?v=34"></script>
-<script src="js/participation.js?v=34"></script>
-<script src="js/profile.js?v=34"></script>
-<script src="js/register.js?v=34"></script>
-<script src="js/app.js?v=34"></script>
+<script src="js/config.js?v=35"></script>
+<script src="js/api.js?v=35"></script>
+<script src="js/auth.js?v=35"></script>
+<script src="js/logParser.js?v=35"></script>
+<script src="js/gamedata.js?v=35"></script>
+<script src="js/imageUtil.js?v=35"></script>
+<script src="js/inventory.js?v=35"></script>
+<script src="js/members.js?v=35"></script>
+<script src="js/treasury.js?v=35"></script>
+<script src="js/dashboard.js?v=35"></script>
+<script src="js/distribution.js?v=35"></script>
+<script src="js/distManage.js?v=35"></script>
+<script src="js/participationParser.js?v=35"></script>
+<script src="js/participation.js?v=35"></script>
+<script src="js/profile.js?v=35"></script>
+<script src="js/register.js?v=35"></script>
+<script src="js/app.js?v=35"></script>
 </body>
 </html>
