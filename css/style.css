@@ -316,6 +316,74 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 .tpage button{border:0;background:none;color:var(--green-dk);cursor:pointer;font-size:12.5px;font-weight:600;padding:2px 6px}
 .tpage button:disabled{color:#c6cad2;cursor:default}
 
+/* ── 내 정보 (내정보탭_개선시안_v3.html 이식) ── */
+.pf-profile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pf-profile .avatar{width:56px;height:56px;border-radius:14px;background:linear-gradient(150deg,#1a3d31,#0f241d);border:1px solid rgba(29,158,117,.5);display:flex;align-items:center;justify-content:center;color:#8ee0c3;font-weight:800;font-size:18px}
+/* 직업 엠블럼 모드 — 로그인 엠블럼과 같은 어두운 금색 발광 박스 + SVG 마스크 채색 */
+.pf-profile .avatar.emblem-mode{background:radial-gradient(circle at 50% 42%,#232838,#12151d 78%);border-color:rgba(240,176,63,.45);box-shadow:inset 0 0 14px rgba(240,176,63,.15)}
+.cls-emblem{display:block;width:36px;height:36px;background:linear-gradient(180deg,#F3CF8B,#D9A43C);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.pf-profile .pmain{flex:1;min-width:180px}
+.pf-profile .nm{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pf-profile .sub{font-size:12.5px;color:var(--txt3)}
+.shift-badge{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;background:var(--gold-bg);color:var(--gold-tx);cursor:pointer}
+.shift-badge.none{background:#f1f2f4;color:var(--txt3)}
+.pf-stats{display:flex;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.pf-stats .stat{background:var(--card);padding:8px 16px;text-align:center}
+.pf-stats .stat b{display:block;font-size:16px;font-weight:700}
+.pf-stats .stat span{font-size:11px;color:var(--txt3)}
+.subtabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.stab{padding:8px 16px;border-radius:9px;font-size:13px;color:var(--txt2);background:var(--card);border:1px solid var(--line);cursor:pointer;user-select:none}
+.stab.on{background:var(--green);color:#fff;font-weight:600;border-color:var(--green)}
+/* 아퀴 3단 순환 칩 */
+.sect{margin-bottom:16px}
+.sect:last-child{margin-bottom:0}
+.sh-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sh-head .t{font-size:12.5px;font-weight:700}
+.sh-head .t.pvp{color:#D06060}.sh-head .t.sup{color:#5B8DD9}.sh-head .t.pve{color:#3FA37A}
+.sh-head .cnt{font-size:11.5px;color:var(--txt3)}
+.chipbox{display:flex;gap:6px;flex-wrap:wrap}
+.rchip{font-size:12px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--txt3);cursor:pointer;user-select:none;transition:all .12s;line-height:1.4}
+.rchip:hover{border-color:#c9cdd4}
+.rchip.lv-leg{background:#F3F1FF;border-color:var(--leg);color:#3C3489;font-weight:600}
+.rchip.lv-myth{background:var(--gold-bg);border-color:var(--abs);color:var(--gold-tx);font-weight:700}
+.locked .rchip{pointer-events:none;opacity:.55}
+.savebar{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #f1f2f4;align-items:center}
+.savebar .hint{font-size:12px;color:var(--txt3);margin-right:auto}
+/* 장비 등급색 셀렉트 + 라이브 미리보기 */
+.gearwrap{display:grid;grid-template-columns:1fr 250px;gap:16px}
+.gform{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-self:start}
+.gf label{display:block;font-size:11.5px;color:var(--txt2);margin-bottom:3px}
+.gf select{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;font-weight:600}
+.gf select.g-abs{border-color:var(--abs);color:var(--gold-tx);background:#FFFDF7}
+.gf select.g-myth{border-color:#E8C15A;color:#8a6414;background:#FFFDF4}
+.gf select.g-leg{border-color:var(--leg);color:#3C3489;background:#FBFAFF}
+.gf select.g-hero{border-color:var(--hero);color:#791F1F;background:#FFFAFA}
+.gpreview{background:var(--panel);border:1px solid var(--panel-line);border-radius:11px;padding:12px;align-self:start}
+.gpreview .pt{font-size:11px;color:#8f96a8;text-align:center;margin-bottom:8px;letter-spacing:1px}
+.pslots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;justify-content:center}
+.pslot{width:100%;max-width:64px;aspect-ratio:1;margin:0 auto;border-radius:8px;background:var(--slot);border:1.5px solid var(--none);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.pslot .p1{font-size:9.5px;color:#aab0bf;white-space:nowrap}
+.pslot .p2{font-size:10.5px;font-weight:700;color:#6a7183}
+.pslot.abs{border-color:var(--abs)}.pslot.abs .p2{color:var(--abs)}
+.pslot.myth{border-color:#E8C15A}.pslot.myth .p2{color:#E8C15A}
+.pslot.leg{border-color:var(--leg)}.pslot.leg .p2{color:var(--leg)}
+.pslot.hero{border-color:var(--hero)}.pslot.hero .p2{color:var(--hero)}
+@media(max-width:760px){
+  .gearwrap{grid-template-columns:1fr}
+  .pslots{grid-template-columns:repeat(auto-fit,minmax(52px,56px));justify-content:center}
+  .pslot{max-width:56px}
+  .gpreview{padding:10px}
+}
+/* 인증샷 드롭존 + 썸네일 */
+.dropzone{border:2px dashed #c9cdd4;border-radius:12px;padding:28px;text-align:center;color:var(--txt3);font-size:13px;cursor:pointer;transition:all .15s;background:#fafbfc}
+.dropzone:hover,.dropzone.over{border-color:var(--green);color:var(--green-dk);background:var(--green-bg)}
+.dropzone b{display:block;font-size:14px;color:var(--txt2);margin-bottom:3px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.thumb{width:104px;height:70px;border-radius:9px;border:1px solid var(--line);position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:9px;display:block}
+.thumb .x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid var(--line);color:var(--txt3);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.thumb .x:hover{color:var(--red);border-color:#F7C1C1}
+
 /* ── 장비/아퀴 편집 (수정 모달) ── */
 .equip-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .equip-edit-grid .field{margin-bottom:0}

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
 
@@ -13,7 +13,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=30" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=33" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -345,84 +345,119 @@
     <div class="toast" id="profileToast"></div>
     <div class="note hidden" id="profileLockBanner">🔒 분배 신청 기간 진행 중에는 프로필을 수정할 수 없습니다. (조회만 가능)</div>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div>
-          <b style="font-size:15px" id="profileNameLabel">내 정보</b>
-          <div class="meta" id="profileMetaLine"></div>
-        </div>
+    <!-- 프로필 요약 카드 -->
+    <div class="pf-profile">
+      <div class="avatar" id="pfAvatar">?</div>
+      <div class="pmain">
+        <div class="nm"><span id="pfSumName"></span><span class="role-badge" id="pfSumRole"></span><span class="shift-badge" id="pfSumShift" onclick="Profile.goShift()"></span></div>
+        <div class="sub" id="pfSumSub"></div>
+      </div>
+      <div class="pf-stats">
+        <div class="stat"><b id="pfStatContrib">0</b><span>기여점수</span></div>
+        <div class="stat"><b id="pfStatPart">0</b><span>참여점수</span></div>
+        <div class="stat"><b id="pfStatPower">0</b><span>전투력</span></div>
       </div>
     </div>
 
-    <div class="filterbar">
-      <span class="fchip on" data-pi="info" onclick="Profile.setTab(this)">기본정보</span>
-      <span class="fchip" data-pi="equip" onclick="Profile.setTab(this)">⚔️ 장비</span>
-      <span class="fchip" data-pi="aqui" onclick="Profile.setTab(this)">🔮 아퀴룬</span>
-      <span class="fchip" data-pi="imgs" onclick="Profile.setTab(this)">📸 인증샷</span>
-      <span class="fchip" data-pi="history" onclick="Profile.setTab(this)">🎁 내 분배이력</span>
+    <div class="subtabs">
+      <span class="stab on" data-pi="info" onclick="Profile.setTab(this)">기본정보</span>
+      <span class="stab" data-pi="equip" onclick="Profile.setTab(this)">장비</span>
+      <span class="stab" data-pi="aqui" onclick="Profile.setTab(this)">아퀴룬</span>
+      <span class="stab" data-pi="imgs" onclick="Profile.setTab(this)">인증샷</span>
+      <span class="stab" data-pi="history" onclick="Profile.setTab(this)">내 분배이력</span>
     </div>
 
-    <div class="card" id="profilePaneInfo">
-      <form id="profileInfoForm">
-        <div class="row" style="gap:10px">
-          <div class="field" style="flex:1"><label for="pfNick">닉네임</label><input type="text" id="pfNick" required></div>
-          <div class="field" style="flex:1"><label for="pfGuild">소속결사</label><input type="text" id="pfGuild"></div>
-          <div class="field" style="flex:1"><label for="pfRank">토벌순위</label><input type="text" id="pfRank"></div>
-        </div>
-        <div class="row" style="gap:10px">
-          <div class="field" style="flex:1"><label for="pfClass">직업</label><select id="pfClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
-          <div class="field" style="flex:1"><label for="pfLevel">레벨</label><input type="number" id="pfLevel" min="0"></div>
-          <div class="field" style="flex:1"><label for="pfAbyss">심연</label><input type="text" id="pfAbyss"></div>
-          <div class="field" style="flex:1"><label for="pfPower">전투력</label><input type="number" id="pfPower" min="0"></div>
-        </div>
-        <div class="field"><label for="pfNewPw">비밀번호 변경 (빈칸이면 유지)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)"></div>
-        <button type="submit" class="btn sm" id="pfInfoSaveBtn">기본정보 저장</button>
-      </form>
-    </div>
-
-    <div class="card hidden" id="profilePaneEquip">
-      <div class="equip-edit-grid" id="pfEquipGrid"></div>
-      <button type="button" class="btn sm" id="pfEquipSaveBtn" style="margin-top:10px">장비 저장</button>
-    </div>
-
-    <div class="card hidden" id="profilePaneAqui">
-      <div id="pfAquiEdit"></div>
-      <button type="button" class="btn sm" id="pfAquiSaveBtn" style="margin-top:10px">아퀴룬 저장</button>
-    </div>
-
-    <div class="card hidden" id="profilePaneImgs">
-      <b style="font-size:14px">⚔️ 전투력 스샷</b>
-      <div class="row" id="pfPowerGallery" style="gap:6px;margin:8px 0;flex-wrap:wrap"></div>
-      <input type="file" id="pfPowerImg" accept="image/*">
-      <button type="button" class="btn sm ghost" id="pfPowerUploadBtn" style="margin-left:8px">전투력 스샷 교체</button>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
-        <b style="font-size:14px">🔮 아퀴룬 스샷 (5~10장)</b>
-        <div class="row" id="pfAquiGallery" style="gap:6px;margin:8px 0;flex-wrap:wrap"></div>
-        <input type="file" id="pfAquiImg" accept="image/*" multiple>
-        <button type="button" class="btn sm ghost" id="pfAquiUploadBtn" style="margin-left:8px">아퀴룬 스샷 교체</button>
+    <!-- 기본정보 (쟁지원조 카드는 이 탭에만) -->
+    <div id="profilePaneInfo">
+      <div class="panel">
+        <h3>기본 정보</h3>
+        <form id="profileInfoForm">
+          <div class="row" style="gap:10px">
+            <div class="field" style="flex:1"><label for="pfNick">닉네임</label><input type="text" id="pfNick" required></div>
+            <div class="field" style="flex:1"><label for="pfGuild">소속결사</label><input type="text" id="pfGuild"></div>
+            <div class="field" style="flex:1"><label for="pfRank">토벌순위</label><input type="text" id="pfRank"></div>
+          </div>
+          <div class="row" style="gap:10px">
+            <div class="field" style="flex:1"><label for="pfClass">직업</label><select id="pfClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+            <div class="field" style="flex:1"><label for="pfLevel">레벨</label><input type="number" id="pfLevel" min="0"></div>
+            <div class="field" style="flex:1"><label for="pfAbyss">심연</label><input type="text" id="pfAbyss"></div>
+            <div class="field" style="flex:1"><label for="pfPower">전투력</label><input type="number" id="pfPower" min="0"></div>
+          </div>
+          <div class="field"><label for="pfNewPw">비밀번호 변경 (빈칸이면 유지)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)"></div>
+          <button type="submit" class="btn sm" id="pfInfoSaveBtn">기본정보 저장</button>
+        </form>
       </div>
-      <div class="meta" style="margin-top:8px">※ 업로드하면 기존 스샷 전체가 새 스샷으로 교체됩니다.</div>
-    </div>
 
-    <div class="card hidden" id="profilePaneHistory">
-      <b style="font-size:15px">🎁 내 분배 이력</b>
-      <div class="list" id="pfHistoryList" style="border:0;margin-top:8px">
-        <div class="irow meta" id="pfHistoryEmpty" style="display:none">분배 이력이 없습니다.</div>
+      <div class="panel" id="shiftCard">
+        <h3>쟁지원조</h3>
+        <div class="meta" style="margin:0 0 10px">쟁 지원(긴급 소집)이 주로 가능한 시간대를 선택하세요. 데이 09:00~17:59 / 나이트 18:00~08:59</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <div class="vtoggle" id="shiftToggle">
+            <span data-sh="day" onclick="Profile.selectShift(this)">☀️ 데이조</span>
+            <span data-sh="night" onclick="Profile.selectShift(this)">🌙 나이트조</span>
+          </div>
+          <span class="meta" id="shiftPendingNote"></span>
+        </div>
+        <div class="meta" style="margin-top:8px;color:var(--txt3)">※ 조 변경은 다음 정산 회차(시즌)부터 참여율 계산에 반영됩니다.</div>
+        <div id="shiftMetricBox" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"></div>
       </div>
     </div>
 
-    <div class="card">
-      <b style="font-size:15px">🚨 긴급 참여조</b>
-      <div class="meta" style="margin:6px 0 10px">긴급 소집이 주로 가능한 시간대를 선택하세요. 데이 09:00~17:59 / 나이트 18:00~08:59</div>
-      <div class="row" style="gap:8px;flex-wrap:wrap">
-        <div class="vtoggle" id="shiftToggle">
-          <span data-sh="day" onclick="Profile.selectShift(this)">☀️ 데이조</span>
-          <span data-sh="night" onclick="Profile.selectShift(this)">🌙 나이트조</span>
+    <!-- 장비: 등급색 셀렉트 + 라이브 미리보기 -->
+    <div class="hidden" id="profilePaneEquip">
+      <div class="panel">
+        <h3>장비 입력 <span class="meta">등급을 고르면 색과 미리보기가 즉시 반영됩니다</span></h3>
+        <div class="gearwrap">
+          <div class="gform" id="pfEquipGrid"></div>
+          <div class="gpreview">
+            <div class="pt">미리보기</div>
+            <div class="pslots" id="pfEquipPreview"></div>
+          </div>
         </div>
-        <span class="meta" id="shiftPendingNote"></span>
+        <div class="savebar"><span class="hint" id="pfEquipHint"></span><button type="button" class="btn" id="pfEquipSaveBtn">장비 저장</button></div>
       </div>
-      <div class="meta" style="margin-top:8px;color:var(--txt3)">※ 조 변경은 다음 정산 회차(시즌)부터 참여율 계산에 반영됩니다.</div>
-      <div id="shiftMetricBox" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"></div>
+    </div>
+
+    <!-- 아퀴룬: 3단 순환 칩 -->
+    <div class="hidden" id="profilePaneAqui">
+      <div class="panel">
+        <h3>아퀴룬 보유 입력 <span class="meta">클릭 순환: 미보유 → <b style="color:#3C3489">전설</b> → <b style="color:#854F0B">신화</b> → 미보유</span></h3>
+        <div id="pfAquiEdit"></div>
+        <div class="savebar"><span class="hint" id="pfAquiHint">변경사항 0건</span><button type="button" class="btn" id="pfAquiSaveBtn">아퀴룬 저장</button></div>
+      </div>
+    </div>
+
+    <!-- 인증샷: 드롭존 + 썸네일 -->
+    <div class="hidden" id="profilePaneImgs">
+      <div class="panel">
+        <h3>전투력 스샷 <span class="meta">1장 · 업로드 시 기존 교체</span></h3>
+        <div class="row" id="pfPowerGallery" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
+        <div class="dropzone" id="pfPowerDrop"><b>이미지를 끌어다 놓거나 클릭해서 업로드</b>PNG·JPG · 1장</div>
+        <input type="file" id="pfPowerImg" accept="image/*" class="hidden">
+        <div class="thumbs" id="pfPowerPending"></div>
+        <div class="savebar hidden" id="pfPowerSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfPowerUploadBtn">업로드 (기존 교체)</button></div>
+      </div>
+      <div class="panel">
+        <h3>아퀴룬 스샷 <span class="meta">5~10장 · 업로드 시 기존 전체 교체</span></h3>
+        <div class="row" id="pfAquiGallery" style="gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
+        <div class="dropzone" id="pfAquiDrop"><b>이미지를 끌어다 놓거나 클릭해서 업로드</b>여러 장 한 번에 선택 가능</div>
+        <input type="file" id="pfAquiImg" accept="image/*" multiple class="hidden">
+        <div class="thumbs" id="pfAquiPending"></div>
+        <div class="savebar hidden" id="pfAquiSaveBar"><span class="hint"></span><button type="button" class="btn" id="pfAquiUploadBtn">업로드 (기존 전체 교체)</button></div>
+      </div>
+    </div>
+
+    <!-- 내 분배이력 -->
+    <div class="hidden" id="profilePaneHistory">
+      <div class="panel">
+        <h3>내 분배 이력</h3>
+        <div class="list" id="pfHistoryList" style="border:0">
+          <div id="pfHistoryEmpty" style="display:none;text-align:center;padding:26px;color:var(--txt3);font-size:13px">
+            <div style="font-size:26px;margin-bottom:6px">🎁</div>
+            아직 분배받은 이력이 없습니다<br><span style="font-size:12px">분배 신청은 [분배] 탭에서 할 수 있어요</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -846,22 +881,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=30"></script>
-<script src="js/api.js?v=30"></script>
-<script src="js/auth.js?v=30"></script>
-<script src="js/logParser.js?v=30"></script>
-<script src="js/gamedata.js?v=30"></script>
-<script src="js/imageUtil.js?v=30"></script>
-<script src="js/inventory.js?v=30"></script>
-<script src="js/members.js?v=30"></script>
-<script src="js/treasury.js?v=30"></script>
-<script src="js/dashboard.js?v=30"></script>
-<script src="js/distribution.js?v=30"></script>
-<script src="js/distManage.js?v=30"></script>
-<script src="js/participationParser.js?v=30"></script>
-<script src="js/participation.js?v=30"></script>
-<script src="js/profile.js?v=30"></script>
-<script src="js/register.js?v=30"></script>
-<script src="js/app.js?v=30"></script>
+<script src="js/config.js?v=33"></script>
+<script src="js/api.js?v=33"></script>
+<script src="js/auth.js?v=33"></script>
+<script src="js/logParser.js?v=33"></script>
+<script src="js/gamedata.js?v=33"></script>
+<script src="js/imageUtil.js?v=33"></script>
+<script src="js/inventory.js?v=33"></script>
+<script src="js/members.js?v=33"></script>
+<script src="js/treasury.js?v=33"></script>
+<script src="js/dashboard.js?v=33"></script>
+<script src="js/distribution.js?v=33"></script>
+<script src="js/distManage.js?v=33"></script>
+<script src="js/participationParser.js?v=33"></script>
+<script src="js/participation.js?v=33"></script>
+<script src="js/profile.js?v=33"></script>
+<script src="js/register.js?v=33"></script>
+<script src="js/app.js?v=33"></script>
 </body>
 </html>
