@@ -1,10 +1,28 @@
 // 부트스트랩: 로그인 폼, 화면 전환, 탭 네비게이션, 로그아웃/비밀번호 변경 모달 배선
 const Tabs = (() => {
-  function go(id, el) {
+  // 분배 상위 탭의 하위 4개 화면 (섹션 id = s-{sub})과 로더
+  const DIST_SUBS = {
+    apply: () => Distribution.load(),
+    status: () => DistManage.loadStatus(),
+    result: () => DistManage.loadResult(),
+    history: () => DistManage.loadHistory(),
+  };
+  let distSub = "apply"; // 마지막으로 보던 하위 탭 기억
+
+  function showScreen(id) {
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("on"));
     document.getElementById("s-" + id).classList.add("on");
+  }
+
+  function go(id, el) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("on"));
     if (el) el.classList.add("on");
+    document.getElementById("distSubtabs").classList.toggle("hidden", id !== "dist");
+    if (id === "dist") {
+      goDist(distSub);
+      return;
+    }
+    showScreen(id);
     if (id === "inv") {
       Inventory.load();
       Inventory.loadItemMaster();
@@ -13,11 +31,19 @@ const Tabs = (() => {
     if (id === "members") Members.load();
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();
-    if (id === "apply") Distribution.load();
     if (id === "part") Participation.load();
     if (id === "profile") Profile.load();
   }
-  return { go };
+
+  function goDist(sub) {
+    if (!DIST_SUBS[sub]) sub = "apply";
+    distSub = sub;
+    document.querySelectorAll("#distSubtabs .fchip").forEach((c) => c.classList.toggle("on", c.dataset.ds === sub));
+    showScreen(sub);
+    DIST_SUBS[sub]();
+  }
+
+  return { go, goDist };
 })();
 
 const App = (() => {
@@ -98,6 +124,7 @@ const App = (() => {
     Treasury.init();
     Dashboard.init();
     Distribution.init();
+    DistManage.init();
     Participation.init();
     Profile.init();
     Register.init();

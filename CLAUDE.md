@@ -42,16 +42,16 @@
 | 99ac4e2 | 신화 아퀴룬 보유 현황: 보유자만 표시 |
 | 98918ca | 7단계: 참여율 관리(출석 로그 파싱·매칭·멱등 재계산·시즌 설정/마감) + 긴급 데이/나이트 지표(내 정보 탭 신설, KPI 3분할, 운영진 위젯). 과거 긴급 65건 분류(나이트42/데이23), 점수 불변 diff 0건 검증 완료 |
 | aededbb | 8단계: 회원가입(스샷 포함 신청→승인) + 내 정보 5개 서브탭(기본/장비/아퀴/인증샷/분배이력, 분배기간 잠금) + Storage 이미지 전환 |
+| 78dd497 | 결사원 관리 3뷰(스샷 보기/장비표/아퀴표) + members 함수 이미지 분리 조회 + CLAUDE.md |
+| (이후) | 9단계: 분배 후반부 — 신청 현황(5분류·자격미달 일괄취소·수동확정), 결과(충돌해결 + 확정대기에서 다이아/현금 입력 → 승인 즉시 최종확인), 이력(필터·관리자 분배취소) + RPC 3개(0008). 분배 상위탭+하위 4탭 구조. 아퀴정보 목록 시안 적용(사람별/룬별, 룬 기준 미보유 탐색·참여점수 정렬·직업별 룬 그리드 메모), 아퀴 매핑 3직업 비교 모달 |
 
-배포된 Edge Functions(11개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register. 적용된 마이그레이션: 0001(RLS)~0007(shift).
+배포된 Edge Functions(11개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register. 적용된 마이그레이션: 0001(RLS)~0008(분배 후반부 RPC — confirm/finalize/cancel).
 
 ## 진행 중 / 다음 할 일
 
+- **분배 후반부 참고**: UI는 확정 대기에서 다이아/현금 입력 → "나감 처리(승인)" = 즉시 finalize(이력+재고차감+장비/아퀴 갱신+공금 입금). mark_dispatched/undispatch 액션은 함수에 호환용으로만 남아 있고 UI는 사용 안 함. 되돌리기 = 이력 탭 분배취소(관리자, RPC 원자 역전).
 - **8단계 E2E 미완**: 가입 신청→승인→새 계정 로그인→스샷 확인 실전 테스트 안 함. 첫 스샷 업로드 시 Storage `screenshots` 버킷 자동 생성 여부 실전 확인 필요.
-- **분배 시스템 후반부** (남은 큰 덩어리, 원본 조사는 완료됨):
-  - 신청 현황: 운영진의 신청자 목록(기여점수순), 수동 확정/반려, 충돌 해결(전설아퀴/별빛 1인1개)
-  - 확정 처리: 나감처리(is_dispatched) → 다이아/현금 입력 → 최종확인(finalize: distribution_history 기록+재고 차감+공금 자동 지급 — treasury RPC 재사용)
-  - 이력: 전체 분배 이력(필터) + 분배취소(관리자, 재고/신청/공금 역전)
-- **1차 배포**: GitHub 원격 연결 + Pages 설정 + 분배 자동확정 E2E(기여점수순 확정 검증 — SQL 통제 테스트 계획 있음)
+- **분배 실전 E2E 미완**: 실제 분배 기간에서 신청→자동/수동확정→승인(최종확인)→공금 입금→분배취소 흐름을 소량으로 검증 필요.
+- **1차 배포**: GitHub 원격 연결 + Pages 설정
 - **미뤄둔 부가 기능**: 엑셀 업로드(결사원/참여율), 과거 닉네임 등록 UI, 계좌 DB, 관리자 참여 편집 탭, 전시즌 이월 블렌딩(분배 단계에서), 규정(guild_regulations) 편집 화면
 - 참고: 분배 신청 테스트로 전설 아퀴 유찰 카운트가 +1 된 상태(원복 여부 미결). Supabase/Neon 비밀번호 로테이션 권고했으나 확인 안 됨.

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=26">
 </head>
 <body>
 
@@ -104,10 +104,7 @@
 
   <div class="tabs">
     <div class="tab on" data-s="dashboard" onclick="Tabs.go('dashboard',this)">대시보드</div>
-    <div class="tab" data-s="apply" onclick="Tabs.go('apply',this)">분배 신청</div>
-    <div class="tab" data-s="status" onclick="Tabs.go('status',this)">분배 현황</div>
-    <div class="tab" data-s="result" onclick="Tabs.go('result',this)">결과</div>
-    <div class="tab" data-s="history" onclick="Tabs.go('history',this)">이력</div>
+    <div class="tab" data-s="dist" onclick="Tabs.go('dist',this)">분배</div>
     <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)">공금 관리</div>
     <div class="tab" data-s="profile" onclick="Tabs.go('profile',this)">내 정보</div>
     <div class="divider staff-only"></div>
@@ -115,6 +112,14 @@
     <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)">참여율 관리</div>
     <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)">재고 관리</div>
     <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
+  </div>
+
+  <!-- 분배 하위 탭 (분배 상위 탭 선택 시에만 표시) -->
+  <div class="row hidden" id="distSubtabs" style="gap:6px;margin:-8px 0 16px;justify-content:flex-start">
+    <span class="fchip on" data-ds="apply" onclick="Tabs.goDist('apply')">분배 신청</span>
+    <span class="fchip" data-ds="status" onclick="Tabs.goDist('status')">분배 현황</span>
+    <span class="fchip" data-ds="result" onclick="Tabs.goDist('result')">결과</span>
+    <span class="fchip" data-ds="history" onclick="Tabs.goDist('history')">이력</span>
   </div>
 
   <!-- ═══ 대시보드 (실제 동작, 전 회원 — 대시보드_최종통합_시안_v2 레이아웃) ═══ -->
@@ -206,9 +211,64 @@
       </div>
     </div>
   </section>
-  <section class="screen" id="s-status"><div class="placeholder-card card"><div class="big">🚧</div><b>분배 현황</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
-  <section class="screen" id="s-result"><div class="placeholder-card card"><div class="big">🚧</div><b>결과</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
-  <section class="screen" id="s-history"><div class="placeholder-card card"><div class="big">🚧</div><b>이력</b><div class="meta">다음 단계에서 제공될 예정입니다.</div></div></section>
+  <!-- ═══ 분배 현황 (신청 현황 — 전 회원 조회, 확정은 운영진) ═══ -->
+  <section class="screen" id="s-status">
+    <div class="toast" id="statusToast"></div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div><b style="font-size:15px">📋 신청 현황</b> <span class="meta" id="statusMeta"></span></div>
+        <button type="button" class="btn ghost sm" onclick="DistManage.loadStatus()">새로고침</button>
+      </div>
+    </div>
+    <div class="card hidden" id="statusIneligCard">
+      <b style="font-size:14px;color:#A32D2D">⚠️ 자격 미달 신청 (<span id="statusIneligCount">0</span>건)</b>
+      <div class="list" id="statusIneligList" style="border:0;margin-top:8px"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px">
+        <button type="button" class="btn danger sm" id="statusBulkCancelBtn">자격 미달 일괄 취소</button>
+      </div>
+    </div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <span id="statusTabs" style="display:inline-flex;gap:6px;flex-wrap:wrap"></span>
+      <select id="statusSort" onchange="DistManage.renderStatus()" style="margin-left:auto;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
+        <option value="comp">경쟁률순</option>
+        <option value="name">아이템명순</option>
+        <option value="score">기여도순</option>
+      </select>
+    </div>
+    <div id="statusList"></div>
+  </section>
+
+  <!-- ═══ 결과 (일반: 내 확정 내역 / 운영진: 확정 처리 파이프라인) ═══ -->
+  <section class="screen" id="s-result">
+    <div class="toast" id="resultToast"></div>
+    <div id="resultMine"></div>
+    <div id="resultStaff" class="hidden">
+      <div class="row" style="justify-content:flex-end;margin-bottom:10px">
+        <button type="button" class="btn ghost sm" onclick="DistManage.loadResult()">새로고침</button>
+      </div>
+      <div id="resultWaitPane"></div>
+    </div>
+  </section>
+
+  <!-- ═══ 이력 (전 회원 조회 / 분배취소·삭제는 관리자) ═══ -->
+  <section class="screen" id="s-history">
+    <div class="toast" id="historyToast"></div>
+    <div class="filterbar">
+      <input type="search" id="qh" name="history-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 품명/룻자/수령자 검색..." oninput="DistManage.renderHistory()">
+      <select id="hCatFilter" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
+      <select id="hGradeFilter" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
+      <input type="date" id="hFrom" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
+      <input type="date" id="hTo" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
+    </div>
+    <div class="card">
+      <div class="row" style="gap:18px;flex-wrap:wrap">
+        <span class="meta">총 <b id="hCount" style="color:var(--txt)">0</b>건</span>
+        <span class="meta">💎 다이아 합계 <b id="hDiaSum" style="color:var(--txt)">0</b></span>
+        <span class="meta">💵 현금 합계 <b id="hCashSum" style="color:var(--txt)">0</b>원</span>
+      </div>
+    </div>
+    <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
+  </section>
 
   <!-- ═══ 공금 관리 (실제 동작, 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
   <section class="screen" id="s-treasury">
@@ -703,16 +763,28 @@
   </div>
 </div>
 
+<!-- ═══ 분배 관리 공용 확인 모달 ═══ -->
+<div class="modal-backdrop" id="dmConfirmBackdrop">
+  <div class="modal">
+    <h3 id="dmConfirmTitle">확인</h3>
+    <p id="dmConfirmMsg" style="white-space:pre-line"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="dmConfirmCancelBtn">취소</button>
+      <button type="button" class="btn sm" id="dmConfirmYesBtn">확인</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ 아퀴 매핑 조회 모달 (운영진) ═══ -->
 <div class="modal-backdrop" id="aquiMapBackdrop">
-  <div class="modal" style="max-width:620px;max-height:88vh;overflow-y:auto">
+  <div class="modal" style="max-width:780px;max-height:88vh;overflow-y:auto">
     <h3>📖 아퀴 매핑 (직업 × 슬롯코드 → 룬 이름)</h3>
     <div class="meta" style="margin:4px 0 10px">
       기존 시스템에서 이전된 매핑을 단일 출처로 사용합니다. 게임 업데이트로 룬 이름이 바뀌면
       운영진이 변경 내용을 개발 요청으로 전달해 이 매핑에 반영합니다 (반영 즉시 전 화면 적용).
     </div>
-    <div class="field"><label for="aquiMapClass">직업</label>
-      <select id="aquiMapClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:var(--bg)"></select>
+    <div class="field"><label>직업 선택 (최대 3개 — 초과 선택 시 가장 먼저 고른 직업이 해제됩니다)</label>
+      <div id="aquiMapClasses" class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-start"></div>
     </div>
     <div class="mtable" style="max-height:54vh;overflow:auto"><table id="aquiMapTable"></table></div>
     <div class="row" style="margin-top:12px">
@@ -772,21 +844,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=20"></script>
-<script src="js/api.js?v=20"></script>
-<script src="js/auth.js?v=20"></script>
-<script src="js/logParser.js?v=20"></script>
-<script src="js/gamedata.js?v=20"></script>
-<script src="js/imageUtil.js?v=20"></script>
-<script src="js/inventory.js?v=20"></script>
-<script src="js/members.js?v=20"></script>
-<script src="js/treasury.js?v=20"></script>
-<script src="js/dashboard.js?v=20"></script>
-<script src="js/distribution.js?v=20"></script>
-<script src="js/participationParser.js?v=20"></script>
-<script src="js/participation.js?v=20"></script>
-<script src="js/profile.js?v=20"></script>
-<script src="js/register.js?v=20"></script>
-<script src="js/app.js?v=20"></script>
+<script src="js/config.js?v=26"></script>
+<script src="js/api.js?v=26"></script>
+<script src="js/auth.js?v=26"></script>
+<script src="js/logParser.js?v=26"></script>
+<script src="js/gamedata.js?v=26"></script>
+<script src="js/imageUtil.js?v=26"></script>
+<script src="js/inventory.js?v=26"></script>
+<script src="js/members.js?v=26"></script>
+<script src="js/treasury.js?v=26"></script>
+<script src="js/dashboard.js?v=26"></script>
+<script src="js/distribution.js?v=26"></script>
+<script src="js/distManage.js?v=26"></script>
+<script src="js/participationParser.js?v=26"></script>
+<script src="js/participation.js?v=26"></script>
+<script src="js/profile.js?v=26"></script>
+<script src="js/register.js?v=26"></script>
+<script src="js/app.js?v=26"></script>
 </body>
 </html>

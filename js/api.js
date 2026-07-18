@@ -79,6 +79,27 @@ const Api = (() => {
       call("distribution", { method: "PUT", query: { action: "period" }, body: { period_id, new_end } }),
     closeDistributionPeriod: (period_id) =>
       call("distribution", { method: "POST", query: { action: "close" }, body: { period_id } }),
+    getDistStatus: () => call("distribution", { method: "GET", query: { view: "status" } }),
+    getConfirmedDistributions: () => call("distribution", { method: "GET", query: { view: "confirmed" } }),
+    getDistHistory: () => call("distribution", { method: "GET", query: { view: "history" } }),
+    confirmDistribution: (item_id, user_id) =>
+      call("distribution", { method: "POST", query: { action: "confirm" }, body: { item_id, user_id } }),
+    bulkCancelRequests: (request_ids) =>
+      call("distribution", { method: "POST", query: { action: "bulk_cancel" }, body: { request_ids } }),
+    dispatchRequests: (request_ids) =>
+      call("distribution", { method: "POST", query: { action: "dispatch" }, body: { request_ids } }),
+    undispatchRequests: (request_ids) =>
+      call("distribution", { method: "POST", query: { action: "undispatch" }, body: { request_ids } }),
+    revertConfirmed: (request_id) =>
+      call("distribution", { method: "POST", query: { action: "revert" }, body: { request_id } }),
+    declineConflict: (request_id) =>
+      call("distribution", { method: "POST", query: { action: "decline_conflict" }, body: { request_id } }),
+    finalizeDistributions: (entries) =>
+      call("distribution", { method: "POST", query: { action: "finalize" }, body: { entries } }),
+    cancelDistHistory: (history_id) =>
+      call("distribution", { method: "POST", query: { action: "cancel_history" }, body: { history_id } }),
+    deleteDistHistory: (history_id) =>
+      call("distribution", { method: "POST", query: { action: "delete_history" }, body: { history_id } }),
     getProfile: () => call("profile", { method: "GET" }),
     setProfileShift: (shift) => call("profile", { method: "POST", body: { shift } }),
     updateProfile: (patch) => call("profile", { method: "PUT", body: patch }),

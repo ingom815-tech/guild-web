@@ -359,14 +359,23 @@ const Members = (() => {
     return (cls && GameData.aquiName(item, cls)) || aquiColLabel(item.id);
   }
 
-  // "특정 룬 기준 보기" 드롭다운 — 현재 직업 필터의 매핑에서 동적 생성
+  // "특정 룬 기준 보기" 드롭다운 — 현재 직업 필터의 매핑에서 동적 생성.
+  // 미보유자 탐색이 주 용도라 각 룬의 미보유 인원 수를 함께 표시하고, 섹션별로 그룹핑한다.
   function rebuildRuneOptions() {
     const sel = document.getElementById("qmRune");
     const clsF = classFilterValue();
     const prev = runeFilter;
+    const ownedList = filteredRows().map((m) => GameData.parseAqui(m.status_check, m.class || ""));
+    const notOwnCount = (id) => ownedList.filter((o) => !o[id]).length;
     sel.innerHTML =
       `<option value="">특정 룬 기준 보기</option>` +
-      aquiAllItems().map((it) => `<option value="${it.id}">${runeDisplay(it, clsF)}</option>`).join("");
+      ["A", "B", "C"].map((g) =>
+        `<optgroup label="${AQUI_GROUP_META[g].label} (${g})">` +
+        GameData.AQUI_ITEMS[g]
+          .map((it) => `<option value="${it.id}">${runeDisplay(it, clsF)} · 미보유 ${notOwnCount(it.id)}명</option>`)
+          .join("") +
+        `</optgroup>`,
+      ).join("");
     sel.value = prev;
     if (sel.value !== prev) {
       runeFilter = "";
@@ -397,14 +406,53 @@ const Members = (() => {
     const runeItem = runeFilter ? aquiAllItems().find((it) => it.id === runeFilter) : null;
 
     const entries = rows.map((m) => ({ m, owned: GameData.parseAqui(m.status_check, m.class || "") }));
-    const shown = runeItem && onlyNoMode ? entries.filter((e) => !e.owned[runeItem.id]) : entries;
+    let shown = entries;
+    // 미보유 명단은 항상 참여점수 높은 순 — 이 순서가 분배 우선순위 후보 (룬별 현황과 동일 규칙)
+    const pscore = (e) => e.m.participation_score ?? 0;
+    if (runeItem && onlyNoMode) {
+      shown = entries.filter((e) => !e.owned[runeItem.id]).sort((a, b) => pscore(b) - pscore(a));
+    } else if (runeItem) {
+      // 미보유만이 꺼져 있어도 미보유자 우선 + 각 그룹 안에서 참여점수 내림차순
+      shown = [...entries].sort(
+        (a, b) => (a.owned[runeItem.id] ? 1 : 0) - (b.owned[runeItem.id] ? 1 : 0) || pscore(b) - pscore(a),
+      );
+    }
 
     if (runeItem) {
       const note = document.createElement("div");
       note.className = "runenote";
       const ownCnt = entries.filter((e) => !!e.owned[runeItem.id]).length;
-      note.innerHTML = `🔎 <b></b> 기준 보기 — "보유" 컬럼이 추가되었습니다. (${clsF || "전체"} ${entries.length}명 중 보유 ${ownCnt}명)`;
-      note.querySelector("b").textContent = runeDisplay(runeItem, clsF);
+      const disp = runeDisplay(runeItem, clsF);
+      const paren = disp === runeItem.id || disp === aquiColLabel(runeItem.id)
+        ? AQUI_GROUP_META[runeItem.group].label
+        : `${runeItem.id} · ${AQUI_GROUP_META[runeItem.group].label}`;
+      note.innerHTML = `🔎 <b class="rn"></b> <span class="meta" style="color:inherit">(${paren})</span> 기준 보기 — ` +
+        `<b>미보유 ${entries.length - ownCnt}명</b> / 보유 ${ownCnt}명 (${clsF || "전체"} ${entries.length}명)` +
+        `<span class="mapref" style="display:block;margin-top:4px"></span>`;
+      note.querySelector(".rn").textContent = runeDisplay(runeItem, clsF);
+      // 직업 필터가 "전체"면 코드만으론 어떤 룬인지 알 수 없으니 직업별 룬 이름을 그리드로 병기
+      const ref = note.querySelector(".mapref");
+      if (!clsF) {
+        ref.style.cssText =
+          "display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 18px;" +
+          "margin-top:8px;padding-top:8px;border-top:1px dashed #9FE1CB";
+        GameData.CLASS_OPTIONS.forEach((c) => {
+          const cell = document.createElement("span");
+          cell.style.cssText = "display:flex;gap:8px;align-items:baseline";
+          const cls = document.createElement("span");
+          cls.style.cssText = "min-width:72px;font-weight:600;font-size:12px";
+          cls.textContent = c;
+          const rn = document.createElement("span");
+          const n = GameData.aquiName(runeItem, c);
+          rn.textContent = n || "매핑 없음";
+          if (!n) rn.style.opacity = ".5";
+          cell.appendChild(cls);
+          cell.appendChild(rn);
+          ref.appendChild(cell);
+        });
+      } else {
+        ref.remove();
+      }
       wrap.appendChild(note);
     }
 
@@ -583,39 +631,88 @@ const Members = (() => {
   }
 
   // ── 아퀴 매핑 조회 모달 (단일 출처: gamedata.js AQUI_ITEMS — 원본 app.py 상수 이식본) ──
+  // 직업을 최대 3개까지 선택해 슬롯별 룬 이름을 나란히 비교한다. 초과 선택 시 가장 오래된 선택 해제.
+  let aquiMapSelected = [];
+
+  function toggleAquiMapClass(cls) {
+    const idx = aquiMapSelected.indexOf(cls);
+    if (idx >= 0) {
+      if (aquiMapSelected.length === 1) return; // 최소 1개는 유지
+      aquiMapSelected.splice(idx, 1);
+    } else {
+      aquiMapSelected.push(cls);
+      if (aquiMapSelected.length > 3) aquiMapSelected.shift();
+    }
+    renderAquiMapChips();
+    renderAquiMapTable();
+  }
+
+  function renderAquiMapChips() {
+    const box = document.getElementById("aquiMapClasses");
+    box.innerHTML = "";
+    GameData.CLASS_OPTIONS.forEach((c) => {
+      const chip = document.createElement("span");
+      chip.className = "fchip" + (aquiMapSelected.includes(c) ? " on" : "");
+      chip.textContent = c;
+      chip.addEventListener("click", () => toggleAquiMapClass(c));
+      box.appendChild(chip);
+    });
+  }
+
   function renderAquiMapTable() {
-    const cls = document.getElementById("aquiMapClass").value;
     const table = document.getElementById("aquiMapTable");
     table.innerHTML = "";
     const hr = document.createElement("tr");
-    hr.innerHTML = `<th>코드</th><th>섹션</th><th>룬 이름</th><th>신화 가능</th>`;
+    const addTh = (t) => {
+      const th = document.createElement("th");
+      th.textContent = t;
+      hr.appendChild(th);
+    };
+    addTh("코드");
+    addTh("섹션");
+    aquiMapSelected.forEach((c) => addTh(c));
     table.appendChild(hr);
+
     aquiAllItems().forEach((it) => {
       const tr = document.createElement("tr");
-      const name = GameData.aquiName(it, cls);
-      tr.innerHTML = `<td class="cnt"></td><td class="cnt"></td><td class="rn"></td><td class="cnt"></td>`;
-      tr.children[0].textContent = it.id;
-      tr.children[1].textContent = AQUI_GROUP_META[it.group].label;
-      if (name) {
-        tr.children[2].textContent = name;
-        tr.children[2].style.fontWeight = "600";
-      } else {
-        tr.children[2].textContent = "매핑 없음 (코드로 표시됨)";
-        tr.children[2].style.color = "var(--txt3)";
-      }
-      tr.children[3].textContent = GameData.canBeMythic(it, cls) ? "✓" : "";
-      tr.children[3].style.color = "var(--gold-tx)";
+      const tdCode = document.createElement("td");
+      tdCode.className = "cnt";
+      tdCode.textContent = it.id;
+      const tdSec = document.createElement("td");
+      tdSec.className = "cnt";
+      tdSec.textContent = AQUI_GROUP_META[it.group].label;
+      tr.appendChild(tdCode);
+      tr.appendChild(tdSec);
+      aquiMapSelected.forEach((c) => {
+        const td = document.createElement("td");
+        const name = GameData.aquiName(it, c);
+        if (name) {
+          const b = document.createElement("b");
+          b.textContent = name;
+          td.appendChild(b);
+          if (GameData.canBeMythic(it, c)) {
+            const tag = document.createElement("span");
+            tag.style.cssText = "font-size:10px;color:var(--gold-tx);margin-left:5px";
+            tag.textContent = "신화";
+            td.appendChild(tag);
+          }
+        } else {
+          td.textContent = "—";
+          td.style.color = "var(--txt3)";
+          td.title = "매핑 없음 (코드로 표시됨)";
+        }
+        tr.appendChild(td);
+      });
       table.appendChild(tr);
     });
   }
 
   function openAquiMap() {
-    const sel = document.getElementById("aquiMapClass");
-    if (!sel.options.length) {
-      sel.innerHTML = GameData.CLASS_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("");
+    if (!aquiMapSelected.length) {
+      const clsF = classFilterValue();
+      aquiMapSelected = [clsF || GameData.CLASS_OPTIONS[0]];
     }
-    const clsF = classFilterValue();
-    if (clsF) sel.value = clsF;
+    renderAquiMapChips();
     renderAquiMapTable();
     document.getElementById("aquiMapBackdrop").classList.add("on");
   }
@@ -646,7 +743,10 @@ const Members = (() => {
   }
 
   function setRuneFilter() {
+    const prev = runeFilter;
     runeFilter = document.getElementById("qmRune").value || "";
+    // 룬 기준 보기의 주 용도는 미보유자 탐색 — 룬을 새로 고르면 "미보유만"을 자동으로 켠다
+    if (runeFilter && runeFilter !== prev) onlyNoMode = true;
     if (!runeFilter) onlyNoMode = false;
     render();
   }
@@ -910,7 +1010,6 @@ const Members = (() => {
     document.getElementById("aquiMapCloseBtn").addEventListener("click", () => {
       document.getElementById("aquiMapBackdrop").classList.remove("on");
     });
-    document.getElementById("aquiMapClass").addEventListener("change", renderAquiMapTable);
   }
 
   return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo };
