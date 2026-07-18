@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=28">
+<link rel="stylesheet" href="css/style.css?v=29">
 </head>
 <body>
 
@@ -270,71 +270,76 @@
     <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
   </section>
 
-  <!-- ═══ 공금 관리 (실제 동작, 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
+  <!-- ═══ 공금 관리 (공금관리_개선시안.html — 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
   <section class="screen" id="s-treasury">
     <div class="toast" id="treasuryToast"></div>
 
-    <div class="row" style="gap:10px;margin-bottom:10px">
-      <div class="card" style="flex:1;margin-bottom:0">
-        <div class="meta">결사 금고 현금</div>
-        <b id="cashBalance" style="font-size:20px">0</b>
+    <div class="kpis k2">
+      <div class="kpi">
+        <div class="lb"><span class="abadge a-cash">현금</span> 결사 금고</div>
+        <div class="v" id="cashBalance">0 <small>원</small></div>
       </div>
-      <div class="card" style="flex:1;margin-bottom:0">
-        <div class="meta">다이아 합계</div>
-        <b id="diamondTotal" style="font-size:20px">0</b>
-      </div>
-    </div>
-
-    <div class="card">
-      <b style="font-size:15px">운영진별 다이아 보유</b>
-      <div class="list" id="diamondList" style="margin-top:10px;border:0">
-        <div class="irow meta" id="diamondEmpty" style="display:none">보유 다이아가 없습니다.</div>
+      <div class="kpi">
+        <div class="lb"><span class="abadge a-dia">다이아</span> 전체 합계</div>
+        <div class="v" id="diamondTotal">0 <small>개</small></div>
       </div>
     </div>
 
-    <div class="card hidden" id="treasuryStaffForms">
-      <div class="row" style="gap:16px;align-items:flex-start;flex-wrap:wrap">
-        <form id="cashTxForm" style="flex:1;min-width:220px">
-          <b style="font-size:14px">현금 입출금</b>
-          <div class="row" style="gap:8px;margin-top:8px">
-            <select id="cashDirection" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-              <option value="입금">입금</option>
-              <option value="출금">출금</option>
-            </select>
-            <input type="number" id="cashAmount" placeholder="금액" min="1" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-          </div>
-          <input type="text" id="cashDesc" placeholder="내용" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-          <button type="submit" class="btn sm" style="margin-top:8px" id="cashTxSubmitBtn">저장</button>
-        </form>
-
-        <form id="diamondTxForm" style="flex:1;min-width:220px">
-          <b style="font-size:14px">다이아 수동 입출금</b>
-          <div class="row" style="gap:8px;margin-top:8px">
-            <select id="diamondOwner" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 10px"></select>
-            <select id="diamondDirection" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-              <option value="입금">입금</option>
-              <option value="출금">출금</option>
-            </select>
-          </div>
-          <input type="number" id="diamondAmount" placeholder="수량" min="1" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-          <input type="text" id="diamondDesc" placeholder="내용" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:9px 10px">
-          <button type="submit" class="btn sm" style="margin-top:8px" id="diamondTxSubmitBtn">저장</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between;margin-bottom:10px">
-        <b style="font-size:15px">전체 이력</b>
-        <div class="row" style="gap:6px">
-          <span class="fchip on" data-hi="전체" onclick="Treasury.setHistoryFilter(this)">전체</span>
-          <span class="fchip" data-hi="입금" onclick="Treasury.setHistoryFilter(this)">입금</span>
-          <span class="fchip" data-hi="출금" onclick="Treasury.setHistoryFilter(this)">출금</span>
+    <div class="tcols solo" id="treasuryCols">
+      <div class="panel">
+        <h3>운영진별 다이아 보유 <span class="meta" id="diamondSumMeta"></span></h3>
+        <div id="diamondList">
+          <div class="hrow meta" id="diamondEmpty" style="display:none">보유 다이아가 없습니다.</div>
         </div>
       </div>
-      <div class="list" id="treasuryHistoryList" style="border:0">
-        <div class="irow meta" id="treasuryHistoryEmpty" style="display:none">이력이 없습니다.</div>
+
+      <div class="panel hidden" id="treasuryStaffForms">
+        <h3>입출금 등록</h3>
+        <form id="txForm">
+          <div class="fseg" id="txAssetSeg">
+            <span class="on" data-asset="현금">현금</span>
+            <span data-asset="다이아">다이아</span>
+          </div>
+          <div class="frow">
+            <select id="diamondOwner" class="hidden"></select>
+            <select id="txDirection" style="flex:0 0 110px">
+              <option value="입금">입금</option>
+              <option value="출금">출금</option>
+            </select>
+            <input type="number" id="txAmount" min="1" required placeholder="금액 (원)">
+          </div>
+          <div class="frow"><input type="text" id="txDesc" placeholder="내용 (예: 거점 대전 분배)"></div>
+          <div style="text-align:right"><button type="submit" class="btn" id="txSubmitBtn">저장</button></div>
+        </form>
       </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="flex-wrap:wrap;gap:8px">전체 이력
+        <span class="row" style="gap:6px">
+          <span class="fchip" data-tp="this" onclick="Treasury.setPeriod(this)">이번 달</span>
+          <span class="fchip" data-tp="last" onclick="Treasury.setPeriod(this)">지난 달</span>
+          <span class="fchip on" data-tp="all" onclick="Treasury.setPeriod(this)">전체</span>
+          <span class="fdiv"></span>
+          <span class="fchip on" data-ta="전체" onclick="Treasury.setAssetFilter(this)">전체</span>
+          <span class="fchip" data-ta="현금" onclick="Treasury.setAssetFilter(this)">현금</span>
+          <span class="fchip" data-ta="다이아" onclick="Treasury.setAssetFilter(this)">다이아</span>
+          <span class="fdiv"></span>
+          <span class="fchip on" data-hi="전체" onclick="Treasury.setHistoryFilter(this)">입출 전체</span>
+          <span class="fchip" data-hi="입금" onclick="Treasury.setHistoryFilter(this)">입금</span>
+          <span class="fchip" data-hi="출금" onclick="Treasury.setHistoryFilter(this)">출금</span>
+        </span>
+      </h3>
+      <div class="tsummary" id="treasurySummary" style="display:none"></div>
+      <div style="overflow-x:auto">
+        <table class="ttable">
+          <thead>
+            <tr><th style="width:64px">자산</th><th style="width:110px;text-align:right">금액</th><th>내용</th><th style="width:80px">처리자</th><th style="width:110px">일시</th><th style="width:56px"></th></tr>
+          </thead>
+          <tbody id="treasuryHistoryBody"></tbody>
+        </table>
+      </div>
+      <div class="tpage" id="treasuryPager"></div>
     </div>
   </section>
 
@@ -844,22 +849,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=28"></script>
-<script src="js/api.js?v=28"></script>
-<script src="js/auth.js?v=28"></script>
-<script src="js/logParser.js?v=28"></script>
-<script src="js/gamedata.js?v=28"></script>
-<script src="js/imageUtil.js?v=28"></script>
-<script src="js/inventory.js?v=28"></script>
-<script src="js/members.js?v=28"></script>
-<script src="js/treasury.js?v=28"></script>
-<script src="js/dashboard.js?v=28"></script>
-<script src="js/distribution.js?v=28"></script>
-<script src="js/distManage.js?v=28"></script>
-<script src="js/participationParser.js?v=28"></script>
-<script src="js/participation.js?v=28"></script>
-<script src="js/profile.js?v=28"></script>
-<script src="js/register.js?v=28"></script>
-<script src="js/app.js?v=28"></script>
+<script src="js/config.js?v=29"></script>
+<script src="js/api.js?v=29"></script>
+<script src="js/auth.js?v=29"></script>
+<script src="js/logParser.js?v=29"></script>
+<script src="js/gamedata.js?v=29"></script>
+<script src="js/imageUtil.js?v=29"></script>
+<script src="js/inventory.js?v=29"></script>
+<script src="js/members.js?v=29"></script>
+<script src="js/treasury.js?v=29"></script>
+<script src="js/dashboard.js?v=29"></script>
+<script src="js/distribution.js?v=29"></script>
+<script src="js/distManage.js?v=29"></script>
+<script src="js/participationParser.js?v=29"></script>
+<script src="js/participation.js?v=29"></script>
+<script src="js/profile.js?v=29"></script>
+<script src="js/register.js?v=29"></script>
+<script src="js/app.js?v=29"></script>
 </body>
 </html>

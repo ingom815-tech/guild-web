@@ -243,6 +243,45 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 .pd.m{background:#c9922e;border-color:var(--abs)}
 .pcnt{margin-left:auto;font-size:10.5px;color:#8f96a8}
 
+/* ── 공금 관리 (공금관리_개선시안.html 이식) ── */
+.kpis.k2{grid-template-columns:1fr 1fr}
+.kpi .lb{display:flex;align-items:center;gap:6px}
+.kpi .v small{font-size:14px;font-weight:500;color:var(--txt2)}
+.abadge{font-size:10.5px;padding:2px 8px;border-radius:999px;font-weight:700}
+.a-cash{background:var(--blue-bg);color:var(--blue-tx)}
+.a-dia{background:var(--gold-bg);color:var(--gold-tx)}
+.tcols{display:grid;grid-template-columns:1fr 1.3fr;gap:14px;margin-bottom:14px}
+.tcols.solo{grid-template-columns:1fr}
+@media(max-width:800px){.tcols{grid-template-columns:1fr}}
+.hrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f3f4f6;font-size:13.5px}
+.hrow:first-of-type{border-top:0}
+.hrow .nm{width:80px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .bar{width:auto;flex:1;height:7px;background:#f1f2f4;border-radius:4px;overflow:hidden}
+.hrow .bar>i{display:block;height:100%;background:var(--gold-tx);opacity:.75;border-radius:4px}
+.hrow .n{min-width:82px;text-align:right;font-weight:600}
+.fseg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:10px}
+.fseg span{flex:1;text-align:center;padding:8px 0;font-size:13px;color:var(--txt2);cursor:pointer;user-select:none}
+.fseg span.on{background:var(--green);color:#fff;font-weight:600}
+.frow{display:flex;gap:8px;margin-bottom:8px}
+.frow select,.frow input{border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13.5px;flex:1;min-width:0;background:#fff}
+.fdiv{width:1px;background:var(--line);margin:2px 3px;align-self:stretch}
+.ttable{width:100%;border-collapse:collapse;font-size:13.5px}
+.ttable th{text-align:left;font-size:12px;font-weight:500;color:var(--txt3);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.ttable td{padding:10px;border-top:0;border-bottom:1px solid #f3f4f6;white-space:nowrap}
+.ttable .amt{font-weight:700;text-align:right}
+.ttable .amt.in{color:var(--green-dk)}
+.ttable .amt.out{color:var(--red)}
+.ttable .desc{white-space:normal;color:var(--txt2);max-width:340px}
+.ttable .who{color:var(--txt3);font-size:12.5px}
+.ttable .when{color:var(--txt3);font-size:12px}
+.del{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 10px;font-size:12px;color:var(--txt3);cursor:pointer}
+.del:hover{color:var(--red);border-color:#F7C1C1}
+.tsummary{font-size:12.5px;color:var(--txt2);background:#f8f9fa;border:1px solid #f1f2f4;border-radius:9px;padding:8px 12px;margin-bottom:10px}
+.tsummary b{color:var(--txt)}
+.tpage{text-align:center;padding:10px 0 2px;font-size:12.5px;color:var(--txt3)}
+.tpage button{border:0;background:none;color:var(--green-dk);cursor:pointer;font-size:12.5px;font-weight:600;padding:2px 6px}
+.tpage button:disabled{color:#c6cad2;cursor:default}
+
 /* ── 장비/아퀴 편집 (수정 모달) ── */
 .equip-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .equip-edit-grid .field{margin-bottom:0}
