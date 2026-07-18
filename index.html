@@ -4,30 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=29">
+<link rel="stylesheet" href="css/style.css?v=30">
 </head>
 <body>
 
-<!-- ═══ 로그인 화면 ═══ -->
-<div class="login-wrap" id="loginScreen">
-  <div class="login-card">
-    <h1>⚔️ 프라시아 전기</h1>
-    <div class="meta">결사 관리 시스템 로그인</div>
+<!-- ═══ 로그인 화면 (로그인화면_개선시안_v4.html) ═══ -->
+<div class="lg-screen" id="loginScreen">
+  <div class="lg-bg"></div>
+  <div class="lg-fx"></div>
+  <div class="lg-card">
+    <div class="emblem"><img src="img/bi_simbol.png?v=30" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <h1>프라시아 전기 결사 관리</h1>
+    <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
     <form id="loginForm">
-      <div class="field">
-        <label for="loginId">아이디</label>
-        <input type="text" id="loginId" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label for="loginPw">비밀번호</label>
-        <input type="password" id="loginPw" autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn" id="loginBtn">로그인</button>
+      <label for="loginId">아이디</label>
+      <input type="text" id="loginId" autocomplete="username" required>
+      <label for="loginPw">비밀번호</label>
+      <input type="password" id="loginPw" autocomplete="current-password" required>
+      <button type="submit" class="lg-btn" id="loginBtn">로그인</button>
     </form>
-    <div class="meta" style="text-align:center;margin-top:14px">
-      아직 계정이 없나요? <a href="#" id="showRegisterLink" style="color:var(--green-dk);font-weight:600">가입 신청</a>
-    </div>
+    <div class="lg-foot">아직 계정이 없나요? <a href="#" id="showRegisterLink">가입 신청</a></div>
   </div>
 </div>
 
@@ -849,22 +846,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=29"></script>
-<script src="js/api.js?v=29"></script>
-<script src="js/auth.js?v=29"></script>
-<script src="js/logParser.js?v=29"></script>
-<script src="js/gamedata.js?v=29"></script>
-<script src="js/imageUtil.js?v=29"></script>
-<script src="js/inventory.js?v=29"></script>
-<script src="js/members.js?v=29"></script>
-<script src="js/treasury.js?v=29"></script>
-<script src="js/dashboard.js?v=29"></script>
-<script src="js/distribution.js?v=29"></script>
-<script src="js/distManage.js?v=29"></script>
-<script src="js/participationParser.js?v=29"></script>
-<script src="js/participation.js?v=29"></script>
-<script src="js/profile.js?v=29"></script>
-<script src="js/register.js?v=29"></script>
-<script src="js/app.js?v=29"></script>
+<script src="js/config.js?v=30"></script>
+<script src="js/api.js?v=30"></script>
+<script src="js/auth.js?v=30"></script>
+<script src="js/logParser.js?v=30"></script>
+<script src="js/gamedata.js?v=30"></script>
+<script src="js/imageUtil.js?v=30"></script>
+<script src="js/inventory.js?v=30"></script>
+<script src="js/members.js?v=30"></script>
+<script src="js/treasury.js?v=30"></script>
+<script src="js/dashboard.js?v=30"></script>
+<script src="js/distribution.js?v=30"></script>
+<script src="js/distManage.js?v=30"></script>
+<script src="js/participationParser.js?v=30"></script>
+<script src="js/participation.js?v=30"></script>
+<script src="js/profile.js?v=30"></script>
+<script src="js/register.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
 </body>
 </html>
