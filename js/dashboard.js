@@ -114,17 +114,25 @@ const Dashboard = (() => {
   // 신화 체크는 신규 오픈 후 수집 예정이라 현재는 대부분 미보유가 정상.
   function renderMythTable() {
     const members = (data.members || []).filter((m) => MYTHIC_RUNES[m.class]);
-    const rows = members.map((m) => {
-      const owned = GameData.parseAqui(m.status_check, m.class);
-      const [r1, r2] = MYTHIC_RUNES[m.class];
-      const has1 = r1 ? owned[runeIdForClass(r1, m.class)] === "m" : false;
-      const has2 = r2 ? owned[runeIdForClass(r2, m.class)] === "m" : false;
-      return { m, r1, r2, has1, has2, cnt: (has1 ? 1 : 0) + (has2 ? 1 : 0) };
-    });
+    // 보유자만 표시 (1개 이상 신화 보유). 없으면 안내 문구.
+    const rows = members
+      .map((m) => {
+        const owned = GameData.parseAqui(m.status_check, m.class);
+        const [r1, r2] = MYTHIC_RUNES[m.class];
+        const has1 = r1 ? owned[runeIdForClass(r1, m.class)] === "m" : false;
+        const has2 = r2 ? owned[runeIdForClass(r2, m.class)] === "m" : false;
+        return { m, r1, r2, has1, has2, cnt: (has1 ? 1 : 0) + (has2 ? 1 : 0) };
+      })
+      .filter((r) => r.cnt > 0);
     rows.sort((a, b) => b.cnt - a.cnt || (b.m.contribution_score || 0) - (a.m.contribution_score || 0));
 
-    const holders = rows.filter((r) => r.cnt > 0).length;
-    document.getElementById("mythMeta").textContent = `${holders}명 보유 · 스크롤로 전체`;
+    document.getElementById("mythMeta").textContent = rows.length ? `${rows.length}명 보유 · 스크롤로 전체` : "";
+
+    if (!rows.length) {
+      document.getElementById("mythTable").innerHTML =
+        `<tr><td class="gtext" style="text-align:center;padding:24px 10px">아직 신화 아퀴룬 보유자가 없습니다.</td></tr>`;
+      return;
+    }
 
     const cell = (name, has, exists) => {
       if (!exists) return `<span class="aq-none">해당 없음</span>`;
