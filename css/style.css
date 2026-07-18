@@ -321,7 +321,8 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 .pf-profile .avatar{width:56px;height:56px;border-radius:14px;background:linear-gradient(150deg,#1a3d31,#0f241d);border:1px solid rgba(29,158,117,.5);display:flex;align-items:center;justify-content:center;color:#8ee0c3;font-weight:800;font-size:18px}
 /* 직업 엠블럼 모드 — 로그인 엠블럼과 같은 어두운 금색 발광 박스 + SVG 마스크 채색 */
 .pf-profile .avatar.emblem-mode{background:radial-gradient(circle at 50% 42%,#232838,#12151d 78%);border-color:rgba(240,176,63,.45);box-shadow:inset 0 0 14px rgba(240,176,63,.15)}
-.cls-emblem{display:block;width:36px;height:36px;background:linear-gradient(180deg,#F3CF8B,#D9A43C);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.cls-emblem{display:inline-block;width:36px;height:36px;flex:none;background:linear-gradient(180deg,#F3CF8B,#D9A43C);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.cls-emblem.on-light{background:linear-gradient(180deg,#a8801f,#7a5c14);vertical-align:-2px}
 .pf-profile .pmain{flex:1;min-width:180px}
 .pf-profile .nm{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pf-profile .sub{font-size:12.5px;color:var(--txt3)}

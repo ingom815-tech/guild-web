@@ -158,7 +158,7 @@ const Members = (() => {
         <span class="nm"></span>
         <span style="width:110px" class="meta uid"></span>
         <span style="width:90px" class="meta guild"></span>
-        <span style="width:80px" class="meta cls"></span>
+        <span style="width:96px" class="meta cls"></span>
         <span style="width:50px">${m.level ?? 0}</span>
         <span style="width:80px">${(m.power ?? 0).toLocaleString()}</span>
         <span style="width:56px"><span class="role-badge"></span></span>
@@ -171,7 +171,14 @@ const Members = (() => {
       row.querySelector(".nm").textContent = m.current_id || m.user_id;
       row.querySelector(".uid").textContent = m.user_id;
       row.querySelector(".guild").textContent = m.guild_name || "-";
-      row.querySelector(".cls").textContent = m.class || "-";
+      const clsCell = row.querySelector(".cls");
+      const clsEmblem = GameData.classEmblemEl(m.class, 14, "dark");
+      if (clsEmblem) {
+        clsCell.appendChild(clsEmblem);
+        clsCell.appendChild(document.createTextNode(" " + m.class));
+      } else {
+        clsCell.textContent = m.class || "-";
+      }
       const badge = row.querySelector(".role-badge");
       badge.textContent = m.role || "";
       badge.className = "role-badge " + (m.role || "");

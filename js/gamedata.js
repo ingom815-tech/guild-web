@@ -196,10 +196,27 @@ const GameData = (() => {
     return Array.isArray(item.mythic) && !!memberClass && item.mythic.includes(memberClass);
   }
 
+  // 직업 엠블럼 <i> 요소 (SVG mask 채색). variant "dark" = 밝은 배경용 어두운 금색.
+  // 매핑 없는 직업(미선택 포함)은 null — 호출부가 기존 표시를 그대로 유지하면 된다.
+  function classEmblemEl(memberClass, size, variant) {
+    const file = CLASS_ICONS[memberClass];
+    if (!file) return null;
+    const i = document.createElement("i");
+    i.className = "cls-emblem" + (variant === "dark" ? " on-light" : "");
+    if (size) {
+      i.style.width = size + "px";
+      i.style.height = size + "px";
+    }
+    const url = `img/classes/${file}.svg`;
+    i.style.webkitMaskImage = `url('${url}')`;
+    i.style.maskImage = `url('${url}')`;
+    return i;
+  }
+
   return {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
-    aquiName, aquiLabelEl, aquiClassNoticeEl,
+    aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl,
   };
 })();

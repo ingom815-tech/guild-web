@@ -132,7 +132,16 @@ const Dashboard = (() => {
         return `<div class="jrow"><span class="nm"></span><div class="bar"><div style="width:${w}%"></div></div><span class="n"${r.count ? "" : ' style="color:var(--txt3)"'}>${r.count}</span></div>`;
       })
       .join("");
-    el.querySelectorAll(".jrow .nm").forEach((n, i) => (n.textContent = rows[i].class));
+    el.querySelectorAll(".jrow").forEach((rowEl, i) => {
+      const nm = rowEl.querySelector(".nm");
+      nm.textContent = rows[i].class;
+      // 엠블럼 없는 직업명도 막대 시작점이 나란하도록 같은 폭의 스페이서를 넣는다
+      const emblem = GameData.classEmblemEl(rows[i].class, 14, "dark") || document.createElement("i");
+      emblem.style.width = "14px";
+      emblem.style.flex = "none";
+      if (!rows[i].count) emblem.style.opacity = ".45";
+      rowEl.insertBefore(emblem, nm);
+    });
   }
 
   // ── 신화 아퀴룬 보유 현황 표 ──
@@ -353,6 +362,8 @@ const Dashboard = (() => {
       <div class="sub"></div>`;
     card.querySelector(".nm").textContent = m.current_id || m.user_id;
     card.querySelector(".role").textContent = m.role || "";
+    const emblem = GameData.classEmblemEl(m.class, 18, "dark");
+    if (emblem) card.querySelector(".hd").insertBefore(emblem, card.querySelector(".nm"));
     const subParts = [m.class || "-"];
     if (m.subjugation_rank) subParts.push(`토벌 ${m.subjugation_rank}`);
     let subHtml = subParts.join(" · ");
