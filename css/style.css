@@ -132,6 +132,67 @@ tr.won td{background:var(--green-bg)}
 .mtable th{text-align:left;font-size:12px;font-weight:500;color:var(--txt3);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card);cursor:pointer;user-select:none}
 .mtable td{padding:8px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap}
 .mtable .num{text-align:right}
+/* 결사원 관리 — 장비/아퀴 정보 표 (가로 스크롤 + 첫 열 고정) */
+.mgmt-scroll{max-height:70vh}
+.mgmt-scroll th{position:sticky;top:0;z-index:2;cursor:default}
+.mgmt-scroll th.stick,.mgmt-scroll td.stick{position:sticky;left:0;background:var(--card);z-index:1;border-right:1px solid var(--line)}
+.mgmt-scroll th.stick{z-index:3}
+.mgmt-scroll td.ctr,.mgmt-scroll th.ctr{text-align:center;padding:8px 6px}
+.mgmt-scroll th{vertical-align:bottom}
+.aqui-code{font-size:10.5px;color:var(--txt3);font-weight:500;margin-left:4px}
+/* 아퀴정보 목록 — 아퀴정보목록_개선시안_v2.html 이식 */
+:root{--pvp:#D06060;--sup:#5B8DD9;--pve:#3FA37A}
+.aqui-tools{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.aqui-tools.hidden{display:none}
+.aqui-tools select{border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;background:var(--card);color:var(--txt2)}
+.secbar{display:inline-flex;align-items:center;gap:7px}
+.bar{width:74px;height:8px;background:#f1f2f4;border-radius:4px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px}
+.bar.pvp>i{background:var(--pvp)}
+.bar.sup>i{background:var(--sup)}
+.bar.pve>i{background:var(--pve)}
+.aqtable .cnt{font-size:12.5px;color:var(--txt2);min-width:36px}
+.aqtable .cnt.low{color:var(--red);font-weight:600}
+.chev{color:var(--txt3);transition:transform .15s}
+tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
+.aqtable tr.mrow{cursor:pointer}
+.aqtable tr.mrow:hover td{background:#fafbfc}
+.aqtable tr.detail{display:none}
+.aqtable tr.open+tr.detail{display:table-row}
+.aqtable tr.detail>td{background:#fafbfc;padding:14px 16px;white-space:normal}
+.aqtable tr.rdetail{display:none}
+.aqtable tr.ropen+tr.rdetail{display:table-row}
+.aqtable tr.rdetail>td{background:#fafbfc;padding:12px 16px;white-space:normal}
+.dsec{margin-bottom:10px}
+.dsec:last-child{margin-bottom:0}
+.dsec .dt{font-size:11.5px;font-weight:700;margin-bottom:6px;letter-spacing:.5px}
+.dsec .dt.pvp{color:var(--pvp)}.dsec .dt.sup{color:var(--sup)}.dsec .dt.pve{color:var(--pve)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.rc{font-size:11.5px;padding:3px 9px;border-radius:6px;border:1px solid;line-height:1.4}
+.rc.own{background:#fff;border-color:#c9cdd4;color:var(--txt)}
+.rc.myth{background:var(--gold-bg);border-color:var(--myth-bd);color:var(--gold-tx);font-weight:700}
+.rc.no{background:transparent;border-style:dashed;border-color:#d9dce1;color:#b6bac2}
+.have{color:var(--green-dk);font-weight:700}
+.nothave{color:#b6bac2}
+.runenote{background:var(--green-bg);border:1px solid #9FE1CB;color:var(--green-dk);border-radius:9px;padding:9px 14px;font-size:12.5px;margin-bottom:10px}
+.runenote.gray{background:#f1f2f4;border-color:var(--line);color:var(--txt2)}
+.onlyno{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px;background:var(--card)}
+.onlyno.hidden{display:none}
+.onlyno.on{background:var(--green-bg);border-color:#9FE1CB;color:var(--green-dk);font-weight:600}
+.demand{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
+.d-high{background:var(--gold-bg);color:var(--gold-tx)}
+.d-mid{background:#f1f2f4;color:var(--txt2)}
+.cand{display:inline-flex;align-items:center;gap:5px;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px;margin:2px}
+.cand b{font-size:12px}
+.cand .sc{color:var(--txt3);font-size:11px}
+.cand.top{border-color:var(--green);background:var(--green-bg)}
+.mgmt-scroll td.dim{color:#c6cad2}
+.shotbtn{padding:3px 8px;font-size:12px;border-radius:6px}
+/* 스샷 보기 모달 갤러리 */
+.shot-group{margin-top:10px}
+.shot-group .meta{margin-bottom:6px}
+.shot-grid{display:flex;flex-wrap:wrap;gap:8px}
+.shot-grid a img{width:150px;height:150px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 .role{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
 .r-staff{background:var(--green-bg);color:var(--green-dk)}
 .r-member{background:#f1f2f4;color:var(--txt2)}

@@ -111,19 +111,25 @@ const Dashboard = (() => {
   }
 
   function renderClassBars() {
-    const rows = ((data.class_distribution && data.class_distribution[activeClassTab]) || [])
-      .slice()
-      .sort((a, b) => b.count - a.count);
+    const raw = (data.class_distribution && data.class_distribution[activeClassTab]) || [];
+    // 전체/주력 전환 시 행 수가 달라 패널 높이가 출렁이지 않도록,
+    // 항상 전 직업을 0명 포함 고정 행수로 렌더링한다 (탭 전환 = 값만 변화).
+    const counts = Object.create(null);
+    raw.forEach((r) => {
+      counts[r.class] = r.count;
+    });
+    const names = [...new Set([...GameData.CLASS_OPTIONS, ...raw.map((r) => r.class)])];
+    const rows = names.map((c) => ({ class: c, count: counts[c] || 0 })).sort((a, b) => b.count - a.count);
     const el = document.getElementById("classBars");
     if (!rows.length) {
       el.innerHTML = `<div class="gtext">해당 결사원 없음</div>`;
       return;
     }
-    const max = Math.max(...rows.map((r) => r.count));
+    const max = Math.max(...rows.map((r) => r.count), 1);
     el.innerHTML = rows
       .map((r) => {
-        const w = max ? Math.round((r.count / max) * 100) : 0;
-        return `<div class="jrow"><span class="nm"></span><div class="bar"><div style="width:${w}%"></div></div><span class="n">${r.count}</span></div>`;
+        const w = Math.round((r.count / max) * 100);
+        return `<div class="jrow"><span class="nm"></span><div class="bar"><div style="width:${w}%"></div></div><span class="n"${r.count ? "" : ' style="color:var(--txt3)"'}>${r.count}</span></div>`;
       })
       .join("");
     el.querySelectorAll(".jrow .nm").forEach((n, i) => (n.textContent = rows[i].class));

@@ -57,6 +57,7 @@ const Register = (() => {
       if (sel.value) kept[sel.dataset.aquiId] = sel.value;
     });
     wrap.innerHTML = "";
+    if (!cls) wrap.appendChild(GameData.aquiClassNoticeEl());
     for (const group of ["A", "B", "C"]) {
       const info = GameData.AQUI_GROUPS[group];
       const head = document.createElement("div");
@@ -68,9 +69,7 @@ const Register = (() => {
       GameData.AQUI_ITEMS[group].forEach((item) => {
         const field = document.createElement("div");
         field.className = "field";
-        const label = document.createElement("label");
-        label.textContent = GameData.skillLabel(item, cls);
-        label.title = GameData.skillLabel(item, cls);
+        const label = GameData.aquiLabelEl(item, cls);
         const sel = document.createElement("select");
         sel.dataset.aquiId = item.id;
         const opts = [["", "미보유"], ["l", "전설"]];

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 
@@ -375,11 +375,28 @@
 
     <div class="filterbar">
       <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
+      <select id="qmClass" onchange="Members.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
       <span class="fchip on" data-ri="전체" onclick="Members.setRole(this)">전체</span>
       <span class="fchip" data-ri="결사원" onclick="Members.setRole(this)">결사원</span>
       <span class="fchip" data-ri="운영진" onclick="Members.setRole(this)">운영진</span>
       <span class="fchip" data-ri="관리자" onclick="Members.setRole(this)">관리자</span>
       <button type="button" class="btn sm" id="memberAddBtn" style="margin-left:auto">+ 결사원 등록</button>
+    </div>
+    <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="vtoggle" id="memberViewToggle">
+        <span class="on" data-mv="general" onclick="Members.setView(this)">일반정보</span>
+        <span data-mv="equip" onclick="Members.setView(this)">장비정보</span>
+        <span data-mv="aqui" onclick="Members.setView(this)">아퀴정보</span>
+      </div>
+      <span class="aqui-tools hidden" id="aquiTools">
+        <select id="qmRune" onchange="Members.setRuneFilter()"></select>
+        <span class="onlyno hidden" id="qmOnlyNo" onclick="Members.toggleOnlyNo()">☐ 미보유만</span>
+        <div class="vtoggle" id="aquiViewSwitch">
+          <span class="on" data-av="p" onclick="Members.setAquiView(this)">사람별</span>
+          <span data-av="r" onclick="Members.setAquiView(this)">룬별 현황</span>
+        </div>
+        <button type="button" class="btn sm ghost" id="aquiMapBtn">📖 아퀴 매핑</button>
+      </span>
     </div>
     <div class="list" id="membersTable">
       <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
@@ -388,10 +405,13 @@
         <span style="width:90px">소속결사</span><span style="width:80px">직업</span>
         <span style="width:50px">Lv</span><span style="width:80px">전투력</span>
         <span style="width:56px">권한</span><span style="width:70px">기여점수</span>
+        <span style="width:108px">스샷</span>
         <span style="margin-left:auto">관리</span>
       </div>
       <div class="irow meta" id="membersEmpty" style="display:none">등록된 결사원이 없습니다.</div>
     </div>
+    <div class="mtable mgmt-scroll hidden" id="membersEquipTable"></div>
+    <div class="hidden" id="membersAquiTable"></div>
   </section>
 
   <!-- ═══ 운영진: 참여율 관리 (실제 동작) ═══ -->
@@ -683,6 +703,35 @@
   </div>
 </div>
 
+<!-- ═══ 아퀴 매핑 조회 모달 (운영진) ═══ -->
+<div class="modal-backdrop" id="aquiMapBackdrop">
+  <div class="modal" style="max-width:620px;max-height:88vh;overflow-y:auto">
+    <h3>📖 아퀴 매핑 (직업 × 슬롯코드 → 룬 이름)</h3>
+    <div class="meta" style="margin:4px 0 10px">
+      기존 시스템에서 이전된 매핑을 단일 출처로 사용합니다. 게임 업데이트로 룬 이름이 바뀌면
+      운영진이 변경 내용을 개발 요청으로 전달해 이 매핑에 반영합니다 (반영 즉시 전 화면 적용).
+    </div>
+    <div class="field"><label for="aquiMapClass">직업</label>
+      <select id="aquiMapClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:var(--bg)"></select>
+    </div>
+    <div class="mtable" style="max-height:54vh;overflow:auto"><table id="aquiMapTable"></table></div>
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="btn ghost sm" id="aquiMapCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 결사원 스크린샷 보기 모달 ═══ -->
+<div class="modal-backdrop" id="shotModalBackdrop">
+  <div class="modal" style="max-width:760px;max-height:88vh;overflow-y:auto">
+    <h3 id="shotModalTitle">첨부 스크린샷</h3>
+    <div id="shotModalBody"></div>
+    <div class="row" style="margin-top:12px">
+      <button type="button" class="btn ghost sm" id="shotCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ 결사원 탈퇴 확인 모달 ═══ -->
 <div class="modal-backdrop" id="memberDeleteModalBackdrop">
   <div class="modal">
@@ -723,21 +772,21 @@
   </div>
 </div>
 
-<script src="js/config.js?v=14"></script>
-<script src="js/api.js?v=14"></script>
-<script src="js/auth.js?v=14"></script>
-<script src="js/logParser.js?v=14"></script>
-<script src="js/gamedata.js?v=14"></script>
-<script src="js/imageUtil.js?v=14"></script>
-<script src="js/inventory.js?v=14"></script>
-<script src="js/members.js?v=14"></script>
-<script src="js/treasury.js?v=14"></script>
-<script src="js/dashboard.js?v=14"></script>
-<script src="js/distribution.js?v=14"></script>
-<script src="js/participationParser.js?v=14"></script>
-<script src="js/participation.js?v=14"></script>
-<script src="js/profile.js?v=14"></script>
-<script src="js/register.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
+<script src="js/config.js?v=20"></script>
+<script src="js/api.js?v=20"></script>
+<script src="js/auth.js?v=20"></script>
+<script src="js/logParser.js?v=20"></script>
+<script src="js/gamedata.js?v=20"></script>
+<script src="js/imageUtil.js?v=20"></script>
+<script src="js/inventory.js?v=20"></script>
+<script src="js/members.js?v=20"></script>
+<script src="js/treasury.js?v=20"></script>
+<script src="js/dashboard.js?v=20"></script>
+<script src="js/distribution.js?v=20"></script>
+<script src="js/participationParser.js?v=20"></script>
+<script src="js/participation.js?v=20"></script>
+<script src="js/profile.js?v=20"></script>
+<script src="js/register.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
 </body>
 </html>

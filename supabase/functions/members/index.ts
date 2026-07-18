@@ -271,6 +271,20 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(data);
     }
 
+    // 개별 결사원의 스샷 원본 조회 (목록에서 제외된 블랍을 필요할 때만 1명분 가져옴)
+    if (view === "images") {
+      const uid = url.searchParams.get("user_id");
+      if (!uid) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+      const { data, error } = await supabase
+        .from("members")
+        .select("user_id, current_id, power_img_url, status_check_img_url")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (error) return jsonResponse({ error: "스크린샷 조회에 실패했습니다." }, 500);
+      if (!data) return jsonResponse({ error: "해당 회원을 찾을 수 없습니다." }, 404);
+      return jsonResponse(data);
+    }
+
     const { data, error } = await supabase
       .from("members")
       .select(
@@ -278,7 +292,27 @@ Deno.serve(async (req: Request) => {
       )
       .order("current_id", { ascending: true });
     if (error) return jsonResponse({ error: "결사원 목록 조회에 실패했습니다." }, 500);
-    return jsonResponse(data);
+
+    // 스샷 유무 플래그 — 이미지 원문(레거시 base64 블랍)은 목록에서 절대 select하지 않는다.
+    // 원본 get_all_members도 같은 이유로 has_power_img 불리언만 계산했다(database.py:1160).
+    const imgFlagSet = async (col: string): Promise<Set<string>> => {
+      const { data: rows, error: e } = await supabase
+        .from("members")
+        .select("user_id")
+        .not(col, "is", null)
+        .neq(col, "");
+      if (e || !rows) return new Set();
+      return new Set(rows.map((r: { user_id: string }) => r.user_id));
+    };
+    const hasPower = await imgFlagSet("power_img_url");
+    const hasAqui = await imgFlagSet("status_check_img_url");
+    return jsonResponse(
+      (data ?? []).map((m) => ({
+        ...m,
+        has_power_img: hasPower.has(m.user_id),
+        has_aqui_img: hasAqui.has(m.user_id),
+      })),
+    );
   }
 
   if (req.method === "POST") {

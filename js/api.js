@@ -63,6 +63,7 @@ const Api = (() => {
     deleteInventoryItem: (id, confirmDelete) =>
       call("inventory", { method: "DELETE", query: { id, confirm: confirmDelete ? "true" : "false" } }),
     listMembers: () => call("members", { method: "GET" }),
+    getMemberImages: (user_id) => call("members", { method: "GET", query: { view: "images", user_id } }),
     createMember: (member) => call("members", { method: "POST", body: member }),
     updateMember: (user_id, patch) => call("members", { method: "PUT", query: { user_id }, body: patch }),
     deleteMember: (user_id, confirmDelete) =>

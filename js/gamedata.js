@@ -153,6 +153,39 @@ const GameData = (() => {
     return (memberClass && item[memberClass]) || item.id;
   }
 
+  // 화면 표시 원칙: 슬롯 코드(A1, B_s3 등)는 DB 내부용, 화면에는 직업별 실제 룬 이름을 우선 표시.
+  // 이름이 없으면(직업 미정·매핑 없음) null을 반환해 호출부가 코드 fallback을 처리하게 한다.
+  function aquiName(item, memberClass) {
+    return (memberClass && item[memberClass]) || null;
+  }
+
+  // 아퀴 편집 그리드용 라벨 요소 — "룬 이름 + 작은 회색 코드" 병기, 이름 없으면 코드만.
+  function aquiLabelEl(item, memberClass) {
+    const label = document.createElement("label");
+    const name = aquiName(item, memberClass);
+    if (name) {
+      label.textContent = name;
+      const code = document.createElement("span");
+      code.className = "aqui-code";
+      code.textContent = item.id;
+      label.appendChild(code);
+      label.title = `${item.id} = ${name}`;
+    } else {
+      label.textContent = item.id;
+      label.title = item.id;
+    }
+    return label;
+  }
+
+  // 직업 미선택 상태의 아퀴 그리드 상단 안내 문구
+  function aquiClassNoticeEl() {
+    const div = document.createElement("div");
+    div.className = "meta";
+    div.style.cssText = "margin:4px 0 8px;padding:7px 10px;background:#f6f7f9;border-radius:8px";
+    div.textContent = "💡 직업을 먼저 선택하면 각 항목이 룬 이름으로 표시됩니다.";
+    return div;
+  }
+
   function canBeMythic(item, memberClass) {
     return Array.isArray(item.mythic) && !!memberClass && item.mythic.includes(memberClass);
   }
@@ -161,5 +194,6 @@ const GameData = (() => {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
+    aquiName, aquiLabelEl, aquiClassNoticeEl,
   };
 })();

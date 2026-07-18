@@ -2,6 +2,10 @@
 const Members = (() => {
   let members = [];
   let activeRoleFilter = "전체";
+  let activeView = "general"; // general | equip | aqui
+  let aquiView = "p"; // p(사람별) | r(룬별 현황)
+  let runeFilter = ""; // 특정 룬 기준 보기 (슬롯 코드)
+  let onlyNoMode = false; // 미보유만
   let pendingDeleteId = null;
 
   function toast(msg, isErr) {
@@ -108,20 +112,39 @@ const Members = (() => {
     });
   }
 
-  function render() {
-    const container = document.getElementById("membersTable");
+  function classFilterValue() {
+    return document.getElementById("qmClass").value || "";
+  }
+
+  function filteredRows() {
     const q = (document.getElementById("qm").value || "").trim();
-    const rows = members.filter((m) => {
+    const clsF = classFilterValue();
+    return members.filter((m) => {
       const roleHit = activeRoleFilter === "전체" || m.role === activeRoleFilter;
+      const clsHit = !clsF || m.class === clsF;
       const qHit =
         !q ||
         (m.current_id || "").includes(q) ||
         (m.user_id || "").includes(q) ||
         (m.guild_name || "").includes(q) ||
         (m.class || "").includes(q);
-      return roleHit && qHit;
+      return roleHit && clsHit && qHit;
     });
+  }
 
+  function render() {
+    const rows = filteredRows();
+    document.getElementById("membersTable").classList.toggle("hidden", activeView !== "general");
+    document.getElementById("membersEquipTable").classList.toggle("hidden", activeView !== "equip");
+    document.getElementById("membersAquiTable").classList.toggle("hidden", activeView !== "aqui");
+    updateAquiToolbar();
+    if (activeView === "equip") renderEquip(rows);
+    else if (activeView === "aqui") renderAqui(rows);
+    else renderGeneral(rows);
+  }
+
+  function renderGeneral(rows) {
+    const container = document.getElementById("membersTable");
     document.querySelectorAll("#membersTable .irow[data-id]").forEach((el) => el.remove());
     const emptyRow = document.getElementById("membersEmpty");
     emptyRow.style.display = rows.length ? "none" : "flex";
@@ -140,6 +163,7 @@ const Members = (() => {
         <span style="width:80px">${(m.power ?? 0).toLocaleString()}</span>
         <span style="width:56px"><span class="role-badge"></span></span>
         <span style="width:70px">${m.contribution_score ?? 0}</span>
+        <span style="width:108px" class="shots"></span>
         <span style="margin-left:auto;display:flex;gap:6px">
           <button class="btn sm ghost" data-act="edit">수정</button>
           <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">탈퇴</button>
@@ -151,6 +175,29 @@ const Members = (() => {
       const badge = row.querySelector(".role-badge");
       badge.textContent = m.role || "";
       badge.className = "role-badge " + (m.role || "");
+
+      // 스샷 유무 표시 + 종류별 보기 버튼 — 이미지 원문은 용량이 커서 목록에 포함되지 않으므로
+      // 서버가 내려준 유무 플래그로만 표시하고, 클릭 시 그 결사원 것만 따로 조회한다.
+      const shotsCell = row.querySelector(".shots");
+      shotsCell.style.display = "flex";
+      shotsCell.style.gap = "4px";
+      const mkShotBtn = (label, kind, has) => {
+        const btn = document.createElement("button");
+        btn.className = "btn sm ghost shotbtn";
+        btn.textContent = label;
+        if (has) {
+          btn.title = `${label} 스샷 보기`;
+          btn.addEventListener("click", () => openShots(m, kind));
+        } else {
+          btn.disabled = true;
+          btn.style.opacity = ".35";
+          btn.title = `${label} 스샷 없음`;
+        }
+        shotsCell.appendChild(btn);
+      };
+      mkShotBtn("장비", "power", m.has_power_img);
+      mkShotBtn("아퀴", "aqui", m.has_aqui_img);
+
       row.querySelector('[data-act="edit"]').addEventListener("click", () => openEdit(m));
       const delBtn = row.querySelector('[data-act="delete"]');
       if (isAdmin) {
@@ -164,6 +211,415 @@ const Members = (() => {
     });
   }
 
+  // ── 스샷 보기 모달 (열 때 해당 결사원의 요청한 종류 이미지만 서버에서 가져옴) ──
+  async function openShots(m, kind) {
+    const kindLabel = kind === "power" ? "⚔️ 장비(전투력) 스샷" : "🔮 아퀴룬 스샷";
+    document.getElementById("shotModalTitle").textContent = `${m.current_id || m.user_id} — ${kindLabel}`;
+    const body = document.getElementById("shotModalBody");
+    body.innerHTML = '<div class="meta" style="padding:20px 0"><span class="spinner"></span>스크린샷을 불러오는 중...</div>';
+    document.getElementById("shotModalBackdrop").classList.add("on");
+
+    let imgData;
+    try {
+      imgData = await Api.getMemberImages(m.user_id);
+    } catch (e) {
+      body.innerHTML = '<div class="meta" style="padding:20px 0;color:#A32D2D">스크린샷을 불러오지 못했습니다.</div>';
+      return;
+    }
+    const imgs = ImageUtil.parseImgUrls(kind === "power" ? imgData.power_img_url : imgData.status_check_img_url);
+    body.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = "shot-group";
+    const head = document.createElement("div");
+    head.className = "meta";
+    head.textContent = `총 ${imgs.length}장 — 썸네일을 클릭하면 원본이 새 탭에서 열립니다.`;
+    div.appendChild(head);
+    const grid = document.createElement("div");
+    grid.className = "shot-grid";
+    if (imgs.length) {
+      imgs.forEach((src) => {
+        const a = document.createElement("a");
+        a.href = src;
+        a.target = "_blank";
+        a.rel = "noopener";
+        const img = document.createElement("img");
+        img.src = src;
+        img.loading = "lazy";
+        a.appendChild(img);
+        grid.appendChild(a);
+      });
+    } else {
+      grid.innerHTML = '<span class="meta">등록된 스샷이 없습니다.</span>';
+    }
+    div.appendChild(grid);
+    body.appendChild(div);
+  }
+
+  // ── 장비정보 표 (19슬롯 등급, 첫 열 고정 + 가로 스크롤) ──
+  const GRADE_SHORT = { 절대자: "절", 신화: "신", 전설: "전", 영웅: "영", 희귀: "희" };
+
+  function emptyTableRow(colspan, msg) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = colspan;
+    td.className = "dim";
+    td.style.textAlign = "center";
+    td.textContent = msg;
+    tr.appendChild(td);
+    return tr;
+  }
+
+  function renderEquip(rows) {
+    const wrap = document.getElementById("membersEquipTable");
+    wrap.innerHTML = "";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    const addTh = (text, cls) => {
+      const th = document.createElement("th");
+      th.textContent = text;
+      if (cls) th.className = cls;
+      hr.appendChild(th);
+    };
+    addTh("닉네임", "stick");
+    addTh("요약");
+    GameData.EQUIPMENT_SLOTS.forEach((slot) => addTh(slot, "ctr"));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    if (!rows.length) tbody.appendChild(emptyTableRow(GameData.EQUIPMENT_SLOTS.length + 2, "결사원이 없습니다."));
+    rows.forEach((m) => {
+      const equip = GameData.parseEquipment(m.equipment_info);
+      const tr = document.createElement("tr");
+      const td0 = document.createElement("td");
+      td0.className = "stick";
+      td0.style.fontWeight = "600";
+      td0.textContent = m.current_id || m.user_id;
+      tr.appendChild(td0);
+
+      const counts = {};
+      GameData.EQUIPMENT_SLOTS.forEach((s) => {
+        const g = equip[s];
+        if (GameData.GRADE_COLORS[g]) counts[g] = (counts[g] || 0) + 1;
+      });
+      const tdSum = document.createElement("td");
+      ["절대자", "신화", "전설", "영웅", "희귀"].forEach((g) => {
+        if (!counts[g]) return;
+        const b = document.createElement("b");
+        b.style.color = GameData.GRADE_COLORS[g];
+        b.style.marginRight = "6px";
+        b.textContent = `${GRADE_SHORT[g]}${counts[g]}`;
+        tdSum.appendChild(b);
+      });
+      if (!tdSum.children.length) {
+        tdSum.textContent = "미입력";
+        tdSum.className = "dim";
+      }
+      tr.appendChild(tdSum);
+
+      GameData.EQUIPMENT_SLOTS.forEach((slot) => {
+        const td = document.createElement("td");
+        td.className = "ctr";
+        const g = equip[slot];
+        if (GameData.GRADE_COLORS[g]) {
+          td.textContent = GRADE_SHORT[g] || g;
+          td.style.color = GameData.GRADE_COLORS[g];
+          td.style.fontWeight = "700";
+          td.title = `${slot}: ${g}`;
+        } else {
+          td.textContent = "-";
+          td.classList.add("dim");
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+  }
+
+  // ── 아퀴정보 목록 (아퀴정보목록_개선시안_v2.html — 사람별 요약 + 룬별 현황) ──
+  function aquiColLabel(id) {
+    return id.replace("_pot", "약").replace("_s", "특");
+  }
+
+  const AQUI_GROUP_META = {
+    A: { label: "PVP", bar: "pvp" },
+    B: { label: "지원", bar: "sup" },
+    C: { label: "PVE", bar: "pve" },
+  };
+
+  function aquiAllItems() {
+    return ["A", "B", "C"].flatMap((g) => GameData.AQUI_ITEMS[g].map((it) => ({ ...it, group: g })));
+  }
+
+  // 화면 표시 이름: 직업 매핑의 룬 이름, 없으면 코드 fallback (화면이 깨지지 않게)
+  function runeDisplay(item, cls) {
+    return (cls && GameData.aquiName(item, cls)) || aquiColLabel(item.id);
+  }
+
+  // "특정 룬 기준 보기" 드롭다운 — 현재 직업 필터의 매핑에서 동적 생성
+  function rebuildRuneOptions() {
+    const sel = document.getElementById("qmRune");
+    const clsF = classFilterValue();
+    const prev = runeFilter;
+    sel.innerHTML =
+      `<option value="">특정 룬 기준 보기</option>` +
+      aquiAllItems().map((it) => `<option value="${it.id}">${runeDisplay(it, clsF)}</option>`).join("");
+    sel.value = prev;
+    if (sel.value !== prev) {
+      runeFilter = "";
+      onlyNoMode = false;
+    }
+  }
+
+  function updateAquiToolbar() {
+    document.getElementById("aquiTools").classList.toggle("hidden", activeView !== "aqui");
+    if (activeView !== "aqui") return;
+    rebuildRuneOptions();
+    const onlyNoEl = document.getElementById("qmOnlyNo");
+    onlyNoEl.classList.toggle("hidden", !(runeFilter && aquiView === "p"));
+    onlyNoEl.classList.toggle("on", onlyNoMode);
+    onlyNoEl.textContent = onlyNoMode ? "☑ 미보유만" : "☐ 미보유만";
+  }
+
+  function renderAqui(rows) {
+    const wrap = document.getElementById("membersAquiTable");
+    wrap.innerHTML = "";
+    if (aquiView === "r") renderAquiRunes(wrap, rows);
+    else renderAquiPeople(wrap, rows);
+  }
+
+  // ── 사람별 뷰: 닉네임 | 직업 | 보유 | PVP·지원·PVE 미니바 | (선택 룬) | 행 클릭 펼침 ──
+  function renderAquiPeople(wrap, rows) {
+    const clsF = classFilterValue();
+    const runeItem = runeFilter ? aquiAllItems().find((it) => it.id === runeFilter) : null;
+
+    const entries = rows.map((m) => ({ m, owned: GameData.parseAqui(m.status_check, m.class || "") }));
+    const shown = runeItem && onlyNoMode ? entries.filter((e) => !e.owned[runeItem.id]) : entries;
+
+    if (runeItem) {
+      const note = document.createElement("div");
+      note.className = "runenote";
+      const ownCnt = entries.filter((e) => !!e.owned[runeItem.id]).length;
+      note.innerHTML = `🔎 <b></b> 기준 보기 — "보유" 컬럼이 추가되었습니다. (${clsF || "전체"} ${entries.length}명 중 보유 ${ownCnt}명)`;
+      note.querySelector("b").textContent = runeDisplay(runeItem, clsF);
+      wrap.appendChild(note);
+    }
+
+    const box = document.createElement("div");
+    box.className = "mtable";
+    const table = document.createElement("table");
+    table.className = "aqtable";
+    const colCount = runeItem ? 8 : 7;
+    const hr = document.createElement("tr");
+    hr.innerHTML =
+      `<th>닉네임</th><th>직업</th><th class="num">보유</th><th>PVP</th><th>지원</th><th>PVE</th>` +
+      (runeItem ? `<th class="runeth"></th>` : "") +
+      `<th style="width:30px"></th>`;
+    if (runeItem) hr.querySelector(".runeth").textContent = runeDisplay(runeItem, clsF);
+    table.appendChild(hr);
+
+    if (!shown.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="${colCount}" style="text-align:center;color:var(--txt3)">결사원이 없습니다.</td>`;
+      table.appendChild(tr);
+    }
+
+    shown.forEach(({ m, owned }) => {
+      const secCnt = { A: 0, B: 0, C: 0 };
+      Object.keys(owned).forEach((id) => {
+        if (secCnt[id[0]] !== undefined) secCnt[id[0]] += 1;
+      });
+      const total = Object.keys(owned).length;
+
+      const tr = document.createElement("tr");
+      tr.className = "mrow";
+      const secCell = (g) => {
+        const n = secCnt[g];
+        const pct = Math.round((n / 13) * 100);
+        return `<td><span class="secbar"><span class="bar ${AQUI_GROUP_META[g].bar}"><i style="width:${pct}%"></i></span><span class="cnt${n <= 3 ? " low" : ""}">${n}/13</span></span></td>`;
+      };
+      tr.innerHTML =
+        `<td><b class="nm"></b></td><td class="cnt cls"></td><td class="num"><b>${total}</b>/39</td>` +
+        secCell("A") + secCell("B") + secCell("C") +
+        (runeItem
+          ? owned[runeItem.id]
+            ? `<td class="have">✓ 보유</td>`
+            : `<td class="nothave">— 미보유</td>`
+          : "") +
+        `<td class="chev">▾</td>`;
+      tr.querySelector(".nm").textContent = m.current_id || m.user_id;
+      tr.querySelector(".cls").textContent = m.class || "-";
+
+      // 펼침 상세: 39개 룬 이름 배지 (보유=흰, 신화=금색, 미보유=점선 흐림)
+      const detail = document.createElement("tr");
+      detail.className = "detail";
+      const td = document.createElement("td");
+      td.colSpan = colCount;
+      for (const g of ["A", "B", "C"]) {
+        const dsec = document.createElement("div");
+        dsec.className = "dsec";
+        const dt = document.createElement("div");
+        dt.className = `dt ${AQUI_GROUP_META[g].bar}`;
+        dt.textContent = `${AQUI_GROUP_META[g].label} (13)`;
+        dsec.appendChild(dt);
+        const chips = document.createElement("div");
+        chips.className = "chips";
+        GameData.AQUI_ITEMS[g].forEach((item) => {
+          const grade = owned[item.id];
+          const chip = document.createElement("span");
+          chip.className = "rc " + (grade === "m" ? "myth" : grade ? "own" : "no");
+          chip.textContent = runeDisplay(item, m.class || "");
+          chip.title = `${item.id}${grade === "m" ? " · 신화" : grade ? " · 전설" : " · 미보유"}`;
+          chips.appendChild(chip);
+        });
+        dsec.appendChild(chips);
+        td.appendChild(dsec);
+      }
+      detail.appendChild(td);
+
+      tr.addEventListener("click", () => tr.classList.toggle("open"));
+      table.appendChild(tr);
+      table.appendChild(detail);
+    });
+
+    box.appendChild(table);
+    wrap.appendChild(box);
+
+    const foot = document.createElement("div");
+    foot.style.cssText = "text-align:center;padding:10px;font-size:12.5px;color:var(--txt3)";
+    foot.textContent = `총 ${shown.length}명${clsF ? ` (${clsF})` : ""}${runeItem && onlyNoMode ? " — 미보유만" : ""}`;
+    wrap.appendChild(foot);
+  }
+
+  // ── 룬별 현황 뷰: 미보유 많은 순(수요) → 행 클릭 시 미보유자 참여점수순 (분배 우선순위 후보) ──
+  function renderAquiRunes(wrap, rows) {
+    const clsF = classFilterValue();
+    const note = document.createElement("div");
+    note.className = "runenote gray";
+    note.innerHTML =
+      `💡 미보유 인원이 많은 룬(수요 높음)이 위로 정렬됩니다. 행을 클릭하면 미보유자가 <b>참여점수순</b>으로 표시됩니다 — 이 순서가 분배 우선순위 후보입니다.` +
+      (clsF ? "" : ` <span style="color:var(--txt3)">직업 필터를 선택하면 룬 이름으로 표시됩니다.</span>`);
+    wrap.appendChild(note);
+
+    const entries = rows.map((m) => ({ m, owned: GameData.parseAqui(m.status_check, m.class || "") }));
+    const stats = aquiAllItems().map((it) => {
+      const notOwn = entries.filter((e) => !e.owned[it.id]).map((e) => e.m);
+      notOwn.sort((a, b) => (b.participation_score ?? 0) - (a.participation_score ?? 0));
+      return { it, ownCnt: entries.length - notOwn.length, notOwn };
+    });
+    stats.sort((a, b) => b.notOwn.length - a.notOwn.length);
+
+    const box = document.createElement("div");
+    box.className = "mtable";
+    const table = document.createElement("table");
+    table.className = "aqtable";
+    const hr = document.createElement("tr");
+    hr.innerHTML = `<th>룬 이름</th><th>섹션</th><th class="num">보유 / 전체</th><th class="num">미보유 ↓</th><th>수요</th><th style="width:30px"></th>`;
+    table.appendChild(hr);
+
+    if (!entries.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="6" style="text-align:center;color:var(--txt3)">결사원이 없습니다.</td>`;
+      table.appendChild(tr);
+    } else {
+      stats.forEach(({ it, ownCnt, notOwn }) => {
+        const ratio = notOwn.length / entries.length;
+        const tr = document.createElement("tr");
+        tr.className = "mrow";
+        const mythTag = clsF && GameData.canBeMythic(it, clsF)
+          ? ` <span style="font-size:10px;color:var(--gold-tx)">신화</span>`
+          : "";
+        tr.innerHTML =
+          `<td><b class="rn"></b>${mythTag}</td><td class="cnt sec"></td>` +
+          `<td class="num">${ownCnt} / ${entries.length}</td><td class="num"><b>${notOwn.length}명</b></td>` +
+          `<td><span class="demand ${ratio >= 0.6 ? "d-high" : "d-mid"}">${ratio >= 0.6 ? "수요 높음" : "보통"}</span></td>` +
+          `<td class="chev">▾</td>`;
+        tr.querySelector(".rn").textContent = runeDisplay(it, clsF);
+        tr.querySelector(".sec").textContent = AQUI_GROUP_META[it.group].label;
+
+        const detail = document.createElement("tr");
+        detail.className = "rdetail";
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        if (!notOwn.length) {
+          td.innerHTML = `<span class="meta">전원 보유 중입니다.</span>`;
+        } else {
+          notOwn.slice(0, 10).forEach((m, i) => {
+            const cand = document.createElement("span");
+            cand.className = "cand" + (i < 3 ? " top" : "");
+            const b = document.createElement("b");
+            b.textContent = `${i + 1}. ${m.current_id || m.user_id}`;
+            const sc = document.createElement("span");
+            sc.className = "sc";
+            sc.textContent = `${i === 0 ? "참여 " : ""}${(m.participation_score ?? 0).toLocaleString()}`;
+            cand.appendChild(b);
+            cand.appendChild(sc);
+            td.appendChild(cand);
+          });
+          if (notOwn.length > 10) {
+            const rest = document.createElement("span");
+            rest.className = "cand";
+            rest.innerHTML = `<b>…외 ${notOwn.length - 10}명</b>`;
+            td.appendChild(rest);
+          }
+        }
+        detail.appendChild(td);
+
+        tr.addEventListener("click", () => tr.classList.toggle("ropen"));
+        table.appendChild(tr);
+        table.appendChild(detail);
+      });
+    }
+
+    box.appendChild(table);
+    wrap.appendChild(box);
+    const foot = document.createElement("div");
+    foot.style.cssText = "text-align:center;padding:10px;font-size:12.5px;color:var(--txt3)";
+    foot.textContent = `${clsF || "전체"} 39개 룬 · ${entries.length}명 기준`;
+    wrap.appendChild(foot);
+  }
+
+  // ── 아퀴 매핑 조회 모달 (단일 출처: gamedata.js AQUI_ITEMS — 원본 app.py 상수 이식본) ──
+  function renderAquiMapTable() {
+    const cls = document.getElementById("aquiMapClass").value;
+    const table = document.getElementById("aquiMapTable");
+    table.innerHTML = "";
+    const hr = document.createElement("tr");
+    hr.innerHTML = `<th>코드</th><th>섹션</th><th>룬 이름</th><th>신화 가능</th>`;
+    table.appendChild(hr);
+    aquiAllItems().forEach((it) => {
+      const tr = document.createElement("tr");
+      const name = GameData.aquiName(it, cls);
+      tr.innerHTML = `<td class="cnt"></td><td class="cnt"></td><td class="rn"></td><td class="cnt"></td>`;
+      tr.children[0].textContent = it.id;
+      tr.children[1].textContent = AQUI_GROUP_META[it.group].label;
+      if (name) {
+        tr.children[2].textContent = name;
+        tr.children[2].style.fontWeight = "600";
+      } else {
+        tr.children[2].textContent = "매핑 없음 (코드로 표시됨)";
+        tr.children[2].style.color = "var(--txt3)";
+      }
+      tr.children[3].textContent = GameData.canBeMythic(it, cls) ? "✓" : "";
+      tr.children[3].style.color = "var(--gold-tx)";
+      table.appendChild(tr);
+    });
+  }
+
+  function openAquiMap() {
+    const sel = document.getElementById("aquiMapClass");
+    if (!sel.options.length) {
+      sel.innerHTML = GameData.CLASS_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("");
+    }
+    const clsF = classFilterValue();
+    if (clsF) sel.value = clsF;
+    renderAquiMapTable();
+    document.getElementById("aquiMapBackdrop").classList.add("on");
+  }
+
   function filter() {
     render();
   }
@@ -172,6 +628,31 @@ const Members = (() => {
     document.querySelectorAll(".fchip[data-ri]").forEach((c) => c.classList.remove("on"));
     el.classList.add("on");
     activeRoleFilter = el.dataset.ri;
+    render();
+  }
+
+  function setView(el) {
+    document.querySelectorAll("#memberViewToggle span").forEach((s) => s.classList.remove("on"));
+    el.classList.add("on");
+    activeView = el.dataset.mv;
+    render();
+  }
+
+  function setAquiView(el) {
+    document.querySelectorAll("#aquiViewSwitch span").forEach((s) => s.classList.remove("on"));
+    el.classList.add("on");
+    aquiView = el.dataset.av;
+    render();
+  }
+
+  function setRuneFilter() {
+    runeFilter = document.getElementById("qmRune").value || "";
+    if (!runeFilter) onlyNoMode = false;
+    render();
+  }
+
+  function toggleOnlyNo() {
+    onlyNoMode = !onlyNoMode;
     render();
   }
 
@@ -197,6 +678,7 @@ const Members = (() => {
   function buildAquiEditGrid(aquiMap, memberClass) {
     const wrap = document.getElementById("memberAquiEdit");
     wrap.innerHTML = "";
+    if (!memberClass) wrap.appendChild(GameData.aquiClassNoticeEl());
     for (const group of ["A", "B", "C"]) {
       const info = GameData.AQUI_GROUPS[group];
       const head = document.createElement("div");
@@ -208,9 +690,7 @@ const Members = (() => {
       GameData.AQUI_ITEMS[group].forEach((item) => {
         const field = document.createElement("div");
         field.className = "field";
-        const label = document.createElement("label");
-        label.textContent = GameData.skillLabel(item, memberClass);
-        label.title = GameData.skillLabel(item, memberClass);
+        const label = GameData.aquiLabelEl(item, memberClass);
         const sel = document.createElement("select");
         sel.dataset.aquiId = item.id;
         const opts = [["", "미보유"], ["l", "전설"]];
@@ -417,10 +897,21 @@ const Members = (() => {
   }
 
   function init() {
+    document.getElementById("qmClass").innerHTML =
+      `<option value="">전체 직업</option>` +
+      GameData.CLASS_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("");
     initMemberModal();
     initDeleteModal();
     initRegConfirmModal();
+    document.getElementById("shotCloseBtn").addEventListener("click", () => {
+      document.getElementById("shotModalBackdrop").classList.remove("on");
+    });
+    document.getElementById("aquiMapBtn").addEventListener("click", openAquiMap);
+    document.getElementById("aquiMapCloseBtn").addEventListener("click", () => {
+      document.getElementById("aquiMapBackdrop").classList.remove("on");
+    });
+    document.getElementById("aquiMapClass").addEventListener("change", renderAquiMapTable);
   }
 
-  return { init, load, filter, setRole };
+  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo };
 })();
