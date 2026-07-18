@@ -5,6 +5,7 @@ const DistManage = (() => {
   let statusData = null;
   let statusTab = "브로치";
   let resultData = null;
+  let staffList = []; // 다이아 지급 대상(룻자) 선택용 — 운영진/관리자만
   let historyData = null;
   let confirmAction = null;
 
@@ -252,8 +253,20 @@ const DistManage = (() => {
     }
     document.getElementById("resultStaff").classList.toggle("hidden", !resultData.is_staff);
     document.getElementById("resultMine").innerHTML = "";
-    if (resultData.is_staff) renderResultStaff();
-    else renderResultMine();
+    if (resultData.is_staff) {
+      // 다이아는 룻자(운영진) 계좌로만 지급 — 선택 박스용 운영진 목록
+      if (!staffList.length) {
+        try {
+          const members = await Api.listMembers();
+          staffList = members.filter((m) => m.role === "운영진" || m.role === "관리자");
+        } catch (e) {
+          // 목록 조회 실패 시 선택 박스는 비어 있음 — 다이아 입력 시 검증에서 걸러짐
+        }
+      }
+      renderResultStaff();
+    } else {
+      renderResultMine();
+    }
   }
 
   function renderResultMine() {
@@ -357,7 +370,7 @@ const DistManage = (() => {
         <b style="font-size:14.5px">📦 확정 대기 (${waitRows.length}건)</b>
         <button class="btn sm approveSel">선택 나감 처리 (승인)</button>
       </div>
-      <div class="meta" style="margin:4px 0 6px">다이아/현금을 입력하고 승인하면 즉시 이력에 기록되고 재고 차감·공금 입금(다이아→룻자 계좌, 현금→결사 금고)까지 처리됩니다. 되돌리려면 이력 탭에서 분배취소(관리자).</div>
+      <div class="meta" style="margin:4px 0 6px">다이아/현금을 입력하고 승인하면 즉시 이력에 기록되고 재고 차감·공금 입금까지 처리됩니다. <b>다이아는 선택한 룻자(운영진) 계좌로</b>, 현금은 결사 금고로 들어갑니다. 되돌리려면 이력 탭에서 분배취소(관리자).</div>
       <div class="list wl" style="border:0"></div>`;
     const wl = waitCard.querySelector(".wl");
     if (!waitRows.length) {
@@ -375,6 +388,7 @@ const DistManage = (() => {
           <span class="meta" style="width:44px">${r.qty}개</span>
           <span class="row" style="gap:6px">
             💎<input type="number" class="dia" min="0" placeholder="다이아" style="width:90px;border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+            <select class="loot" title="다이아를 받을 룻자(운영진)" style="border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card)"></select>
             💵<input type="number" class="cash" min="0" placeholder="현금(원)" style="width:110px;border:1px solid var(--line);border-radius:8px;padding:6px 8px">
           </span>
           <span style="margin-left:auto;display:flex;gap:6px">
@@ -383,6 +397,14 @@ const DistManage = (() => {
         row.querySelector(".inm").textContent = r.item_name;
         row.querySelector(".nm").textContent = r.nick;
         row._entry = r;
+
+        // 룻자(운영진) 선택 — 아이템의 룻자 닉과 일치하는 운영진이 있으면 기본 선택
+        const lootSel = row.querySelector(".loot");
+        lootSel.innerHTML =
+          `<option value="">룻자 선택</option>` +
+          staffList.map((m) => `<option value="${m.user_id}">${m.current_id || m.user_id}</option>`).join("");
+        const match = staffList.find((m) => (m.current_id || "") === (r.looter || ""));
+        if (match) lootSel.value = match.user_id;
         row.querySelector(".del").addEventListener("click", () =>
           openConfirm("확정 삭제", `"${r.nick}"님의 [${r.item_name}] 확정을 삭제할까요? (신청 자체가 제거됩니다)`, async () => {
             try {
@@ -408,6 +430,7 @@ const DistManage = (() => {
       }
       const entries = selRows.map((row) => {
         const r = row._entry;
+        const lootSel = row.querySelector(".loot");
         return {
           request_id: r.request_id,
           item_id: r.item_id,
@@ -415,10 +438,20 @@ const DistManage = (() => {
           receiver_name: r.nick,
           diamond: parseInt(row.querySelector(".dia").value, 10) || 0,
           cash: parseInt(row.querySelector(".cash").value, 10) || 0,
+          looter_user_id: lootSel.value || null,
+          looter_name: lootSel.value ? lootSel.options[lootSel.selectedIndex].text : "",
+          item_name: r.item_name,
         };
       });
+      // 다이아는 룻자(운영진) 계좌로만 — 다이아 입력이 있는데 룻자 미선택이면 진행 불가
+      const missingLoot = entries.filter((e2) => e2.diamond > 0 && !e2.looter_user_id);
+      if (missingLoot.length) {
+        toast("resultToast", `다이아를 받을 룻자(운영진)를 선택하세요: ${missingLoot.map((e2) => e2.item_name).join(", ")}`, true);
+        return;
+      }
       const summary = entries
-        .map((e2) => `· ${e2.receiver_name} — 💎${e2.diamond.toLocaleString()} / 💵${e2.cash.toLocaleString()}`)
+        .map((e2) =>
+          `· ${e2.receiver_name} — 💎${e2.diamond.toLocaleString()}${e2.diamond > 0 ? `(→${e2.looter_name})` : ""} / 💵${e2.cash.toLocaleString()}(→금고)`)
         .join("\n");
       openConfirm(
         "나감 처리 (승인)",

@@ -660,23 +660,29 @@ Deno.serve(async (req: Request) => {
           // 무시 (원본도 부가 갱신)
         }
 
-        // 다이아: 룻자 계좌 입금 (uid 없으면 이름으로 조회 → 수령자 → 금고 순 폴백, 원본 8693-8714)
+        // 다이아: 반드시 룻자(운영진) 계좌로 입금 — 수령자 폴백 금지.
+        // 우선순위: UI에서 선택한 룻자 → 아이템의 looter_user_id → looter 이름 매칭 → 결사 금고.
         let diaTo: string | null = null;
         let diaName = "";
         if (diamond > 0) {
-          if (f.looter_user_id) {
+          const chosenLooter = typeof e.looter_user_id === "string" && e.looter_user_id ? e.looter_user_id : null;
+          if (chosenLooter) {
+            const { data: cm } = await supabase.from("members").select("user_id, current_id").eq("user_id", chosenLooter).maybeSingle();
+            if (cm) {
+              diaTo = cm.user_id;
+              diaName = cm.current_id || cm.user_id;
+            }
+          }
+          if (!diaTo && f.looter_user_id) {
             diaTo = f.looter_user_id;
             diaName = f.looter || f.looter_user_id;
-          } else if (f.looter) {
+          }
+          if (!diaTo && f.looter) {
             const { data: lm } = await supabase.from("members").select("user_id, current_id").eq("current_id", f.looter).limit(1);
             if (lm && lm.length) {
               diaTo = lm[0].user_id;
               diaName = lm[0].current_id;
             }
-          }
-          if (!diaTo && receiverUid) {
-            diaTo = receiverUid;
-            diaName = receiverName;
           }
           if (!diaTo) {
             diaTo = "guild_treasury";
