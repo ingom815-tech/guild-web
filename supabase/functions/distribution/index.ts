@@ -688,6 +688,23 @@ Deno.serve(async (req: Request) => {
             diaTo = "guild_treasury";
             diaName = "결사 금고";
           }
+          // 계좌 통합 별칭 (app_settings.dia_account_alias, 예: {"크앙":"admin"} = 곰형→관리자).
+          // 어떤 경로로 곰형이 정해져도 실제 입금은 관리자 계좌로 간다. 분배취소도 같은 별칭 적용(0010).
+          try {
+            const { data: aliasRow } = await supabase.from("app_settings").select("value").eq("key", "dia_account_alias").maybeSingle();
+            if (aliasRow && aliasRow.value) {
+              const alias = JSON.parse(aliasRow.value) as Record<string, string>;
+              if (alias[diaTo]) {
+                const { data: am } = await supabase.from("members").select("user_id, current_id").eq("user_id", alias[diaTo]).maybeSingle();
+                if (am) {
+                  diaTo = am.user_id;
+                  diaName = am.current_id || am.user_id;
+                }
+              }
+            }
+          } catch {
+            // 별칭 설정이 없거나 형식 오류면 원래 대상 유지
+          }
           const { error: diaErr } = await supabase.rpc("apply_treasury_transaction", {
             p_asset_type: "다이아",
             p_direction: "입금",

@@ -254,7 +254,7 @@ const DistManage = (() => {
     document.getElementById("resultStaff").classList.toggle("hidden", !resultData.is_staff);
     document.getElementById("resultMine").innerHTML = "";
     if (resultData.is_staff) {
-      // 다이아는 룻자(운영진) 계좌로만 지급 — 선택 박스용 운영진 목록
+      // 다이아 지급 대상(룻자) 선택 박스용 운영진 목록
       if (!staffList.length) {
         try {
           const members = await Api.listMembers();
@@ -370,7 +370,7 @@ const DistManage = (() => {
         <b style="font-size:14.5px">📦 확정 대기 (${waitRows.length}건)</b>
         <button class="btn sm approveSel">선택 나감 처리 (승인)</button>
       </div>
-      <div class="meta" style="margin:4px 0 6px">다이아/현금을 입력하고 승인하면 즉시 이력에 기록되고 재고 차감·공금 입금까지 처리됩니다. <b>다이아는 선택한 룻자(운영진) 계좌로</b>, 현금은 결사 금고로 들어갑니다. 되돌리려면 이력 탭에서 분배취소(관리자).</div>
+      <div class="meta" style="margin:4px 0 6px">다이아/현금을 입력하고 승인하면 즉시 이력에 기록되고 재고 차감·공금 입금까지 처리됩니다. <b>다이아는 선택한 룻자(운영진) 계좌로</b> (곰형 선택 시 관리자 계좌로 통합), 현금은 결사 금고로 들어갑니다. 되돌리려면 이력 탭에서 분배취소(관리자).</div>
       <div class="list wl" style="border:0"></div>`;
     const wl = waitCard.querySelector(".wl");
     if (!waitRows.length) {
@@ -398,11 +398,17 @@ const DistManage = (() => {
         row.querySelector(".nm").textContent = r.nick;
         row._entry = r;
 
-        // 룻자(운영진) 선택 — 아이템의 룻자 닉과 일치하는 운영진이 있으면 기본 선택
+        // 룻자(운영진) 선택 — 아이템의 룻자 닉과 일치하는 운영진이 있으면 기본 선택.
+        // 곰형은 관리자 계좌로 통합돼 "곰형 (관리자 계좌)"로 표시된다 (서버가 별칭으로 관리자에 입금).
         const lootSel = row.querySelector(".loot");
         lootSel.innerHTML =
           `<option value="">룻자 선택</option>` +
-          staffList.map((m) => `<option value="${m.user_id}">${m.current_id || m.user_id}</option>`).join("");
+          staffList
+            .map((m) => {
+              const label = (m.current_id || m.user_id) + (m.current_id === "곰형" ? " (관리자 계좌)" : "");
+              return `<option value="${m.user_id}">${label}</option>`;
+            })
+            .join("");
         const match = staffList.find((m) => (m.current_id || "") === (r.looter || ""));
         if (match) lootSel.value = match.user_id;
         row.querySelector(".del").addEventListener("click", () =>
