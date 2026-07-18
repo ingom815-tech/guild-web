@@ -212,10 +212,93 @@ Deno.serve(async (req: Request) => {
     kpi.pending_requests = pendingRequests;
   }
 
+  // ── 긴급 데이/나이트 지표 (참여점수 계산과 무관한 별도 참고 데이터) ──
+  // 계산용 조 = member_shift_history에서 effective_season <= 현재 시즌인 가장 최근 행.
+  const { data: shiftRows } = await supabase
+    .from("member_shift_history")
+    .select("user_id, shift, effective_season, id")
+    .lte("effective_season", season)
+    .order("id", { ascending: true });
+  const effectiveShift = new Map<string, string>();
+  for (const r of shiftRows || []) effectiveShift.set(r.user_id, r.shift); // id 오름차순 → 마지막이 최신
+
+  const memberIds = new Set(members.map((m) => m.user_id));
+  let dayMemberIds: string[] = [];
+  let nightMemberIds: string[] = [];
+  for (const [uid, sh] of effectiveShift) {
+    if (!memberIds.has(uid)) continue;
+    if (sh === "day") dayMemberIds.push(uid);
+    else if (sh === "night") nightMemberIds.push(uid);
+  }
+  const unselected = totalMembers - dayMemberIds.length - nightMemberIds.length;
+
+  const { data: emLogs } = await supabase
+    .from("participation_logs")
+    .select("id, shift")
+    .eq("season", season)
+    .eq("activity_type", "긴급")
+    .not("shift", "is", null);
+  const dayLogIds = (emLogs || []).filter((l) => l.shift === "day").map((l) => l.id);
+  const nightLogIds = (emLogs || []).filter((l) => l.shift === "night").map((l) => l.id);
+
+  const attendance = new Map<number, Set<string>>(); // log_id -> user set
+  const allEmIds = [...dayLogIds, ...nightLogIds];
+  if (allEmIds.length) {
+    const { data: att } = await supabase
+      .from("participation_log_members")
+      .select("log_id, user_id")
+      .in("log_id", allEmIds)
+      .not("user_id", "is", null);
+    for (const r of att || []) {
+      if (!attendance.has(r.log_id)) attendance.set(r.log_id, new Set());
+      attendance.get(r.log_id)!.add(r.user_id);
+    }
+  }
+
+  // KPI 데이/나이트 = 해당 조 선택자들의 "자기 조 긴급 참여율" 평균 (조원 0명 또는 로그 0건이면 null → "—")
+  function avgShiftRate(memberList: string[], logIds: number[]): number | null {
+    if (!memberList.length || !logIds.length) return null;
+    let sum = 0;
+    for (const uid of memberList) {
+      let attended = 0;
+      for (const lid of logIds) if (attendance.get(lid)?.has(uid)) attended++;
+      sum += attended / logIds.length;
+    }
+    return Math.round((sum / memberList.length) * 1000) / 10;
+  }
+  // 응집률 = 로그별 (해당 조 선택자 중 참석자 수 ÷ 해당 조 선택 인원)의 평균
+  function avgCohesion(memberList: string[], logIds: number[]): number | null {
+    if (!memberList.length || !logIds.length) return null;
+    const memberSet = new Set(memberList);
+    let sum = 0;
+    for (const lid of logIds) {
+      const attendees = attendance.get(lid) || new Set();
+      let cnt = 0;
+      for (const uid of attendees) if (memberSet.has(uid)) cnt++;
+      sum += cnt / memberList.length;
+    }
+    return Math.round((sum / logIds.length) * 1000) / 10;
+  }
+
+  const shiftMetrics: Record<string, unknown> = {
+    kpi_day_rate: avgShiftRate(dayMemberIds, dayLogIds),
+    kpi_night_rate: avgShiftRate(nightMemberIds, nightLogIds),
+  };
+  if (staff) {
+    shiftMetrics.day_members = dayMemberIds.length;
+    shiftMetrics.night_members = nightMemberIds.length;
+    shiftMetrics.unselected = unselected;
+    shiftMetrics.day_logs = dayLogIds.length;
+    shiftMetrics.night_logs = nightLogIds.length;
+    shiftMetrics.day_cohesion = avgCohesion(dayMemberIds, dayLogIds);
+    shiftMetrics.night_cohesion = avgCohesion(nightMemberIds, nightLogIds);
+  }
+
   return jsonResponse({
     kpi,
     class_distribution: classDistribution,
     key_aqui: keyAqui,
     members: memberRows,
+    shift_metrics: shiftMetrics,
   });
 });

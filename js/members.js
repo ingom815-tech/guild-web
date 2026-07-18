@@ -31,6 +31,7 @@ const Members = (() => {
       const qHit =
         !q ||
         (m.current_id || "").includes(q) ||
+        (m.user_id || "").includes(q) ||
         (m.guild_name || "").includes(q) ||
         (m.class || "").includes(q);
       return roleHit && qHit;
@@ -47,6 +48,7 @@ const Members = (() => {
       row.dataset.id = m.user_id;
       row.innerHTML = `
         <span class="nm"></span>
+        <span style="width:110px" class="meta uid"></span>
         <span style="width:90px" class="meta guild"></span>
         <span style="width:80px" class="meta cls"></span>
         <span style="width:50px">${m.level ?? 0}</span>
@@ -58,6 +60,7 @@ const Members = (() => {
           <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">탈퇴</button>
         </span>`;
       row.querySelector(".nm").textContent = m.current_id || m.user_id;
+      row.querySelector(".uid").textContent = m.user_id;
       row.querySelector(".guild").textContent = m.guild_name || "-";
       row.querySelector(".cls").textContent = m.class || "-";
       const badge = row.querySelector(".role-badge");

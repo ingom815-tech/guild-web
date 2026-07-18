@@ -14,6 +14,8 @@ const Tabs = (() => {
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();
     if (id === "apply") Distribution.load();
+    if (id === "part") Participation.load();
+    if (id === "profile") Profile.load();
   }
   return { go };
 })();
@@ -96,6 +98,8 @@ const App = (() => {
     Treasury.init();
     Dashboard.init();
     Distribution.init();
+    Participation.init();
+    Profile.init();
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {

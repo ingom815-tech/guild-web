@@ -72,14 +72,34 @@ const Dashboard = (() => {
     if (staff && k.avg_power != null) {
       html += `<div class="kpi"><div class="lb">평균 전투력</div><div class="v">${(k.avg_power || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     }
+    // 데이/나이트 = 조 선택자들의 자기 조 긴급 참여율 평균 (선택자 0명 또는 로그 0건이면 "—")
+    const sm = data.shift_metrics || {};
+    const dayRate = sm.kpi_day_rate != null ? `${sm.kpi_day_rate}%` : "—";
+    const nightRate = sm.kpi_night_rate != null ? `${sm.kpi_night_rate}%` : "—";
     html += `<div class="kpi"><div class="lb">평균 참여율</div>
       <div class="p3">
         <div class="seg"><div class="sv">${rate}</div><div class="slb">전체</div></div>
-        <div class="seg"><div class="sv">—</div><div class="slb">데이</div></div>
-        <div class="seg"><div class="sv">—</div><div class="slb">나이트</div></div>
+        <div class="seg"><div class="sv">${dayRate}</div><div class="slb">데이</div></div>
+        <div class="seg"><div class="sv">${nightRate}</div><div class="slb">나이트</div></div>
       </div></div>`;
     html += `<div class="kpi"><div class="lb">평균 기여점수</div><div class="v">${(k.avg_contribution || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     grid.innerHTML = html;
+    renderShiftWidget();
+  }
+
+  // 운영진 전용 한 줄 위젯: 조별 인원 + 이번 회차 긴급 현황 (색 절제, 진회색 숫자)
+  function renderShiftWidget() {
+    const el = document.getElementById("shiftWidget");
+    const sm = data.shift_metrics || {};
+    if (!Auth.isStaff() || sm.day_members === undefined) {
+      el.innerHTML = "";
+      return;
+    }
+    const coh = (v) => (v != null ? `${v}%` : "—");
+    el.innerHTML = `<div class="panel" style="padding:10px 18px;margin-bottom:16px;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;color:var(--txt2)">
+      <span>🚨 데이조 <b style="color:var(--txt)">${sm.day_members}</b>명 · 나이트조 <b style="color:var(--txt)">${sm.night_members}</b>명 · 미선택 <b style="color:var(--txt)">${sm.unselected}</b>명</span>
+      <span>이번 회차: 데이 긴급 <b style="color:var(--txt)">${sm.day_logs}</b>회 (평균 응집률 <b style="color:var(--txt)">${coh(sm.day_cohesion)}</b>) · 나이트 긴급 <b style="color:var(--txt)">${sm.night_logs}</b>회 (평균 응집률 <b style="color:var(--txt)">${coh(sm.night_cohesion)}</b>)</span>
+    </div>`;
   }
 
   // ── 직업 분포 (단색 초록, 최다 직업 = 100%) ──

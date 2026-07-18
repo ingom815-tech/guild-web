@@ -78,6 +78,14 @@ const Api = (() => {
       call("distribution", { method: "PUT", query: { action: "period" }, body: { period_id, new_end } }),
     closeDistributionPeriod: (period_id) =>
       call("distribution", { method: "POST", query: { action: "close" }, body: { period_id } }),
+    getProfile: () => call("profile", { method: "GET" }),
+    setProfileShift: (shift) => call("profile", { method: "POST", body: { shift } }),
+    getParticipationStatus: () => call("participation", { method: "GET", query: { view: "status" } }),
+    getParticipationLogs: () => call("participation", { method: "GET", query: { view: "logs" } }),
+    saveParticipationLogs: (sessions) => call("participation", { method: "POST", body: { sessions } }),
+    deleteParticipationLog: (id) => call("participation", { method: "DELETE", query: { id } }),
+    participationSeasonOp: (op, extra) =>
+      call("participation", { method: "POST", query: { action: "season" }, body: { op, ...(extra || {}) } }),
     getTreasuryBalances: () => call("treasury", { method: "GET", query: { view: "balances" } }),
     getTreasuryHistory: (filters) => call("treasury", { method: "GET", query: { view: "history", ...filters } }),
     createTreasuryTransaction: (tx) => call("treasury", { method: "POST", body: tx }),
