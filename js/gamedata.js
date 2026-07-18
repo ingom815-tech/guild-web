@@ -23,6 +23,12 @@ const GameData = (() => {
     절대자: "#EAB308",
   };
 
+  // 직업 엠블럼 SVG (img/classes/*.svg — 넥슨 공식 클래스 아이콘, 단색이라 CSS mask로 채색)
+  const CLASS_ICONS = {
+    환영검사: "mirageblade", 향사수: "incensearcher", 주문각인사: "runescribe", 집행관: "enforcer",
+    태양감시자: "solarsentinel", 심연추방자: "abyssrevenant", 야만투사: "wildwarrior",
+  };
+
   const AQUI_GROUPS = {
     A: { label: "PVP", color: "#ef4444" },
     B: { label: "지원", color: "#3b82f6" },
@@ -191,7 +197,7 @@ const GameData = (() => {
   }
 
   return {
-    EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS,
+    EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
     aquiName, aquiLabelEl, aquiClassNoticeEl,
