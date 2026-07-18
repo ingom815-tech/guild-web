@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 
@@ -25,6 +25,66 @@
       </div>
       <button type="submit" class="btn" id="loginBtn">로그인</button>
     </form>
+    <div class="meta" style="text-align:center;margin-top:14px">
+      아직 계정이 없나요? <a href="#" id="showRegisterLink" style="color:var(--green-dk);font-weight:600">가입 신청</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 가입 신청 화면 ═══ -->
+<div class="login-wrap hidden" id="registerScreen" style="max-width:640px">
+  <div class="login-card">
+    <h1>📝 결사 가입 신청</h1>
+    <div class="meta" style="text-align:center;margin-bottom:16px">운영진 승인 후 로그인할 수 있습니다.</div>
+    <div class="err-msg" id="registerErr"></div>
+    <form id="registerForm">
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="regUserId">아이디 (고정)</label><input type="text" id="regUserId" autocomplete="off" required></div>
+        <div class="field" style="flex:1"><label for="regNick">닉네임 (게임 내)</label><input type="text" id="regNick" required></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="regPw">비밀번호 (4자 이상)</label><input type="password" id="regPw" autocomplete="new-password" required></div>
+        <div class="field" style="flex:1"><label for="regPw2">비밀번호 확인</label><input type="password" id="regPw2" autocomplete="new-password" required></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="regRole">권한</label>
+          <select id="regRole" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="결사원">결사원</option><option value="운영진">운영진</option></select>
+        </div>
+        <div class="field" style="flex:1"><label for="regGuild">소속결사</label><input type="text" id="regGuild"></div>
+        <div class="field" style="flex:1"><label for="regRank">토벌순위</label><input type="text" id="regRank"></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div class="field" style="flex:1"><label for="regClass">직업</label><select id="regClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+        <div class="field" style="flex:1"><label for="regLevel">레벨</label><input type="number" id="regLevel" min="0" value="0"></div>
+        <div class="field" style="flex:1"><label for="regAbyss">심연</label><input type="text" id="regAbyss"></div>
+        <div class="field" style="flex:1"><label for="regPower">전투력</label><input type="number" id="regPower" min="0" value="0"></div>
+      </div>
+
+      <details style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">⚔️ 장비 정보</summary>
+        <div class="equip-edit-grid" id="regEquipGrid" style="margin-top:8px"></div>
+      </details>
+      <details style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:4px 0">🔮 아퀴룬 정보</summary>
+        <div id="regAquiEdit" style="margin-top:8px"></div>
+      </details>
+
+      <div class="field">
+        <label for="regPowerImg">전투력 스샷 (1장)</label>
+        <input type="file" id="regPowerImg" accept="image/*">
+        <div class="row" id="regPowerPreview" style="gap:6px;margin-top:6px;flex-wrap:wrap"></div>
+      </div>
+      <div class="field">
+        <label for="regAquiImg">아퀴룬 스샷 (5~10장)</label>
+        <input type="file" id="regAquiImg" accept="image/*" multiple>
+        <div class="row" id="regAquiPreview" style="gap:6px;margin-top:6px;flex-wrap:wrap"></div>
+      </div>
+
+      <button type="submit" class="btn" id="regSubmitBtn">가입 신청</button>
+    </form>
+    <div class="meta" style="text-align:center;margin-top:14px">
+      <a href="#" id="backToLoginLink" style="color:var(--txt2)">← 로그인으로 돌아가기</a>
+    </div>
   </div>
 </div>
 
@@ -221,6 +281,7 @@
   <!-- ═══ 내 정보 (실제 동작, 전 회원) ═══ -->
   <section class="screen" id="s-profile">
     <div class="toast" id="profileToast"></div>
+    <div class="note hidden" id="profileLockBanner">🔒 분배 신청 기간 진행 중에는 프로필을 수정할 수 없습니다. (조회만 가능)</div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -228,6 +289,63 @@
           <b style="font-size:15px" id="profileNameLabel">내 정보</b>
           <div class="meta" id="profileMetaLine"></div>
         </div>
+      </div>
+    </div>
+
+    <div class="filterbar">
+      <span class="fchip on" data-pi="info" onclick="Profile.setTab(this)">기본정보</span>
+      <span class="fchip" data-pi="equip" onclick="Profile.setTab(this)">⚔️ 장비</span>
+      <span class="fchip" data-pi="aqui" onclick="Profile.setTab(this)">🔮 아퀴룬</span>
+      <span class="fchip" data-pi="imgs" onclick="Profile.setTab(this)">📸 인증샷</span>
+      <span class="fchip" data-pi="history" onclick="Profile.setTab(this)">🎁 내 분배이력</span>
+    </div>
+
+    <div class="card" id="profilePaneInfo">
+      <form id="profileInfoForm">
+        <div class="row" style="gap:10px">
+          <div class="field" style="flex:1"><label for="pfNick">닉네임</label><input type="text" id="pfNick" required></div>
+          <div class="field" style="flex:1"><label for="pfGuild">소속결사</label><input type="text" id="pfGuild"></div>
+          <div class="field" style="flex:1"><label for="pfRank">토벌순위</label><input type="text" id="pfRank"></div>
+        </div>
+        <div class="row" style="gap:10px">
+          <div class="field" style="flex:1"><label for="pfClass">직업</label><select id="pfClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+          <div class="field" style="flex:1"><label for="pfLevel">레벨</label><input type="number" id="pfLevel" min="0"></div>
+          <div class="field" style="flex:1"><label for="pfAbyss">심연</label><input type="text" id="pfAbyss"></div>
+          <div class="field" style="flex:1"><label for="pfPower">전투력</label><input type="number" id="pfPower" min="0"></div>
+        </div>
+        <div class="field"><label for="pfNewPw">비밀번호 변경 (빈칸이면 유지)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)"></div>
+        <button type="submit" class="btn sm" id="pfInfoSaveBtn">기본정보 저장</button>
+      </form>
+    </div>
+
+    <div class="card hidden" id="profilePaneEquip">
+      <div class="equip-edit-grid" id="pfEquipGrid"></div>
+      <button type="button" class="btn sm" id="pfEquipSaveBtn" style="margin-top:10px">장비 저장</button>
+    </div>
+
+    <div class="card hidden" id="profilePaneAqui">
+      <div id="pfAquiEdit"></div>
+      <button type="button" class="btn sm" id="pfAquiSaveBtn" style="margin-top:10px">아퀴룬 저장</button>
+    </div>
+
+    <div class="card hidden" id="profilePaneImgs">
+      <b style="font-size:14px">⚔️ 전투력 스샷</b>
+      <div class="row" id="pfPowerGallery" style="gap:6px;margin:8px 0;flex-wrap:wrap"></div>
+      <input type="file" id="pfPowerImg" accept="image/*">
+      <button type="button" class="btn sm ghost" id="pfPowerUploadBtn" style="margin-left:8px">전투력 스샷 교체</button>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+        <b style="font-size:14px">🔮 아퀴룬 스샷 (5~10장)</b>
+        <div class="row" id="pfAquiGallery" style="gap:6px;margin:8px 0;flex-wrap:wrap"></div>
+        <input type="file" id="pfAquiImg" accept="image/*" multiple>
+        <button type="button" class="btn sm ghost" id="pfAquiUploadBtn" style="margin-left:8px">아퀴룬 스샷 교체</button>
+      </div>
+      <div class="meta" style="margin-top:8px">※ 업로드하면 기존 스샷 전체가 새 스샷으로 교체됩니다.</div>
+    </div>
+
+    <div class="card hidden" id="profilePaneHistory">
+      <b style="font-size:15px">🎁 내 분배 이력</b>
+      <div class="list" id="pfHistoryList" style="border:0;margin-top:8px">
+        <div class="irow meta" id="pfHistoryEmpty" style="display:none">분배 이력이 없습니다.</div>
       </div>
     </div>
 
@@ -249,6 +367,12 @@
   <!-- ═══ 운영진: 결사원 관리 (실제 동작) ═══ -->
   <section class="screen" id="s-members">
     <div class="toast" id="membersToast"></div>
+
+    <div class="card hidden" id="regRequestsCard">
+      <b style="font-size:15px;color:var(--amber-dk)">📮 가입 신청 (<span id="regRequestsCount">0</span>건 대기)</b>
+      <div class="list" id="regRequestsList" style="border:0;margin-top:8px"></div>
+    </div>
+
     <div class="filterbar">
       <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
       <span class="fchip on" data-ri="전체" onclick="Members.setRole(this)">전체</span>
@@ -473,6 +597,18 @@
   </div>
 </div>
 
+<!-- ═══ 가입 신청 승인/거절 확인 모달 ═══ -->
+<div class="modal-backdrop" id="regConfirmBackdrop">
+  <div class="modal">
+    <h3 id="regConfirmTitle">확인</h3>
+    <p id="regConfirmMsg"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="regConfirmCancelBtn">취소</button>
+      <button type="button" class="btn sm" id="regConfirmYesBtn">실행</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ 참여율 관리 확인 모달 (시즌 마감/초기화/로그 삭제 공용) ═══ -->
 <div class="modal-backdrop" id="partConfirmBackdrop">
   <div class="modal">
@@ -587,19 +723,21 @@
   </div>
 </div>
 
-<script src="js/config.js?v=13"></script>
-<script src="js/api.js?v=13"></script>
-<script src="js/auth.js?v=13"></script>
-<script src="js/logParser.js?v=13"></script>
-<script src="js/gamedata.js?v=13"></script>
-<script src="js/inventory.js?v=13"></script>
-<script src="js/members.js?v=13"></script>
-<script src="js/treasury.js?v=13"></script>
-<script src="js/dashboard.js?v=13"></script>
-<script src="js/distribution.js?v=13"></script>
-<script src="js/participationParser.js?v=13"></script>
-<script src="js/participation.js?v=13"></script>
-<script src="js/profile.js?v=13"></script>
-<script src="js/app.js?v=13"></script>
+<script src="js/config.js?v=14"></script>
+<script src="js/api.js?v=14"></script>
+<script src="js/auth.js?v=14"></script>
+<script src="js/logParser.js?v=14"></script>
+<script src="js/gamedata.js?v=14"></script>
+<script src="js/imageUtil.js?v=14"></script>
+<script src="js/inventory.js?v=14"></script>
+<script src="js/members.js?v=14"></script>
+<script src="js/treasury.js?v=14"></script>
+<script src="js/dashboard.js?v=14"></script>
+<script src="js/distribution.js?v=14"></script>
+<script src="js/participationParser.js?v=14"></script>
+<script src="js/participation.js?v=14"></script>
+<script src="js/profile.js?v=14"></script>
+<script src="js/register.js?v=14"></script>
+<script src="js/app.js?v=14"></script>
 </body>
 </html>

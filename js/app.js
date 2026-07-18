@@ -100,6 +100,7 @@ const App = (() => {
     Distribution.init();
     Participation.init();
     Profile.init();
+    Register.init();
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {

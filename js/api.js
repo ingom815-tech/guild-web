@@ -80,6 +80,15 @@ const Api = (() => {
       call("distribution", { method: "POST", query: { action: "close" }, body: { period_id } }),
     getProfile: () => call("profile", { method: "GET" }),
     setProfileShift: (shift) => call("profile", { method: "POST", body: { shift } }),
+    updateProfile: (patch) => call("profile", { method: "PUT", body: patch }),
+    uploadProfileImages: (kind, images) =>
+      call("profile", { method: "POST", query: { action: "images" }, body: { kind, images } }),
+    register: (payload) => call("register", { method: "POST", body: payload }),
+    getRegistrations: () => call("members", { method: "GET", query: { view: "registrations" } }),
+    approveRegistration: (request_id) =>
+      call("members", { method: "POST", query: { action: "approve" }, body: { request_id } }),
+    rejectRegistration: (request_id) =>
+      call("members", { method: "POST", query: { action: "reject" }, body: { request_id } }),
     getParticipationStatus: () => call("participation", { method: "GET", query: { view: "status" } }),
     getParticipationLogs: () => call("participation", { method: "GET", query: { view: "logs" } }),
     saveParticipationLogs: (sessions) => call("participation", { method: "POST", body: { sessions } }),

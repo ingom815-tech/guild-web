@@ -21,6 +21,91 @@ const Members = (() => {
       return;
     }
     render();
+    loadRegistrations();
+  }
+
+  // ── 가입 신청 관리 ──
+  let regConfirmAction = null;
+
+  async function loadRegistrations() {
+    let regs = [];
+    try {
+      regs = await Api.getRegistrations();
+    } catch (e) {
+      return; // 조회 실패 시 카드만 숨김
+    }
+    const card = document.getElementById("regRequestsCard");
+    card.classList.toggle("hidden", !regs.length);
+    document.getElementById("regRequestsCount").textContent = regs.length;
+    const listEl = document.getElementById("regRequestsList");
+    listEl.innerHTML = "";
+
+    regs.forEach((r) => {
+      const row = document.createElement("div");
+      row.className = "irow";
+      row.style.flexWrap = "wrap";
+      const powerImgs = ImageUtil.parseImgUrls(r.power_img_url);
+      const aquiImgs = ImageUtil.parseImgUrls(r.status_check_img_url);
+      const thumb = (src) =>
+        `<a href="${src}" target="_blank"><img src="${src}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"></a>`;
+      row.innerHTML = `
+        <div style="min-width:200px">
+          <b class="nm"></b> <span class="meta uid"></span>
+          <div class="meta detail"></div>
+        </div>
+        <div class="row" style="gap:4px;flex-wrap:wrap">
+          ${powerImgs.map(thumb).join("")}${aquiImgs.map(thumb).join("")}
+        </div>
+        <span style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn sm" data-act="approve">승인</button>
+          <button class="btn sm ghost" data-act="reject" style="color:#A32D2D">거절</button>
+        </span>`;
+      row.querySelector(".nm").textContent = r.current_id || r.user_id;
+      row.querySelector(".uid").textContent = `(${r.user_id})`;
+      row.querySelector(".detail").textContent =
+        `${r.role || "결사원"} · ${r.class || "-"} · Lv ${r.level ?? 0} · 전투력 ${(r.power ?? 0).toLocaleString()} · ${r.guild_name || "-"}` +
+        ` · 스샷 전투력 ${powerImgs.length}장/아퀴 ${aquiImgs.length}장`;
+      row.querySelector('[data-act="approve"]').addEventListener("click", () => {
+        openRegConfirm("가입 승인", `"${r.current_id || r.user_id}"님의 가입을 승인할까요? 즉시 로그인 가능해집니다.`, async () => {
+          await Api.approveRegistration(r.id);
+          toast(`✓ ${r.current_id || r.user_id} 가입 승인 완료`);
+          await load();
+        });
+      });
+      row.querySelector('[data-act="reject"]').addEventListener("click", () => {
+        openRegConfirm("가입 거절", `"${r.current_id || r.user_id}"님의 가입 신청을 거절할까요?`, async () => {
+          await Api.rejectRegistration(r.id);
+          toast(`가입 신청을 거절했습니다.`);
+          await load();
+        });
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  function openRegConfirm(title, msg, action) {
+    regConfirmAction = action;
+    document.getElementById("regConfirmTitle").textContent = title;
+    document.getElementById("regConfirmMsg").textContent = msg;
+    document.getElementById("regConfirmBackdrop").classList.add("on");
+  }
+
+  function initRegConfirmModal() {
+    document.getElementById("regConfirmCancelBtn").addEventListener("click", () => {
+      regConfirmAction = null;
+      document.getElementById("regConfirmBackdrop").classList.remove("on");
+    });
+    document.getElementById("regConfirmYesBtn").addEventListener("click", async () => {
+      const action = regConfirmAction;
+      regConfirmAction = null;
+      document.getElementById("regConfirmBackdrop").classList.remove("on");
+      if (!action) return;
+      try {
+        await action();
+      } catch (err) {
+        toast(err.message || "처리 실패", true);
+      }
+    });
   }
 
   function render() {
@@ -334,6 +419,7 @@ const Members = (() => {
   function init() {
     initMemberModal();
     initDeleteModal();
+    initRegConfirmModal();
   }
 
   return { init, load, filter, setRole };

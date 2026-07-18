@@ -195,8 +195,82 @@ Deno.serve(async (req: Request) => {
   }
 
   const url = new URL(req.url);
+  const action = url.searchParams.get("action");
+
+  // ── 가입 신청 승인/거절 (원본 approve_registration/reject_registration, database.py:3300) ──
+  if ((action === "approve" || action === "reject") && req.method === "POST") {
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+    const reqId = Number(body.request_id);
+    if (!reqId) return jsonResponse({ error: "request_id가 필요합니다." }, 400);
+
+    const { data: reg, error: regErr } = await supabase
+      .from("registration_requests")
+      .select("*")
+      .eq("id", reqId)
+      .maybeSingle();
+    if (regErr || !reg) return jsonResponse({ error: "해당 가입 신청을 찾을 수 없습니다." }, 404);
+    if (reg.status !== "대기") return jsonResponse({ error: `이미 처리된 신청입니다 (${reg.status}).` }, 409);
+
+    if (action === "reject") {
+      const { error } = await supabase
+        .from("registration_requests")
+        .update({ status: "거절" })
+        .eq("id", reqId);
+      if (error) return jsonResponse({ error: "거절 처리에 실패했습니다." }, 500);
+      return jsonResponse({ ok: true });
+    }
+
+    // 승인: members UPSERT (기존 회원이면 신청 내용으로 갱신 — 원본 ON CONFLICT DO UPDATE와 동일)
+    const memberRow = {
+      user_id: reg.user_id,
+      password: reg.password, // 신청 시점에 이미 bcrypt 해시됨
+      current_id: reg.current_id,
+      guild_name: reg.guild_name,
+      subjugation_rank: reg.subjugation_rank,
+      level: reg.level ?? 0,
+      class: reg.class,
+      abyss_level: reg.abyss_level,
+      power: reg.power ?? 0,
+      role: reg.role || "결사원",
+      equipment_info: reg.equipment_info,
+      status_check: reg.status_check,
+      power_img_url: reg.power_img_url,
+      status_check_img_url: reg.status_check_img_url,
+      contribution_score: Math.round((reg.power ?? 0) * 0.3), // 신규 회원 참여점수 0 기준
+    };
+    const { error: upsertErr } = await supabase
+      .from("members")
+      .upsert(memberRow, { onConflict: "user_id" });
+    if (upsertErr) return jsonResponse({ error: "회원 등록에 실패했습니다." }, 500);
+
+    const { error: stErr } = await supabase
+      .from("registration_requests")
+      .update({ status: "승인", approved_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19) })
+      .eq("id", reqId);
+    if (stErr) return jsonResponse({ error: "신청 상태 갱신에 실패했습니다." }, 500);
+
+    return jsonResponse({ ok: true, user_id: reg.user_id });
+  }
 
   if (req.method === "GET") {
+    const view = url.searchParams.get("view");
+
+    // 가입 신청 목록 (대기 중)
+    if (view === "registrations") {
+      const { data, error } = await supabase
+        .from("registration_requests")
+        .select("id, user_id, current_id, role, guild_name, subjugation_rank, level, class, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, requested_at, status")
+        .eq("status", "대기")
+        .order("requested_at", { ascending: true });
+      if (error) return jsonResponse({ error: "가입 신청 조회에 실패했습니다." }, 500);
+      return jsonResponse(data);
+    }
+
     const { data, error } = await supabase
       .from("members")
       .select(
