@@ -44,6 +44,7 @@ const Auth = (() => {
 
   function applyRoleUI(user) {
     document.body.classList.toggle("staff", isStaff(user));
+    document.body.classList.toggle("admin", user.role === "관리자");
     const badge = document.getElementById("userRoleBadge");
     const greet = document.getElementById("userGreeting");
     if (badge) {

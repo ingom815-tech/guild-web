@@ -155,6 +155,79 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "알 수 없는 시즌 작업입니다." }, 400);
   }
 
+  // ── 참석 명단 보정 (관리자 전용 — 로그 관리 탭 숨김 기능) ──
+  // 점수·참여율 무결성을 위해 "기존 세션의 참석 여부"만 조정한다: 추가 = 횟수 +1/점수 +100, 제거 = 반대.
+  // 가짜 세션을 만들지 않으므로 전체 세션 수(참여율 분모)는 변하지 않는다. 처리 후 즉시 재계산.
+  if ((action === "add_member" || action === "remove_member") && req.method === "POST") {
+    if (!isAdmin(user)) return jsonResponse({ error: "참석 보정은 관리자만 가능합니다." }, 403);
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+    const logId = Number(body.log_id);
+    if (!logId) return jsonResponse({ error: "log_id가 필요합니다." }, 400);
+
+    const season = await getCurrentSeason();
+    const { data: log } = await supabase
+      .from("participation_logs")
+      .select("id, season")
+      .eq("id", logId)
+      .maybeSingle();
+    if (!log) return jsonResponse({ error: "해당 로그를 찾을 수 없습니다." }, 404);
+    if (log.season !== season) {
+      return jsonResponse({ error: "현재 시즌 로그만 보정할 수 있습니다. (지난 시즌은 마감 스냅샷 보존)" }, 400);
+    }
+
+    if (action === "add_member") {
+      const userId = typeof body.user_id === "string" ? body.user_id : "";
+      if (!userId) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+      const { data: member } = await supabase
+        .from("members")
+        .select("user_id, current_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!member) return jsonResponse({ error: "해당 결사원을 찾을 수 없습니다." }, 404);
+      const { data: dup } = await supabase
+        .from("participation_log_members")
+        .select("id")
+        .eq("log_id", logId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (dup) return jsonResponse({ error: "이미 이 세션의 참석자입니다." }, 400);
+      const { error: insErr } = await supabase.from("participation_log_members").insert({
+        log_id: logId,
+        user_id: userId,
+        member_name: member.current_id || userId,
+        squad_no: 0,
+        matched: true,
+      });
+      if (insErr) return jsonResponse({ error: "참석자 추가에 실패했습니다." }, 500);
+    } else {
+      // remove_member: 매칭 행은 user_id로, 미매칭 행은 member_name으로 제거
+      const userId = typeof body.user_id === "string" ? body.user_id : "";
+      const memberName = typeof body.member_name === "string" ? body.member_name : "";
+      let q = supabase.from("participation_log_members").delete().eq("log_id", logId);
+      if (userId) q = q.eq("user_id", userId);
+      else if (memberName) q = q.eq("member_name", memberName).is("user_id", null);
+      else return jsonResponse({ error: "user_id 또는 member_name이 필요합니다." }, 400);
+      const { data: removed, error: delErr } = await q.select("id");
+      if (delErr) return jsonResponse({ error: "참석자 제거에 실패했습니다." }, 500);
+      if (!removed || !removed.length) return jsonResponse({ error: "해당 참석 기록을 찾을 수 없습니다." }, 404);
+    }
+
+    // 표시용 인원수를 실제 명단 수와 일치시킴
+    const { count: newCount } = await supabase
+      .from("participation_log_members")
+      .select("id", { count: "exact", head: true })
+      .eq("log_id", logId);
+    await supabase.from("participation_logs").update({ total_participants: newCount ?? 0 }).eq("id", logId);
+
+    await supabase.rpc("recalc_participation_scores", { p_season: season });
+    return jsonResponse({ ok: true, total_participants: newCount ?? 0 });
+  }
+
   // ── 조회 ──
   if (req.method === "GET") {
     const view = url.searchParams.get("view") || "status";
@@ -190,6 +263,45 @@ Deno.serve(async (req: Request) => {
           unmatched_count: counts.get(l.id)?.unmatched || 0,
         })),
       );
+    }
+
+    // 시즌별 참여 기록 (season_participation 스냅샷 — 시즌 선택 조회)
+    if (view === "season_scores") {
+      const target = Number(url.searchParams.get("season")) || season;
+      const { data: seasonRows } = await supabase.from("season_participation").select("season");
+      const seasons = [...new Set((seasonRows || []).map((r) => r.season))].sort((a, b) => b - a);
+      const { data: rows, error } = await supabase
+        .from("season_participation")
+        .select("user_id, participation_score, participation_rate, bontu_score, siteum_score, uni_score, gyeoldun_score, byeolbong_score, saebyeok_score")
+        .eq("season", target)
+        .order("participation_score", { ascending: false });
+      if (error) return jsonResponse({ error: "시즌 기록 조회에 실패했습니다." }, 500);
+      const { data: mem } = await supabase.from("members").select("user_id, current_id, class");
+      const memMap = new Map((mem || []).map((m) => [m.user_id, m]));
+      return jsonResponse({
+        season: target,
+        current_season: season,
+        seasons,
+        rows: (rows || []).map((r) => ({
+          ...r,
+          current_id: memMap.get(r.user_id)?.current_id || r.user_id,
+          class: memMap.get(r.user_id)?.class || "",
+        })),
+      });
+    }
+
+    // 로그 1건의 참석 명단 (로그 관리 상세 펼침용)
+    if (view === "log_members") {
+      const id = Number(url.searchParams.get("id"));
+      if (!id) return jsonResponse({ error: "id가 필요합니다." }, 400);
+      const { data, error } = await supabase
+        .from("participation_log_members")
+        .select("member_name, squad_no, matched, user_id")
+        .eq("log_id", id)
+        .order("squad_no", { ascending: true })
+        .order("member_name", { ascending: true });
+      if (error) return jsonResponse({ error: "명단 조회에 실패했습니다." }, 500);
+      return jsonResponse(data || []);
     }
 
     // view === "status"

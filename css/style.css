@@ -21,6 +21,8 @@ h1{font-size:19px;font-weight:600}
 body.staff .staff-only{display:flex!important}
 body.staff .blk.staff-only{display:block!important}
 body.staff .cell.staff-only{display:table-cell!important}
+.admin-only{display:none!important}
+body.admin .admin-only{display:flex!important}
 .divider{width:1px;background:var(--line);margin:6px 6px 6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -448,6 +450,20 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
   .myth-scroll th:first-child,.myth-scroll td:first-child{position:sticky;left:0;background:var(--card);z-index:1}
   .myth-scroll{overflow:auto}
 }
+
+/* ── 로그 관리: 참여 로그 명단 펼침 ── */
+.lad-detail{display:none;flex-basis:100%;width:100%;background:#fafbfc;border:1px solid #f1f2f4;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12.5px;color:var(--txt2)}
+.irow.open .lad-detail{display:block}
+.irow.open .chev{transform:rotate(180deg)}
+.lad-squad{margin-bottom:3px;line-height:1.7;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.lad-squad b{color:var(--txt);margin-right:2px}
+.lad-un{color:#A32D2D}
+.lad-chip{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:12px}
+.lad-chip.lad-un{border-color:#F3B9B9}
+.lad-chip .lad-x{color:var(--txt3);cursor:pointer;font-size:10.5px;padding:0 1px}
+.lad-chip .lad-x:hover{color:#A32D2D}
+.lad-add{display:flex;gap:6px;margin-top:8px;align-items:center}
+.lad-add select{border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12.5px;background:#fff;max-width:200px}
 
 /* ── 장비/아퀴 편집 (수정 모달) ── */
 .equip-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}

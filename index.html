@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=39">
-<link rel="stylesheet" href="css/style.css?v=39">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=43">
+<link rel="stylesheet" href="css/style.css?v=43">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=39" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=43" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,7 +91,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=39" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=43" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -110,6 +110,7 @@
     <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)"><span class="lf">참여율 관리</span><span class="ls">참여율</span></div>
     <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)"><span class="lf">재고 관리</span><span class="ls">재고</span></div>
     <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
+    <div class="tab staff admin-only" data-s="logs" onclick="Tabs.go('logs',this)"><span class="lf">로그 관리</span><span class="ls">로그</span></div>
   </div>
 
   <!-- 분배 하위 탭 (분배 상위 탭 선택 시에만 표시) -->
@@ -570,6 +571,16 @@
         <div class="irow meta" id="partLogEmpty" style="display:none">이번 시즌 입력된 로그가 없습니다.</div>
       </div>
     </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <b style="font-size:15px">📚 시즌별 참여 기록</b>
+        <select id="partSeasonSel" onchange="Participation.loadSeasonScores()" style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;background:var(--card)"></select>
+      </div>
+      <div class="meta" id="partSeasonNote" style="margin-bottom:8px"></div>
+      <div class="mtable" style="max-height:60vh;overflow:auto"><table id="partSeasonTable"></table></div>
+      <div class="meta" id="partSeasonEmpty" style="display:none;text-align:center;padding:20px">이 시즌의 기록이 없습니다.</div>
+    </div>
   </section>
 
   <!-- ═══ 운영진: 재고 관리 (실제 동작) ═══ -->
@@ -673,6 +684,41 @@
       <div id="unmatchedList" style="max-height:360px;overflow-y:auto"></div>
     </div>
   </section>
+
+  <!-- ═══ 관리자: 로그 관리 (참여/재고 로그 조회·삭제 — 삭제 시 데이터 롤백) ═══ -->
+  <section class="screen" id="s-logs">
+    <div class="toast" id="logAdmToast"></div>
+    <div class="subtabs">
+      <span class="stab on" data-la="part" onclick="LogAdmin.setTab(this)">참여 로그 <span class="cnt" id="logAdmPartCnt">0</span></span>
+      <span class="stab" data-la="inv" onclick="LogAdmin.setTab(this)">재고 로그 <span class="cnt" id="logAdmInvCnt">0</span></span>
+    </div>
+
+    <div id="logAdmPart">
+      <div class="note" style="margin-bottom:10px">참여 로그를 삭제하면 그 로그의 출석 기록이 제거되고, 이번 시즌 참여점수가 즉시 재계산(롤백)됩니다. 목록은 이번 시즌 로그입니다.</div>
+      <div class="list" id="logAdmPartList">
+        <div class="irow meta" id="logAdmPartEmpty" style="display:none">이번 시즌 참여 로그가 없습니다.</div>
+      </div>
+    </div>
+
+    <div class="hidden" id="logAdmInv">
+      <div class="note" style="margin-bottom:10px">재고 로그(등록된 드랍템)를 삭제하면 그 아이템에 걸린 분배 신청도 함께 삭제(롤백)됩니다. 최근 등록순입니다.</div>
+      <div class="list" id="logAdmInvList">
+        <div class="irow meta" id="logAdmInvEmpty" style="display:none">등록된 재고 로그가 없습니다.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══ 로그 관리 삭제 확인 모달 ═══ -->
+<div class="modal-backdrop" id="logAdmConfirmBackdrop">
+  <div class="modal">
+    <h3 id="logAdmConfirmTitle">로그 삭제</h3>
+    <p id="logAdmConfirmMsg"></p>
+    <div class="row">
+      <button type="button" class="btn ghost sm" id="logAdmCancelBtn">취소</button>
+      <button type="button" class="btn danger sm" id="logAdmOkBtn">삭제 (롤백 포함)</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ 일괄 등록 확인 모달 ═══ -->
@@ -899,22 +945,23 @@
   </div>
 </div>
 
-<script src="js/config.js?v=39"></script>
-<script src="js/api.js?v=39"></script>
-<script src="js/auth.js?v=39"></script>
-<script src="js/logParser.js?v=39"></script>
-<script src="js/gamedata.js?v=39"></script>
-<script src="js/imageUtil.js?v=39"></script>
-<script src="js/inventory.js?v=39"></script>
-<script src="js/members.js?v=39"></script>
-<script src="js/treasury.js?v=39"></script>
-<script src="js/dashboard.js?v=39"></script>
-<script src="js/distribution.js?v=39"></script>
-<script src="js/distManage.js?v=39"></script>
-<script src="js/participationParser.js?v=39"></script>
-<script src="js/participation.js?v=39"></script>
-<script src="js/profile.js?v=39"></script>
-<script src="js/register.js?v=39"></script>
-<script src="js/app.js?v=39"></script>
+<script src="js/config.js?v=43"></script>
+<script src="js/api.js?v=43"></script>
+<script src="js/auth.js?v=43"></script>
+<script src="js/logParser.js?v=43"></script>
+<script src="js/gamedata.js?v=43"></script>
+<script src="js/imageUtil.js?v=43"></script>
+<script src="js/inventory.js?v=43"></script>
+<script src="js/members.js?v=43"></script>
+<script src="js/treasury.js?v=43"></script>
+<script src="js/dashboard.js?v=43"></script>
+<script src="js/distribution.js?v=43"></script>
+<script src="js/distManage.js?v=43"></script>
+<script src="js/participationParser.js?v=43"></script>
+<script src="js/participation.js?v=43"></script>
+<script src="js/profile.js?v=43"></script>
+<script src="js/register.js?v=43"></script>
+<script src="js/logAdmin.js?v=43"></script>
+<script src="js/app.js?v=43"></script>
 </body>
 </html>

@@ -33,6 +33,7 @@ const Tabs = (() => {
     if (id === "dashboard") Dashboard.load();
     if (id === "part") Participation.load();
     if (id === "profile") Profile.load();
+    if (id === "logs") LogAdmin.load();
   }
 
   function goDist(sub) {
@@ -128,6 +129,7 @@ const App = (() => {
     Participation.init();
     Profile.init();
     Register.init();
+    LogAdmin.init();
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {

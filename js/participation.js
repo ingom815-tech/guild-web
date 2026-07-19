@@ -38,6 +38,52 @@ const Participation = (() => {
     renderSeason();
     renderStatusTable();
     renderLogs();
+    loadSeasonScores(); // 시즌별 기록은 별도 조회 — 실패해도 나머지 화면은 유지
+  }
+
+  // ── 시즌별 참여 기록 (season_participation 스냅샷 조회) ──
+  async function loadSeasonScores() {
+    const sel = document.getElementById("partSeasonSel");
+    const season = sel.value ? Number(sel.value) : undefined;
+    let data;
+    try {
+      data = await Api.getSeasonScores(season);
+    } catch (e) {
+      document.getElementById("partSeasonNote").textContent =
+        `시즌별 기록 조회 실패: ${e.message || ""} — participation 함수가 최신 버전인지 확인해주세요.`;
+      return;
+    }
+    sel.innerHTML = (data.seasons || []).length
+      ? data.seasons.map((s) => `<option value="${s}"${s === data.season ? " selected" : ""}>시즌 ${s}${s === data.current_season ? " (현재)" : ""}</option>`).join("")
+      : `<option value="${data.season}" selected>시즌 ${data.season}</option>`;
+    document.getElementById("partSeasonNote").textContent =
+      data.season === data.current_season
+        ? "현재 진행 중인 시즌의 스냅샷입니다 (로그 저장·삭제 시 갱신)."
+        : `시즌 ${data.season} 마감 시점의 확정 기록입니다.`;
+
+    const rows = data.rows || [];
+    document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
+    const table = document.getElementById("partSeasonTable");
+    let html = `<tr><th>닉네임</th><th>직업</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">참여점수</th><th class="num">참여율</th></tr>`;
+    html += rows
+      .map((r) => {
+        const rate = r.participation_rate != null ? `${r.participation_rate}%` : "—";
+        const rateHtml = r.participation_rate != null && r.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        return `<tr>
+          <td><b class="nm"></b></td>
+          <td class="gtext cls"></td>
+          ${ACTIVITIES.map((a) => `<td class="num gtext">${r[ACTIVITY_COLS[a]] || 0}</td>`).join("")}
+          <td class="num"><b>${(r.participation_score || 0).toLocaleString()}</b></td>
+          <td class="num">${rateHtml}</td>
+        </tr>`;
+      })
+      .join("");
+    table.innerHTML = html;
+    const trs = table.querySelectorAll("tr");
+    rows.forEach((r, i) => {
+      trs[i + 1].querySelector(".nm").textContent = r.current_id || r.user_id;
+      trs[i + 1].querySelector(".cls").textContent = r.class || "-";
+    });
   }
 
   function renderSeason() {
@@ -311,5 +357,5 @@ const Participation = (() => {
     document.getElementById("qp").addEventListener("input", filter);
   }
 
-  return { init, load, filter };
+  return { init, load, filter, loadSeasonScores };
 })();

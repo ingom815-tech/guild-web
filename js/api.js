@@ -113,6 +113,13 @@ const Api = (() => {
       call("members", { method: "POST", query: { action: "reject" }, body: { request_id } }),
     getParticipationStatus: () => call("participation", { method: "GET", query: { view: "status" } }),
     getParticipationLogs: () => call("participation", { method: "GET", query: { view: "logs" } }),
+    getParticipationLogMembers: (id) => call("participation", { method: "GET", query: { view: "log_members", id } }),
+    getSeasonScores: (season) =>
+      call("participation", { method: "GET", query: season ? { view: "season_scores", season } : { view: "season_scores" } }),
+    addLogMember: (log_id, user_id) =>
+      call("participation", { method: "POST", query: { action: "add_member" }, body: { log_id, user_id } }),
+    removeLogMember: (log_id, ident) =>
+      call("participation", { method: "POST", query: { action: "remove_member" }, body: { log_id, ...ident } }),
     saveParticipationLogs: (sessions) => call("participation", { method: "POST", body: { sessions } }),
     deleteParticipationLog: (id) => call("participation", { method: "DELETE", query: { id } }),
     participationSeasonOp: (op, extra) =>
