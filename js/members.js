@@ -28,25 +28,37 @@ const Members = (() => {
     loadRegistrations();
   }
 
-  // ── 가입 신청 관리 ──
+  // ── 가입 신청 관리 (하위탭) ──
   let regConfirmAction = null;
+
+  // 하위탭 전환: 결사원 목록 ↔ 가입 신청
+  function setSection(el) {
+    document.querySelectorAll(".stab[data-ms]").forEach((c) => c.classList.remove("on"));
+    el.classList.add("on");
+    const section = el.dataset.ms;
+    document.getElementById("membersSectionList").classList.toggle("hidden", section !== "list");
+    document.getElementById("membersSectionReg").classList.toggle("hidden", section !== "reg");
+    if (section === "reg") loadRegistrations();
+  }
 
   async function loadRegistrations() {
     let regs = [];
     try {
       regs = await Api.getRegistrations();
     } catch (e) {
-      return; // 조회 실패 시 카드만 숨김
+      return; // 조회 실패 시 기존 표시 유지
     }
-    const card = document.getElementById("regRequestsCard");
-    card.classList.toggle("hidden", !regs.length);
-    document.getElementById("regRequestsCount").textContent = regs.length;
+    const cnt = document.getElementById("regRequestsCount");
+    cnt.textContent = regs.length;
+    cnt.classList.toggle("alert", regs.length > 0); // 대기 건이 있으면 탭 배지를 주황으로
     const listEl = document.getElementById("regRequestsList");
-    listEl.innerHTML = "";
+    listEl.querySelectorAll(".irow[data-reg]").forEach((el) => el.remove());
+    document.getElementById("regRequestsEmpty").style.display = regs.length ? "none" : "flex";
 
     regs.forEach((r) => {
       const row = document.createElement("div");
       row.className = "irow";
+      row.dataset.reg = r.id;
       row.style.flexWrap = "wrap";
       const powerImgs = ImageUtil.parseImgUrls(r.power_img_url);
       const aquiImgs = ImageUtil.parseImgUrls(r.status_check_img_url);
@@ -1019,5 +1031,5 @@ const Members = (() => {
     });
   }
 
-  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo };
+  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection };
 })();

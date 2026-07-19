@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=35">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=38">
+<link rel="stylesheet" href="css/style.css?v=38">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=35" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=38" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,7 +91,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=35" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기 — 결사 관리</h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=38" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기 — 결사 관리</h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -190,7 +190,8 @@
       </div>
     </div>
 
-    <div class="filterbar" id="applyTabs">
+    <div class="cat-tabs" id="applyTabs">
+      <span class="lbl">구분</span>
       <span class="fchip on" data-ai="브로치" onclick="Distribution.setTab(this)">브로치</span>
       <span class="fchip" data-ai="별빛심연석 및 조각" onclick="Distribution.setTab(this)">별빛심연석 및 조각</span>
       <span class="fchip" data-ai="찬란한심연석" onclick="Distribution.setTab(this)">찬란한심연석</span>
@@ -466,11 +467,23 @@
   <section class="screen" id="s-members">
     <div class="toast" id="membersToast"></div>
 
-    <div class="card hidden" id="regRequestsCard">
-      <b style="font-size:15px;color:var(--amber-dk)">📮 가입 신청 (<span id="regRequestsCount">0</span>건 대기)</b>
-      <div class="list" id="regRequestsList" style="border:0;margin-top:8px"></div>
+    <!-- 하위탭: 결사원 목록 / 가입 신청 -->
+    <div class="subtabs">
+      <span class="stab on" data-ms="list" onclick="Members.setSection(this)">결사원 목록</span>
+      <span class="stab" data-ms="reg" onclick="Members.setSection(this)">📮 가입 신청 <span class="cnt" id="regRequestsCount">0</span></span>
     </div>
 
+    <div class="hidden" id="membersSectionReg">
+      <div class="card">
+        <b style="font-size:15px;color:var(--amber-dk)">가입 신청 대기 목록</b>
+        <div class="meta" style="margin-top:4px">승인하면 즉시 결사원으로 등록되고 로그인할 수 있습니다. 거절해도 신청 기록은 남습니다.</div>
+        <div class="list" id="regRequestsList" style="border:0;margin-top:8px">
+          <div class="irow meta" id="regRequestsEmpty" style="display:none">대기 중인 가입 신청이 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="membersSectionList">
     <div class="filterbar">
       <input type="search" id="qm" name="member-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/소속결사/직업 검색..." oninput="Members.filter()">
       <select id="qmClass" onchange="Members.filter()" style="border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card)"></select>
@@ -510,6 +523,7 @@
     </div>
     <div class="mtable mgmt-scroll hidden" id="membersEquipTable"></div>
     <div class="hidden" id="membersAquiTable"></div>
+    </div><!-- /membersSectionList -->
   </section>
 
   <!-- ═══ 운영진: 참여율 관리 (실제 동작) ═══ -->
@@ -563,6 +577,9 @@
     <div class="toast" id="invToast"></div>
     <div class="filterbar">
       <input type="search" id="qi" name="inv-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 아이템명 검색..." oninput="Inventory.filter()">
+    </div>
+    <div class="cat-tabs">
+      <span class="lbl">등급</span>
       <span class="fchip on" data-gi="전체" onclick="Inventory.setGrade(this)">전체</span>
       <span class="fchip" data-gi="신화" onclick="Inventory.setGrade(this)">신화</span>
       <span class="fchip" data-gi="전설" onclick="Inventory.setGrade(this)">전설</span>
@@ -882,22 +899,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=35"></script>
-<script src="js/api.js?v=35"></script>
-<script src="js/auth.js?v=35"></script>
-<script src="js/logParser.js?v=35"></script>
-<script src="js/gamedata.js?v=35"></script>
-<script src="js/imageUtil.js?v=35"></script>
-<script src="js/inventory.js?v=35"></script>
-<script src="js/members.js?v=35"></script>
-<script src="js/treasury.js?v=35"></script>
-<script src="js/dashboard.js?v=35"></script>
-<script src="js/distribution.js?v=35"></script>
-<script src="js/distManage.js?v=35"></script>
-<script src="js/participationParser.js?v=35"></script>
-<script src="js/participation.js?v=35"></script>
-<script src="js/profile.js?v=35"></script>
-<script src="js/register.js?v=35"></script>
-<script src="js/app.js?v=35"></script>
+<script src="js/config.js?v=38"></script>
+<script src="js/api.js?v=38"></script>
+<script src="js/auth.js?v=38"></script>
+<script src="js/logParser.js?v=38"></script>
+<script src="js/gamedata.js?v=38"></script>
+<script src="js/imageUtil.js?v=38"></script>
+<script src="js/inventory.js?v=38"></script>
+<script src="js/members.js?v=38"></script>
+<script src="js/treasury.js?v=38"></script>
+<script src="js/dashboard.js?v=38"></script>
+<script src="js/distribution.js?v=38"></script>
+<script src="js/distManage.js?v=38"></script>
+<script src="js/participationParser.js?v=38"></script>
+<script src="js/participation.js?v=38"></script>
+<script src="js/profile.js?v=38"></script>
+<script src="js/register.js?v=38"></script>
+<script src="js/app.js?v=38"></script>
 </body>
 </html>

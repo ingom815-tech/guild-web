@@ -42,8 +42,24 @@ const Distribution = (() => {
       toast(`⏰ 신청 기간이 마감되어 ${data.auto_confirmed}건이 자동 확정되었습니다.`);
     }
     renderPeriod();
+    updateTabCounts();
     renderGrid();
     renderMyRequests();
+  }
+
+  // 구분 탭마다 신청 가능 아이템 건수 배지 표시 (0건 탭은 흐리게)
+  function updateTabCounts() {
+    document.querySelectorAll("#applyTabs .fchip[data-ai]").forEach((chip) => {
+      const n = (data.groups || []).filter((g) => g.tab === chip.dataset.ai).length;
+      let cnt = chip.querySelector(".cnt");
+      if (!cnt) {
+        cnt = document.createElement("span");
+        cnt.className = "cnt";
+        chip.appendChild(cnt);
+      }
+      cnt.textContent = n;
+      chip.classList.toggle("empty", n === 0);
+    });
   }
 
   function renderPeriod() {

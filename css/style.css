@@ -47,6 +47,15 @@ tr.won td{background:var(--green-bg)}
 .filterbar input{flex:1;min-width:170px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:14px;background:var(--card)}
 .fchip{font-size:12.5px;padding:7px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--txt2);cursor:pointer;user-select:none}
 .fchip.on{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
+/* 카테고리/필터 칩 그룹 — 라벨 + 건수 배지로 선택 UI를 또렷하게 */
+.cat-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:12px}
+.cat-tabs .lbl{font-size:12px;color:var(--txt3);font-weight:700;margin-right:4px;letter-spacing:.5px}
+.cat-tabs .fchip{background:#f6f7f9;border-color:transparent}
+.cat-tabs .fchip.on{background:var(--green);border-color:var(--green);box-shadow:0 2px 8px rgba(29,158,117,.3)}
+.fchip .cnt,.stab .cnt{display:inline-block;margin-left:5px;font-size:10.5px;background:#e6e8ec;color:var(--txt2);border-radius:999px;padding:1px 7px;font-weight:700}
+.fchip.on .cnt,.stab.on .cnt{background:rgba(255,255,255,.28);color:#fff}
+.stab .cnt.alert{background:var(--amber);color:#412402}
+.fchip.empty{opacity:.5}
 .list{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
 .irow{display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid #f1f2f4;font-size:13.5px;flex-wrap:wrap}
 .irow:first-child{border-top:0}
@@ -310,6 +319,17 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 .ttable .when{color:var(--txt3);font-size:12px}
 .del{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 10px;font-size:12px;color:var(--txt3);cursor:pointer}
 .del:hover{color:var(--red);border-color:#F7C1C1}
+/* 모바일: 표 → 카드형 (배지·금액 / 내용 / 처리자·일시·삭제 3줄) — 좁은 화면에서 내용이 세로 1자로 깨지는 것 방지 */
+@media(max-width:640px){
+  .ttable thead{display:none}
+  .ttable,.ttable tbody{display:block;width:100%}
+  .ttable tr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:3px 8px;padding:10px 2px;border-bottom:1px solid #f3f4f6}
+  .ttable td{display:block;padding:0;border:0;white-space:normal;max-width:none}
+  .ttable td:nth-child(2){grid-column:2/-1;text-align:right;font-size:15px}
+  .ttable td:nth-child(3){grid-column:1/-1}
+  .ttable td:nth-child(6){justify-self:end}
+  .ttable td[colspan]{grid-column:1/-1}
+}
 .tsummary{font-size:12.5px;color:var(--txt2);background:#f8f9fa;border:1px solid #f1f2f4;border-radius:9px;padding:8px 12px;margin-bottom:10px}
 .tsummary b{color:var(--txt)}
 .tpage{text-align:center;padding:10px 0 2px;font-size:12.5px;color:var(--txt3)}

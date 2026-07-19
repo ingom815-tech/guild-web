@@ -79,7 +79,27 @@ const Inventory = (() => {
     render();
   }
 
+  // 등급 필터 칩마다 건수 배지 표시 (검색어와 무관하게 전체 재고 기준, 0건은 흐리게)
+  function updateGradeCounts() {
+    document.querySelectorAll('.fchip[data-gi]').forEach((chip) => {
+      const key = chip.dataset.gi;
+      const n =
+        key === "전체" ? items.length :
+        key === "미신청" ? items.filter((it) => (it.applicant_count || 0) === 0).length :
+        items.filter((it) => it.grade === key).length;
+      let cnt = chip.querySelector(".cnt");
+      if (!cnt) {
+        cnt = document.createElement("span");
+        cnt.className = "cnt";
+        chip.appendChild(cnt);
+      }
+      cnt.textContent = n;
+      chip.classList.toggle("empty", n === 0);
+    });
+  }
+
   function render() {
+    updateGradeCounts();
     const container = document.getElementById("invTable");
     const q = (document.getElementById("qi").value || "").trim();
     const rows = items.filter((it) => {
