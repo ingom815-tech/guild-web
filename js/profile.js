@@ -379,15 +379,19 @@ const Profile = (() => {
     const GRADE_BADGE = { 신화: "b-myth", 전설: "b-legend", 영웅: "b-hero", 희귀: "b-rare" };
     rows.forEach((h) => {
       const row = document.createElement("div");
-      row.className = "irow";
+      row.className = "irow two"; // 데스크톱 불변(display:contents), 모바일 2단 행
       row.dataset.id = h.id;
       row.innerHTML = `
-        <span style="width:56px">${h.grade ? `<span class="badge ${GRADE_BADGE[h.grade] || "b-gray"}">${h.grade}</span>` : ""}</span>
-        <span class="nm"></span>
-        <span class="meta">수량 ${h.quantity ?? 1}</span>
-        ${h.diamond_amount ? `<span class="meta">💎 ${h.diamond_amount.toLocaleString()}</span>` : ""}
-        ${h.cash_amount ? `<span class="meta">💰 ${h.cash_amount.toLocaleString()}</span>` : ""}
-        <span class="meta" style="margin-left:auto">${h.distributed_at ? String(h.distributed_at).slice(0, 10) : ""}</span>`;
+        <div class="r1">
+          <span style="width:56px">${h.grade ? `<span class="badge ${GRADE_BADGE[h.grade] || "b-gray"}">${h.grade}</span>` : ""}</span>
+          <span class="nm"></span>
+        </div>
+        <div class="r2">
+          <span class="meta">수량 ${h.quantity ?? 1}</span>
+          ${h.diamond_amount ? `<span class="meta">💎 ${h.diamond_amount.toLocaleString()}</span>` : ""}
+          ${h.cash_amount ? `<span class="meta">💰 ${h.cash_amount.toLocaleString()}</span>` : ""}
+          <span class="meta" style="margin-left:auto">${h.distributed_at ? String(h.distributed_at).slice(0, 10) : ""}</span>
+        </div>`;
       row.querySelector(".nm").textContent = h.item_name;
       listEl.appendChild(row);
     });

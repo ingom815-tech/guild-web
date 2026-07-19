@@ -118,24 +118,28 @@ const Inventory = (() => {
     const staff = Auth.isStaff();
     rows.forEach((it) => {
       const row = document.createElement("div");
-      row.className = "irow";
+      row.className = "irow two"; // r1/r2 래퍼는 데스크톱에서 display:contents (레이아웃 불변), 모바일 2단 행
       row.dataset.id = it.id;
       const applied = it.applicant_count || 0;
       const appliedHtml = applied === 0
-        ? `<span style="width:60px;color:#A32D2D;font-weight:600">⚠️ 0</span>`
-        : `<span style="width:60px">${applied}명</span>`;
+        ? `<span style="width:60px;color:#A32D2D;font-weight:600" class="ap">⚠️ 0</span>`
+        : `<span style="width:60px" class="ap">${applied}명</span>`;
       row.innerHTML = `
-        <span style="width:56px">${it.grade ? `<span class="badge ${gradeClass(it.grade)}">${it.grade}</span>` : ""}</span>
-        <span class="nm"></span>
-        <span style="width:60px">수량 ${it.quantity}</span>
-        ${appliedHtml}
-        <span style="width:100px" class="meta"></span>
-        <span style="margin-left:auto;display:flex;gap:6px" class="staff-only">
-          <button class="btn sm ghost" data-act="edit">수정</button>
-          <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">삭제</button>
-        </span>`;
+        <div class="r1">
+          <span style="width:56px">${it.grade ? `<span class="badge ${gradeClass(it.grade)}">${it.grade}</span>` : ""}</span>
+          <span class="nm"></span>
+          <span style="width:60px">수량 ${it.quantity}</span>
+        </div>
+        <div class="r2">
+          ${appliedHtml}
+          <span style="width:100px" class="meta lt"></span>
+          <span style="margin-left:auto;display:flex;gap:6px" class="staff-only">
+            <button class="btn sm ghost" data-act="edit">수정</button>
+            <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">삭제</button>
+          </span>
+        </div>`;
       row.querySelector(".nm").textContent = it.item_name;
-      row.querySelector(".meta").textContent = it.looter || "-";
+      row.querySelector(".lt").textContent = it.looter || "-";
       if (staff) {
         row.querySelector('[data-act="edit"]').addEventListener("click", () => openEdit(it));
         row.querySelector('[data-act="delete"]').addEventListener("click", () => requestDelete(it));

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=38">
-<link rel="stylesheet" href="css/style.css?v=38">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=39">
+<link rel="stylesheet" href="css/style.css?v=39">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=38" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=39" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,11 +91,11 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=38" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기 — 결사 관리</h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=39" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
-      <button class="btn ghost sm" id="changePwBtn">비밀번호 변경</button>
+      <button class="btn ghost sm" id="changePwBtn">비밀번호<span class="lf"> 변경</span></button>
       <button class="btn ghost sm" id="logoutBtn">로그아웃</button>
     </div>
   </header>
@@ -103,12 +103,12 @@
   <div class="tabs">
     <div class="tab on" data-s="dashboard" onclick="Tabs.go('dashboard',this)">대시보드</div>
     <div class="tab" data-s="dist" onclick="Tabs.go('dist',this)">분배</div>
-    <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)">공금 관리</div>
+    <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)"><span class="lf">공금 관리</span><span class="ls">공금</span></div>
     <div class="tab" data-s="profile" onclick="Tabs.go('profile',this)">내 정보</div>
     <div class="divider staff-only"></div>
-    <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)">결사원 관리</div>
-    <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)">참여율 관리</div>
-    <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)">재고 관리</div>
+    <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)"><span class="lf">결사원 관리</span><span class="ls">결사원</span></div>
+    <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)"><span class="lf">참여율 관리</span><span class="ls">참여율</span></div>
+    <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)"><span class="lf">재고 관리</span><span class="ls">재고</span></div>
     <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
   </div>
 
@@ -510,7 +510,7 @@
       </span>
     </div>
     <div class="list" id="membersTable">
-      <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
+      <div class="irow hrow-head" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
         <span class="nm" style="font-weight:500">닉네임</span>
         <span style="width:110px">고정아이디</span>
         <span style="width:90px">소속결사</span><span style="width:96px">직업</span>
@@ -588,7 +588,7 @@
       <span class="fchip" data-gi="미신청" onclick="Inventory.setGrade(this)">⚠️ 미신청</span>
     </div>
     <div class="list" id="invTable">
-      <div class="irow" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
+      <div class="irow hrow-head" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
         <span style="width:56px">등급</span><span class="nm" style="font-weight:500">아이템명</span>
         <span style="width:60px">재고</span><span style="width:60px">신청</span><span style="width:100px">룻자</span>
         <span style="margin-left:auto">관리</span>
@@ -899,22 +899,22 @@
   </div>
 </div>
 
-<script src="js/config.js?v=38"></script>
-<script src="js/api.js?v=38"></script>
-<script src="js/auth.js?v=38"></script>
-<script src="js/logParser.js?v=38"></script>
-<script src="js/gamedata.js?v=38"></script>
-<script src="js/imageUtil.js?v=38"></script>
-<script src="js/inventory.js?v=38"></script>
-<script src="js/members.js?v=38"></script>
-<script src="js/treasury.js?v=38"></script>
-<script src="js/dashboard.js?v=38"></script>
-<script src="js/distribution.js?v=38"></script>
-<script src="js/distManage.js?v=38"></script>
-<script src="js/participationParser.js?v=38"></script>
-<script src="js/participation.js?v=38"></script>
-<script src="js/profile.js?v=38"></script>
-<script src="js/register.js?v=38"></script>
-<script src="js/app.js?v=38"></script>
+<script src="js/config.js?v=39"></script>
+<script src="js/api.js?v=39"></script>
+<script src="js/auth.js?v=39"></script>
+<script src="js/logParser.js?v=39"></script>
+<script src="js/gamedata.js?v=39"></script>
+<script src="js/imageUtil.js?v=39"></script>
+<script src="js/inventory.js?v=39"></script>
+<script src="js/members.js?v=39"></script>
+<script src="js/treasury.js?v=39"></script>
+<script src="js/dashboard.js?v=39"></script>
+<script src="js/distribution.js?v=39"></script>
+<script src="js/distManage.js?v=39"></script>
+<script src="js/participationParser.js?v=39"></script>
+<script src="js/participation.js?v=39"></script>
+<script src="js/profile.js?v=39"></script>
+<script src="js/register.js?v=39"></script>
+<script src="js/app.js?v=39"></script>
 </body>
 </html>

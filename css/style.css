@@ -405,6 +405,50 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 .thumb .x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid var(--line);color:var(--txt3);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .thumb .x:hover{color:var(--red);border-color:#F7C1C1}
 
+/* ══ 모바일 전면 보완 (모바일_개선시안_단일_v2.html) — 데스크톱 불변 ══ */
+/* r1/r2 래퍼: 데스크톱에서는 투명(display:contents) → 기존 컬럼 레이아웃 유지 */
+.irow .r1,.irow .r2{display:contents}
+.ls{display:none}
+@media(max-width:767px){
+  body{padding:12px 10px}
+  .lf{display:none!important}
+  .ls{display:inline}
+  /* 헤더: 인사말 제거, 로고+제목+텍스트 버튼 한 줄 */
+  header{flex-wrap:nowrap;gap:8px;margin-bottom:8px}
+  header h1{font-size:15.5px;flex:1;min-width:0;overflow:hidden;white-space:nowrap}
+  #userGreeting,#userRoleBadge{display:none}
+  .user-chip{gap:6px;flex-shrink:0}
+  .user-chip .btn{padding:6px 10px;font-size:12px}
+  /* 상단 탭: 한 줄 가로 스크롤 + sticky + 축약 라벨 */
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:30;background:var(--bg);gap:0;margin-bottom:14px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex-shrink:0;white-space:nowrap;padding:11px 13px;font-size:14px;border-bottom-width:2.5px}
+  .tabs .divider{display:none!important}
+  /* 필터 칩/서브탭/구분 그룹: 한 줄 가로 스크롤 (0건 칩은 숨김) */
+  .filterbar,.cat-tabs,#distSubtabs,.subtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .filterbar::-webkit-scrollbar,.cat-tabs::-webkit-scrollbar,#distSubtabs::-webkit-scrollbar,.subtabs::-webkit-scrollbar{display:none}
+  .filterbar>*,.cat-tabs>*,#distSubtabs>*,.subtabs>*{flex-shrink:0}
+  .filterbar input{flex:0 0 180px;min-width:0}
+  .cat-tabs .fchip.empty{display:none}
+  /* 목록: 2단 고정 카드 행 */
+  .hrow-head{display:none!important}
+  .irow.two{display:block;padding:12px 15px}
+  .irow.two .r1{display:flex;align-items:center;gap:9px}
+  .irow.two .r1 .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+  .irow.two .r2{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .irow.two .r1>*,.irow.two .r2>*{width:auto!important}
+  .irow.two .m-hide{display:none!important}
+  .irow.two .r1 .pw{margin-left:auto;font-weight:700}
+  .irow.two .r1 .pw::before{content:"⚔ ";color:var(--txt3);font-weight:400}
+  .irow.two .ct::before{content:"기여 ";color:var(--txt3);font-weight:400}
+  .irow.two .ap::before{content:"신청 ";color:var(--txt3);font-weight:400}
+  .irow.two .lt::before{content:"룻자 ";color:var(--txt3)}
+  /* 불가피한 표: 가로 스크롤 + 첫 컬럼(닉네임) 고정 */
+  .mtable th:first-child,.mtable td:first-child,
+  .myth-scroll th:first-child,.myth-scroll td:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+  .myth-scroll{overflow:auto}
+}
+
 /* ── 장비/아퀴 편집 (수정 모달) ── */
 .equip-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .equip-edit-grid .field{margin-bottom:0}

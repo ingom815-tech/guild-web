@@ -164,22 +164,26 @@ const Members = (() => {
     const isAdmin = (Auth.getUser() || {}).role === "관리자";
     rows.forEach((m) => {
       const row = document.createElement("div");
-      row.className = "irow";
+      row.className = "irow two"; // r1/r2 래퍼는 데스크톱에서 display:contents (레이아웃 불변), 모바일 2단 행
       row.dataset.id = m.user_id;
       row.innerHTML = `
-        <span class="nm"></span>
-        <span style="width:110px" class="meta uid"></span>
-        <span style="width:90px" class="meta guild"></span>
-        <span style="width:96px" class="meta cls"></span>
-        <span style="width:50px">${m.level ?? 0}</span>
-        <span style="width:80px">${(m.power ?? 0).toLocaleString()}</span>
-        <span style="width:56px"><span class="role-badge"></span></span>
-        <span style="width:70px">${m.contribution_score ?? 0}</span>
-        <span style="width:108px" class="shots"></span>
-        <span style="margin-left:auto;display:flex;gap:6px">
-          <button class="btn sm ghost" data-act="edit">수정</button>
-          <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">탈퇴</button>
-        </span>`;
+        <div class="r1">
+          <span class="nm"></span>
+          <span style="width:110px" class="meta uid m-hide"></span>
+          <span style="width:90px" class="meta guild m-hide"></span>
+          <span style="width:96px" class="meta cls"></span>
+          <span style="width:50px" class="m-hide">${m.level ?? 0}</span>
+          <span style="width:80px" class="pw">${(m.power ?? 0).toLocaleString()}</span>
+        </div>
+        <div class="r2">
+          <span style="width:56px"><span class="role-badge"></span></span>
+          <span style="width:70px" class="ct">${m.contribution_score ?? 0}</span>
+          <span style="width:108px" class="shots"></span>
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn sm ghost" data-act="edit">수정</button>
+            <button class="btn sm ghost" data-act="delete" style="color:#A32D2D">탈퇴</button>
+          </span>
+        </div>`;
       row.querySelector(".nm").textContent = m.current_id || m.user_id;
       row.querySelector(".uid").textContent = m.user_id;
       row.querySelector(".guild").textContent = m.guild_name || "-";
