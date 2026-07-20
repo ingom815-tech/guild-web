@@ -1,9 +1,10 @@
-// 분배 신청 화면: 기간 상태/관리(운영진) + 5탭 아이템 그룹 + 신청 모달 + 내 신청 목록
+// 분배 신청 화면 (분배신청_단순화시안_v4): 회차 상태줄 + 자격 배너 + 필터 칩 + 한 줄 행 목록.
+// 신청 가능/불가 판정은 전부 서버(can_apply/blocked_reason)를 그대로 따른다 — 화면은 표시만 개편.
 const Distribution = (() => {
   const GRADE_BADGE = { 신화: "b-myth", 전설: "b-legend", 영웅: "b-hero", 희귀: "b-rare" };
   let data = null; // GET view=items 응답
-  let myRequests = [];
-  let activeTab = "브로치";
+  let myRequests = []; // 내 대기 신청 (취소 토글용)
+  let activeFilter = "전체";
   let applyTarget = null; // 신청 모달 대상 그룹
 
   function toast(msg, isErr) {
@@ -28,6 +29,24 @@ const Distribution = (() => {
   function kstNowEpoch() {
     return Date.now() + 9 * 3600 * 1000;
   }
+  function periodActive() {
+    return !!(data && data.period && data.period.status === "진행중");
+  }
+
+  function cat5(g) {
+    return GameData.category5(g.item_name, g.category, g.grade);
+  }
+
+  // "전원 가능" 완화가 실제 적용되는 그룹 — 서버 checkEligibility의 전설 아퀴 2회 유찰 규칙과 동일 판정
+  function isUnsoldOpen(g) {
+    const cat = String(g.category || "").replace(/ /g, "");
+    return (g.unsold_period_count || 0) >= 2 && (cat === "아퀴" || cat === "아퀴룬") && g.grade === "전설";
+  }
+
+  function pendingReqFor(g) {
+    const ids = g.item_ids || [];
+    return myRequests.find((r) => ids.includes(r.item_id)) || null;
+  }
 
   async function load() {
     try {
@@ -42,31 +61,16 @@ const Distribution = (() => {
       toast(`⏰ 신청 기간이 마감되어 ${data.auto_confirmed}건이 자동 확정되었습니다.`);
     }
     renderPeriod();
-    updateTabCounts();
-    renderGrid();
-    renderMyRequests();
+    renderBanner();
+    renderChips();
+    renderList();
   }
 
-  // 구분 탭마다 신청 가능 아이템 건수 배지 표시 (0건 탭은 흐리게)
-  function updateTabCounts() {
-    document.querySelectorAll("#applyTabs .fchip[data-ai]").forEach((chip) => {
-      const n = (data.groups || []).filter((g) => g.tab === chip.dataset.ai).length;
-      let cnt = chip.querySelector(".cnt");
-      if (!cnt) {
-        cnt = document.createElement("span");
-        cnt.className = "cnt";
-        chip.appendChild(cnt);
-      }
-      cnt.textContent = n;
-      chip.classList.toggle("empty", n === 0);
-    });
-  }
-
+  // ── 회차 상태줄 + 운영진 기간 관리 ──
   function renderPeriod() {
     const p = data.period;
     const label = document.getElementById("periodStatusLabel");
     const info = document.getElementById("periodTimeInfo");
-    const myInfo = document.getElementById("myApplyInfo");
     const staff = Auth.isStaff();
 
     if (p && p.status === "진행중") {
@@ -74,26 +78,13 @@ const Distribution = (() => {
       const remainMs = naiveEpoch(p.end_time) - kstNowEpoch();
       const remainH = Math.max(0, Math.floor(remainMs / 3600000));
       const remainM = Math.max(0, Math.floor((remainMs % 3600000) / 60000));
-      info.textContent = `${fmtNaive(p.start_time)} ~ ${fmtNaive(p.end_time)} (남은 시간 ${remainH}시간 ${remainM}분)`;
+      info.textContent = `마감까지 ${remainH}시간 ${remainM}분 · 마감 ${fmtNaive(p.end_time)}`;
     } else {
       label.textContent = "⚪ 신청 기간이 아닙니다";
       info.textContent = p ? `최근 기간: ${fmtNaive(p.start_time)} ~ ${fmtNaive(p.end_time)} (종료)` : "설정된 기간이 없습니다.";
     }
 
-    const my = data.my || {};
-    myInfo.innerHTML = "";
-    const chip = (txt, ok) => {
-      const s = document.createElement("span");
-      s.className = "badge " + (ok ? "b-green" : "b-gray");
-      s.textContent = txt;
-      return s;
-    };
-    myInfo.appendChild(chip(`참여율 ${my.participation_rate != null ? my.participation_rate + "%" : "-"}`, true));
-    myInfo.appendChild(chip(`기여점수 ${(my.contribution_score || 0).toLocaleString()}`, true));
-    myInfo.appendChild(chip(my.has_power_ss ? "전투력 스샷 ✓" : "전투력 스샷 ✗", my.has_power_ss));
-    myInfo.appendChild(chip(my.has_aqui_ss ? "아퀴룬 스샷 ✓" : "아퀴룬 스샷 ✗", my.has_aqui_ss));
-
-    // 운영진 기간 관리 폼
+    // 마감 변경/연장/종료 폼은 운영진에게만
     const box = document.getElementById("periodStaffBox");
     box.classList.toggle("hidden", !staff);
     if (staff) {
@@ -104,68 +95,177 @@ const Distribution = (() => {
     }
   }
 
-  function setTab(el) {
-    document.querySelectorAll(".fchip[data-ai]").forEach((c) => c.classList.remove("on"));
-    el.classList.add("on");
-    activeTab = el.dataset.ai;
-    renderGrid();
+  // ── 자격 배너: 신청 불가 사유는 여기 한 번만 (행마다 반복하지 않음) ──
+  // 전 아이템 공통 차단 요건(전투력/아퀴룬 스샷)만 미충족으로 다루고,
+  // 아이템별 기준(참여도·전투력 등)은 해당 행의 버튼 비활성으로만 표현한다.
+  function renderBanner() {
+    const el = document.getElementById("eligBanner");
+    const my = data.my || {};
+    const missing = [];
+    if (!my.has_power_ss) missing.push("전투력 스샷 등록");
+    if (!my.has_aqui_ss) missing.push("아퀴룬 스샷 등록");
+
+    if (missing.length) {
+      el.className = "elig bad";
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span class="ic">⚠️</span>
+        <div><b>지금은 신청할 수 없어요.</b> 신청하려면 다음이 필요합니다:<br>
+          ${missing.map((m) => "· " + m).join(" &nbsp;")}
+          <span class="fix" onclick="Distribution.goShots()">지금 등록하기 →</span></div>`;
+      return;
+    }
+    if (!periodActive()) {
+      el.style.display = "none";
+      return;
+    }
+    el.className = "elig ok";
+    el.style.display = "flex";
+    const rate = my.participation_rate != null ? my.participation_rate + "%" : "-";
+    el.innerHTML = `
+      <span class="ic">✅</span>
+      <div><b>신청 가능 상태입니다.</b> 참여도 ${rate} · 기여점수 ${(my.contribution_score || 0).toLocaleString()} · 전투력/아퀴룬 스샷 등록됨</div>`;
   }
 
-  function renderGrid() {
-    const grid = document.getElementById("applyGrid");
-    const groups = (data.groups || []).filter((g) => g.tab === activeTab);
-    document.getElementById("applyEmpty").style.display = groups.length ? "none" : "block";
-    grid.innerHTML = "";
+  // "지금 등록하기 →" — 내 정보 > 인증샷 탭으로 이동
+  function goShots() {
+    Tabs.go("profile", document.querySelector('.tab[data-s="profile"]'));
+    const stab = document.querySelector('.stab[data-pi="imgs"]');
+    if (stab) Profile.setTab(stab);
+  }
+
+  // ── 필터 칩: 전체 | 신청 가능만 | 카테고리 5종(0건 숨김) | ✓ 내 신청 ──
+  function filterNames() {
+    return ["전체", "신청 가능만", ...GameData.DIST_CATEGORIES, "내 신청"];
+  }
+  function matchesFilter(g, f) {
+    if (f === "전체") return true;
+    if (f === "신청 가능만") return !!g.can_apply;
+    if (f === "내 신청") return !!g.applied;
+    return cat5(g) === f;
+  }
+
+  function renderChips() {
+    const wrap = document.getElementById("applyChips");
+    wrap.innerHTML = "";
+    const groups = data.groups || [];
+    let activeVisible = false;
+    filterNames().forEach((f) => {
+      const n = groups.filter((g) => matchesFilter(g, f)).length;
+      if (n === 0 && GameData.DIST_CATEGORIES.includes(f)) return; // 0건 카테고리 칩은 숨김
+      if (f === activeFilter) activeVisible = true;
+      const chip = document.createElement("span");
+      chip.className = "fchip" + (activeFilter === f ? " on" : "") + (n === 0 ? " empty" : "");
+      chip.textContent = f === "내 신청" ? "✓ 내 신청" : f;
+      const cnt = document.createElement("span");
+      cnt.className = "cnt";
+      cnt.textContent = n;
+      chip.appendChild(cnt);
+      chip.addEventListener("click", () => {
+        activeFilter = f;
+        renderChips();
+        renderList();
+      });
+      wrap.appendChild(chip);
+    });
+    if (!activeVisible) {
+      activeFilter = "전체";
+      const first = wrap.querySelector(".fchip");
+      if (first) first.classList.add("on");
+    }
+  }
+
+  // ── 아이템 목록: 한 줄 행 (등급 배지 | 이름 ×N | 예외 태그 | 버튼) ──
+  // 룻자·룻 일자는 결사원 화면에 표시하지 않는다 (운영진용 분배 현황 탭에서만 유지).
+  function renderList() {
+    const listEl = document.getElementById("applyList");
+    listEl.querySelectorAll(".irow[data-g]").forEach((el) => el.remove());
+    const groups = (data.groups || []).filter((g) => matchesFilter(g, activeFilter));
+    const order = GameData.DIST_CATEGORIES;
+    groups.sort(
+      (a, b) => order.indexOf(cat5(a)) - order.indexOf(cat5(b)) || String(a.item_name).localeCompare(String(b.item_name), "ko"),
+    );
+    document.getElementById("applyEmpty").style.display = groups.length ? "none" : "flex";
 
     groups.forEach((g) => {
-      const card = document.createElement("div");
-      card.className = "mcard";
-      const badgeCls = GRADE_BADGE[g.grade] || "b-gray";
-      const unsoldBadge = (g.unsold_period_count || 0) >= 2 ? `<span class="badge b-green">🔓 2회 유찰 — 전원 신청 가능</span>` : "";
-      const raidBadge = g.raid_type === "연합" ? `<span class="badge b-gray">연합</span>` : `<span class="badge b-green">결사</span>`;
-      const elig = g.eligibility || { eligible: true, failed: [], rule: "" };
-      let eligHtml = "";
-      if (elig.rule && !((g.unsold_period_count || 0) >= 2)) {
-        if (elig.eligible) {
-          eligHtml = `<div class="meta" style="color:var(--green-dk);margin-top:4px">✓ ${elig.rule} 자격 충족</div>`;
-        } else {
-          const reasons = elig.failed.map((f) => `${f.label} ${f.current} / 기준 ${f.required}`).join(", ");
-          eligHtml = `<div class="meta" style="color:#A32D2D;margin-top:4px">✗ ${elig.rule} — ${reasons}</div>`;
-        }
-      }
-      card.innerHTML = `
-        <div class="hd">
-          <span class="badge ${badgeCls}">${g.grade || "-"}</span>
-          ${raidBadge}
-          <span class="nm"></span>
-        </div>
-        <div class="meta-line"></div>
-        ${unsoldBadge}
-        ${eligHtml}
-        <div style="margin-top:8px" class="act"></div>`;
-      card.querySelector(".nm").textContent = g.item_name;
-      card.querySelector(".meta-line").textContent =
-        `수량 ${g.quantity} · 룻자 ${g.looters && g.looters.length ? g.looters.join(", ") : "-"}` +
-        (g.drop_date ? ` · ${String(g.drop_date).slice(0, 10)}` : "");
+      const row = document.createElement("div");
+      row.className = "irow arow";
+      row.dataset.g = "1";
+      let tag = "";
+      if (g.raid_type === "연합") tag = `<span class="atag">연합 룻</span>`;
+      else if (isUnsoldOpen(g)) tag = `<span class="atag all">${g.unsold_period_count}회 유찰 · 전원 가능</span>`;
+      // 심연석류(별빛·조각·찬란한)는 수량 개념 없이 신청만 받음 — ×N 표기 생략
+      const showQty = (g.quantity || 0) >= 2 && !GameData.isOpenApplyItem(g.item_name);
+      row.innerHTML = `
+        <span class="gb">${g.grade ? `<span class="badge ${GRADE_BADGE[g.grade] || "b-gray"}">${g.grade}</span>` : ""}</span>
+        <span class="nm"><b class="t"></b>${showQty ? ` <span class="qn">×${g.quantity}</span>` : ""}</span>
+        ${tag}
+        <span class="acts"></span>`;
+      row.querySelector(".t").textContent = g.item_name;
+      const acts = row.querySelector(".acts");
+      const pending = pendingReqFor(g);
 
-      const act = card.querySelector(".act");
-      if (g.can_apply) {
+      if (g.applied && pending && periodActive()) {
+        // 신청함 → 재클릭 시 확인 후 취소 (마감 전까지만)
+        const btn = document.createElement("button");
+        btn.className = "btn sm applied";
+        btn.textContent = "✓ 신청함 · 취소";
+        btn.addEventListener("click", () => cancelRequest(g, pending, btn));
+        acts.appendChild(btn);
+      } else if (g.applied) {
+        const s = document.createElement("span");
+        s.className = "badge b-green";
+        s.textContent = "✓ 신청함";
+        acts.appendChild(s);
+      } else if (g.raid_type === "연합") {
+        acts.innerHTML = `<button type="button" class="btn sm off" disabled>신청 불가</button>`;
+      } else if (g.can_apply) {
         const btn = document.createElement("button");
         btn.className = "btn sm";
-        btn.textContent = "신청하기";
-        btn.addEventListener("click", () => openApply(g));
-        act.appendChild(btn);
+        btn.textContent = "신청";
+        btn.addEventListener("click", () => startApply(g, btn));
+        acts.appendChild(btn);
       } else {
-        const s = document.createElement("span");
-        s.className = "badge " + (g.applied ? "b-green" : "b-gray");
-        s.textContent = g.blocked_reason || "신청 불가";
-        act.appendChild(s);
+        // 자격 미충족/기간 아님 등 — 사유 문구는 반복하지 않고 회색 비활성만
+        acts.innerHTML = `<button type="button" class="btn sm off" disabled>신청</button>`;
       }
-      grid.appendChild(card);
+      listEl.appendChild(row);
     });
   }
 
-  // ── 신청 모달 ──
+  async function startApply(g, btn) {
+    // 심연석류는 수량 입력 없이 항상 1건 신청 (선정은 운영진이 신청자 중 직접 선택)
+    const needsModal = g.is_category_item || ((g.quantity || 0) > 1 && !GameData.isOpenApplyItem(g.item_name));
+    if (needsModal) {
+      openApply(g);
+      return;
+    }
+    // 수량 입력이 필요 없는 아이템은 바로 신청
+    btn.disabled = true;
+    try {
+      await Api.createItemRequest({ item_id: g.first_item_id, quantity: 1 });
+      toast(`✅ ${g.item_name} 신청 완료!`);
+      await load();
+    } catch (err) {
+      toast(err.message || "신청 실패", true);
+      btn.disabled = false;
+    }
+  }
+
+  async function cancelRequest(g, pending, btn) {
+    if (!confirm(`"${g.item_name}" 신청을 취소할까요?`)) return;
+    btn.disabled = true;
+    try {
+      await Api.cancelItemRequest(pending.id);
+      toast("신청이 취소되었습니다.");
+      await load();
+    } catch (err) {
+      toast(err.message || "취소 실패", true);
+      btn.disabled = false;
+    }
+  }
+
+  // ── 신청 모달 (카테고리 아이템 선호 입력 / 수량 2개 이상 아이템 수량 선택) ──
   function openApply(g) {
     applyTarget = g;
     document.getElementById("applyModalTitle").textContent = `${g.item_name} 신청`;
@@ -228,38 +328,6 @@ const Distribution = (() => {
     });
   }
 
-  // ── 내 신청 목록 ──
-  function renderMyRequests() {
-    const listEl = document.getElementById("myRequestList");
-    document.querySelectorAll("#myRequestList .irow[data-id]").forEach((el) => el.remove());
-    const emptyRow = document.getElementById("myRequestEmpty");
-    emptyRow.style.display = myRequests.length ? "none" : "flex";
-
-    myRequests.forEach((r) => {
-      const row = document.createElement("div");
-      row.className = "irow";
-      row.dataset.id = r.id;
-      const prefTxt = r.preference_1 ? ` · 1순위 ${r.preference_1}${r.preference_2 ? " / 2순위 " + r.preference_2 : ""}` : "";
-      row.innerHTML = `
-        <span style="width:56px">${r.grade ? `<span class="badge ${GRADE_BADGE[r.grade] || "b-gray"}">${r.grade}</span>` : ""}</span>
-        <span class="nm"></span>
-        <span class="meta detail"></span>
-        <button type="button" class="btn sm ghost" data-act="cancel" style="margin-left:auto;color:#A32D2D">취소</button>`;
-      row.querySelector(".nm").textContent = r.item_name;
-      row.querySelector(".detail").textContent = `수량 ${r.requested_quantity} · 기여점수 ${r.current_contribution_score}${prefTxt}`;
-      row.querySelector('[data-act="cancel"]').addEventListener("click", async () => {
-        try {
-          await Api.cancelItemRequest(r.id);
-          toast("신청이 취소되었습니다.");
-          await load();
-        } catch (err) {
-          toast(err.message || "취소 실패", true);
-        }
-      });
-      listEl.appendChild(row);
-    });
-  }
-
   // ── 운영진 기간 관리 ──
   function initPeriodForms() {
     document.getElementById("periodSetBtn").addEventListener("click", async () => {
@@ -308,5 +376,5 @@ const Distribution = (() => {
     initPeriodForms();
   }
 
-  return { init, load, setTab };
+  return { init, load, goShots };
 })();

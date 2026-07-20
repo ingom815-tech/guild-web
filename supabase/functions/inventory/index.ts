@@ -66,9 +66,10 @@ function isStaff(user: SessionUser | null): boolean {
   return !!user && (user.role === "관리자" || user.role === "운영진");
 }
 
-// 기존 Streamlit 앱의 app.py EQUIPMENT_GRADES / ITEM_CATEGORIES 상수와 동일한 값.
 const GRADES = ["희귀", "영웅", "전설", "신화", "절대자"];
+// 공식 아이템 구분 5분류 (카테고리 표준화) + 전환기 호환용 구 값(표준화 이전 등록분 수정 허용).
 const CATEGORIES = [
+  "아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타",
   "아퀴", "심연석", "기타", "주무기", "특화무기", "머리", "상의", "바지",
   "장갑", "신발", "망토", "허리", "반지", "귀걸이", "팔찌", "목걸이",
 ];

@@ -186,8 +186,10 @@ function checkEligibility(
   const myPower = member.power || 0;
   const nameNorm = itemName.replace(/ /g, "").toLowerCase();
   const cat = (category || "").replace(/ /g, "").toLowerCase();
+  // 카테고리 표준화 호환: "아퀴"(구) / "아퀴룬"(신) 모두 아퀴로 취급 — 규칙 자체는 원본 그대로.
+  const isAquiCat = cat === "아퀴" || cat === "아퀴룬";
 
-  if (cat === "아퀴" && grade === "전설" && (unsoldCount || 0) >= 2) {
+  if (isAquiCat && grade === "전설" && (unsoldCount || 0) >= 2) {
     return { eligible: true, failed: [], rule: "전설 아퀴 (2회 유찰 — 무조건 신청 가능)" };
   }
 
@@ -218,7 +220,7 @@ function checkEligibility(
       ["참여도", participation, Number(regs.legend_simyeon_min_participation_pct ?? 35)],
     ];
     rule = "전설 심연석";
-  } else if (cat === "아퀴" && grade === "전설") {
+  } else if (isAquiCat && grade === "전설") {
     conditions = [
       ["전투력", myPower, Number(regs.legend_aqui_min_power ?? 32000)],
       ["참여도", participation, Number(regs.legend_aqui_min_participation_pct ?? 65)],
@@ -237,14 +239,17 @@ function checkEligibility(
   return { eligible: failed.length === 0, failed, rule };
 }
 
-// 5개 탭 분류 (app.py INV_GROUP_DEFS, 6562)
-function classifyTab(itemName: string, category: string | null, grade: string | null): string {
+// 공식 구분 5분류 (카테고리 표준화 — 프론트 GameData.category5와 동일 규칙).
+// DB 구분 값이 이미 5분류면 그대로, 구 값이면 이름 기반으로 환산한다.
+const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
+function classifyTab(itemName: string, category: string | null, _grade: string | null): string {
+  if (category && DIST_CATEGORIES.includes(category)) return category;
   const noSpace = itemName.replace(/ /g, "");
-  if (itemName.includes("브로치")) return "브로치";
-  if (noSpace.includes("별빛심연석")) return "별빛심연석 및 조각";
+  if (noSpace.includes("브로치")) return "브로치";
+  if (noSpace.includes("별빛심연석")) return "별빛심연석";
   if (noSpace.includes("찬란한")) return "찬란한심연석";
-  if ((category || "") === "아퀴" && grade === "전설") return "전퀴";
-  return "나머지";
+  if ((category || "") === "아퀴") return "아퀴룬";
+  return "전파편 및 기타";
 }
 
 // ── 분배 확정 시 수령자 장비/아퀴 자동 갱신 (원본 _update_member_equipment_on_distribution, database.py:2789) ──
@@ -354,7 +359,7 @@ async function updateMemberAquiOnDistribution(userId: string, item: DistributedI
 async function updateMemberOnDistribution(userId: string | null, item: DistributedItem): Promise<void> {
   if (!userId) return;
   const category = item.category || "";
-  if (category === "아퀴") {
+  if (category === "아퀴" || category === "아퀴룬") {
     await updateMemberAquiOnDistribution(userId, item);
     return;
   }
@@ -1145,6 +1150,12 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: `신청 자격 미달 — ${reason}` }, 403);
     }
 
+    // 심연석류(별빛 심연석·조각, 찬란한 심연석)는 수량·재고 개념 없이 신청만 받는다 —
+    // 수량 1 고정, 재고 수량 상한 검증 없음. 선정은 운영진이 신청자 중에서 직접 확정.
+    const openNameNorm = item.item_name.replace(/ /g, "");
+    const isOpenApply = openNameNorm.includes("별빛심연석") ||
+      (openNameNorm.includes("찬란한") && openNameNorm.includes("심연석"));
+
     let qty = 1;
     let pref1 = "";
     let pref2 = "";
@@ -1153,6 +1164,8 @@ Deno.serve(async (req: Request) => {
       pref1 = typeof body.preference_1 === "string" ? body.preference_1.trim() : "";
       pref2 = typeof body.preference_2 === "string" ? body.preference_2.trim() : "";
       if (!pref1) return jsonResponse({ error: "1순위 선호를 입력해주세요." }, 400);
+    } else if (isOpenApply) {
+      qty = 1;
     } else {
       qty = Number(body.quantity);
       if (!Number.isInteger(qty) || qty < 1) return jsonResponse({ error: "수량은 1 이상의 정수여야 합니다." }, 400);

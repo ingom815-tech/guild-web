@@ -196,6 +196,28 @@ const GameData = (() => {
     return Array.isArray(item.mythic) && !!memberClass && item.mythic.includes(memberClass);
   }
 
+  // 공식 아이템 구분 5분류 (분배신청_단순화시안_v4 기준으로 표준화된 체계).
+  // DB 구분 값이 이미 5분류면 그대로, 구 값(아퀴/심연석/기타/장비슬롯)이 남아 있으면
+  // 이름 기반으로 환산한다 — 서버 classifyTab과 같은 우선순위(브로치 → 별빛 → 찬란 → 아퀴).
+  const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
+
+  function category5(itemName, category, grade) {
+    if (DIST_CATEGORIES.includes(category)) return category;
+    const ns = String(itemName || "").replace(/ /g, "");
+    if (ns.includes("브로치")) return "브로치";
+    if (ns.includes("별빛심연석")) return "별빛심연석";
+    if (ns.includes("찬란한")) return "찬란한심연석";
+    if (category === "아퀴") return "아퀴룬";
+    return "전파편 및 기타";
+  }
+
+  // 수량·재고 개념 없이 신청만 받는 아이템 (별빛 심연석·조각, 찬란한 심연석).
+  // 신청 수량 1 고정, ×N 표기·수량 입력 없음 — 선정은 운영진이 신청자 중에서 직접 선택.
+  function isOpenApplyItem(itemName) {
+    const ns = String(itemName || "").replace(/ /g, "");
+    return ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
+  }
+
   // 직업 엠블럼 <i> 요소 (SVG mask 채색). variant "dark" = 밝은 배경용 어두운 금색.
   // 매핑 없는 직업(미선택 포함)은 null — 호출부가 기존 표시를 그대로 유지하면 된다.
   function classEmblemEl(memberClass, size, variant) {
@@ -215,8 +237,8 @@ const GameData = (() => {
 
   return {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
-    GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP,
+    GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP, DIST_CATEGORIES,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
-    aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl,
+    aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl, category5, isOpenApplyItem,
   };
 })();

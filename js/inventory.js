@@ -1,7 +1,8 @@
 // 재고 관리 화면: 목록 렌더/필터/등록/수정/삭제(2단계 확인)
 const Inventory = (() => {
   const GRADES = ["희귀", "영웅", "전설", "신화", "절대자"];
-  const CATEGORIES = ["아퀴", "심연석", "기타", "주무기", "특화무기", "머리", "상의", "바지", "장갑", "신발", "망토", "허리", "반지", "귀걸이", "팔찌", "목걸이"];
+  // 공식 아이템 구분 5분류 — 앞으로 등록되는 아이템은 이 중에서만 선택 (구 값은 category5로 환산)
+  const CATEGORIES = GameData.DIST_CATEGORIES;
   const GRADE_BADGE = { 신화: "b-myth", 전설: "b-legend", 영웅: "b-hero", 희귀: "b-rare" };
 
   let items = [];
@@ -45,9 +46,8 @@ const Inventory = (() => {
       if (match.grade && GRADES.includes(match.grade)) {
         document.getElementById(gradeSelectId).value = match.grade;
       }
-      if (match.category && CATEGORIES.includes(match.category)) {
-        document.getElementById(categorySelectId).value = match.category;
-      }
+      // 아이템 사전에 구 구분 값이 남아 있어도 공식 5분류로 환산해 채운다
+      document.getElementById(categorySelectId).value = GameData.category5(match.item_name, match.category, match.grade);
     });
   }
 
@@ -226,7 +226,7 @@ const Inventory = (() => {
           _cid: Math.random().toString(36).slice(2, 10),
           item_name: m.item_name,
           grade: m.grade,
-          category: m.category,
+          category: GameData.category5(m.item_name, m.category, m.grade),
           quantity: m.quantity,
           looter: m.looter || defaultLooter || "",
           drop_date: m.drop_date || null,
@@ -487,7 +487,7 @@ const Inventory = (() => {
   function openEdit(it) {
     document.getElementById("editName").value = it.item_name;
     document.getElementById("editGrade").value = it.grade || GRADES[0];
-    document.getElementById("editCategory").value = it.category || CATEGORIES[0];
+    document.getElementById("editCategory").value = GameData.category5(it.item_name, it.category, it.grade);
     document.getElementById("editQty").value = it.quantity;
     document.getElementById("editLooter").value = it.looter || "";
     document.getElementById("editForm").dataset.id = it.id;

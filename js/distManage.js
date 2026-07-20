@@ -1,9 +1,9 @@
 // 분배 후반부: 신청 현황(분배 현황 탭) / 확정 처리(결과 탭) / 분배 이력(이력 탭).
 // 원본 app.py _render_request_status / 확정 처리 탭 / _render_distribution_history_mgmt 이식.
 const DistManage = (() => {
-  const TAB_ORDER = ["브로치", "별빛심연석 및 조각", "찬란한심연석", "전퀴", "나머지"];
+  const TAB_ORDER = GameData.DIST_CATEGORIES; // 공식 구분 5분류
   let statusData = null;
-  let statusTab = "브로치";
+  let statusTab = TAB_ORDER[0];
   let resultData = null;
   let staffList = []; // 다이아 지급 대상(룻자) 선택용 — 운영진/관리자만
   let historyData = null;
@@ -58,6 +58,10 @@ const DistManage = (() => {
       toast("statusToast", e.message || "신청 현황 조회 실패", true);
       return;
     }
+    // 탭 분류는 서버 값 대신 공식 5분류로 재계산 (서버 재배포와 무관하게 동작)
+    (statusData.groups || []).forEach((g) => {
+      g.tab = GameData.category5(g.item_name, g.category, g.grade);
+    });
     // 기본 탭: 신청이 있는 첫 탭
     const withReq = TAB_ORDER.find((t) =>
       (statusData.groups || []).some((g) => g.tab === t && g.requests.length),
@@ -141,10 +145,10 @@ const DistManage = (() => {
     const listEl = document.getElementById("statusList");
     listEl.innerHTML = "";
 
-    // 전퀴 탭: 중복 신청자 경고 (같은 사람이 전설 아퀴 2개 이상 신청 — 정보성, 원본 동일)
-    if (statusTab === "전퀴") {
+    // 아퀴룬 탭: 중복 신청자 경고 (같은 사람이 전설 아퀴 2개 이상 신청 — 정보성, 원본 동일)
+    if (statusTab === "아퀴룬") {
       const perUser = Object.create(null);
-      tabGroups.forEach((g) => g.requests.forEach((r) => {
+      tabGroups.filter((g) => g.grade === "전설").forEach((g) => g.requests.forEach((r) => {
         (perUser[r.nick] = perUser[r.nick] || []).push(g.item_name);
       }));
       const dups = Object.entries(perUser).filter(([, items]) => items.length >= 2);
@@ -166,16 +170,22 @@ const DistManage = (() => {
     tabGroups.forEach((g) => {
       const card = document.createElement("div");
       card.className = "card";
+      // 심연석류(별빛·조각·찬란한)는 수량 개념 없이 신청만 받고 운영진이 선정 — 수량/경쟁률 표시 안 함
+      const openItem = GameData.isOpenApplyItem(g.item_name);
       const comp = (g.requests.length / Math.max(g.quantity, 1)).toFixed(1);
+      const metaTxt = openItem
+        ? `신청 ${g.requests.length}건 · 선정은 운영진 선택`
+        : `수량 ${g.quantity} · 신청 ${g.requests.length}건 · 경쟁률 ${comp}:1`;
       card.innerHTML = `
         <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
           <div><b class="inm" style="font-size:14.5px"></b> ${gradeBadge(g.grade)}
-            <span class="meta">수량 ${g.quantity} · 신청 ${g.requests.length}건 · 경쟁률 ${comp}:1</span></div>
+            <span class="meta">${metaTxt}</span></div>
           <span class="meta lt"></span>
         </div>
         <div class="reqbody" style="margin-top:8px"></div>`;
       card.querySelector(".inm").textContent = g.item_name;
-      card.querySelector(".lt").textContent = g.looters && g.looters.length ? `룻: ${g.looters.join(", ")}` : "";
+      // 룻자 정보는 운영진에게만 (결사원 화면에는 표시하지 않음)
+      card.querySelector(".lt").textContent = staff && g.looters && g.looters.length ? `룻: ${g.looters.join(", ")}` : "";
 
       const body = card.querySelector(".reqbody");
       if (!g.requests.length) {
@@ -235,8 +245,13 @@ const DistManage = (() => {
             body.appendChild(line);
           });
         };
-        sub(`✅ 선정 예정 (상위 ${Math.min(cut, g.requests.length)}명)`, g.requests.slice(0, cut), 0, true);
-        sub("확정권 밖", g.requests.slice(cut), cut, false);
+        if (openItem) {
+          // 컷 구분 없이 전체 나열 — 운영진이 명단에서 직접 확정
+          sub(`🙋 신청자 명단 (${g.requests.length}명)`, g.requests, 0, false);
+        } else {
+          sub(`✅ 선정 예정 (상위 ${Math.min(cut, g.requests.length)}명)`, g.requests.slice(0, cut), 0, true);
+          sub("확정권 밖", g.requests.slice(cut), cut, false);
+        }
       }
       listEl.appendChild(card);
     });
