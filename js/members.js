@@ -131,7 +131,7 @@ const Members = (() => {
   function filteredRows() {
     const q = (document.getElementById("qm").value || "").trim();
     const clsF = classFilterValue();
-    return members.filter((m) => {
+    const rows = members.filter((m) => {
       const roleHit = activeRoleFilter === "전체" || m.role === activeRoleFilter;
       const clsHit = !clsF || m.class === clsF;
       const qHit =
@@ -142,6 +142,10 @@ const Members = (() => {
         (m.class || "").includes(q);
       return roleHit && clsHit && qHit;
     });
+    // 정렬: 참여점수/기여점수/전투력 내림차순 (일반·장비·아퀴 뷰 공통 적용)
+    const sortKey = (document.getElementById("qmSort") || {}).value || "";
+    if (sortKey) rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+    return rows;
   }
 
   function render() {
