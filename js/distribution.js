@@ -8,6 +8,7 @@ const Distribution = (() => {
   let activeFilter = "전체";
   let openNames = new Set(); // 재렌더 후에도 펼침 상태 유지
   let applyTarget = null; // 모달 대상 { g, rank } (rank null = 자유 신청 수량 입력)
+  let pendingFocus = null; // 결사 창고에서 넘어올 때 포커스할 아이템명
 
   function toast(msg, isErr) {
     const t = document.getElementById("applyToast");
@@ -84,6 +85,8 @@ const Distribution = (() => {
       toast(e.message || "분배 정보 조회 실패", true);
       return;
     }
+    // 신화 등급은 분배 신청 대상이 아님 — 운영진 수동 분배 (창고에서 "문의" 안내)
+    data.groups = (data.groups || []).filter((g) => g.grade !== "신화");
     if (data.auto_confirmed > 0) {
       toast(`⏰ 신청 기간이 마감되어 ${data.auto_confirmed}건이 자동 확정되었습니다.`);
     }
@@ -92,14 +95,35 @@ const Distribution = (() => {
     renderWishStrip();
     renderChips();
     renderList();
+    if (pendingFocus) applyFocus();
   }
 
-  // ── 회차 상태줄 + 운영진 기간 관리 ──
+  // 결사 창고 → 신청 탭 연결: 해당 아이템 행으로 스크롤 + 펼침 + 1.5초 하이라이트
+  function focusItem(name) {
+    pendingFocus = name;
+  }
+
+  function applyFocus() {
+    const name = pendingFocus;
+    pendingFocus = null;
+    openNames.add(name);
+    activeFilter = "전체"; // 현재 필터에 가려 있어도 보이도록
+    renderChips();
+    renderList();
+    const el = [...document.querySelectorAll("#applyList .aitem")].find(
+      (it) => it.querySelector(".nm .t").textContent === name,
+    );
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 1500);
+  }
+
+  // ── 회차 상태줄 (기간 설정 폼은 결사 창고 탭으로 이동 — warehouse.js 담당) ──
   function renderPeriod() {
     const p = data.period;
     const label = document.getElementById("periodStatusLabel");
     const info = document.getElementById("periodTimeInfo");
-    const staff = Auth.isStaff();
 
     if (p && p.status === "진행중") {
       label.textContent = "🟢 분배 신청 접수중";
@@ -110,15 +134,6 @@ const Distribution = (() => {
     } else {
       label.textContent = "⚪ 신청 기간이 아닙니다";
       info.textContent = p ? `최근 기간: ${fmtNaive(p.start_time)} ~ ${fmtNaive(p.end_time)} (종료)` : "설정된 기간이 없습니다.";
-    }
-
-    const box = document.getElementById("periodStaffBox");
-    box.classList.toggle("hidden", !staff);
-    if (staff) {
-      const active = !!(p && p.status === "진행중");
-      document.getElementById("periodSetForm").style.display = active ? "none" : "flex";
-      document.getElementById("periodActiveForm").style.display = active ? "flex" : "none";
-      if (active) document.getElementById("periodNewEnd").value = String(p.end_time).replace(" ", "T").slice(0, 16);
     }
   }
 
@@ -164,29 +179,22 @@ const Distribution = (() => {
     if (stab) Profile.setTab(stab);
   }
 
-  // ── 내 지망 스트립 (1·2·3순위 칸 + 실시간 경합 상태) ──
-  function slotStatusEl(g, myRank) {
-    const span = document.createElement("span");
+  // ── 내 지망 카드 (1·2·3순위 칸 + 실시간 경합 상태 — 시안 v2 문구) ──
+  function applySlotStatus(el, g, myRank) {
     const winners = simWinners(g);
     const iAmWinner = winners.some((w) => w.user_id === myUid());
     const apps = (g.applicants || []).filter((a) => a.rank != null);
     if (iAmWinner) {
       const rival = apps.find((a) => a.user_id !== myUid());
-      if (!rival) {
-        span.className = "s-win";
-        span.textContent = "현재 유력";
-      } else {
-        span.className = "s-comp";
-        span.textContent = `${myRank}순위 경합 — ${rival.nick}(${(rival.score || 0).toLocaleString()}) 대비 현재 유력`;
-      }
-      return span;
+      el.className = "ws win";
+      el.textContent = rival ? "내 점수가 높아 현재 유력" : "단독 지망 — 현재 선정 1위";
+      return;
     }
     const top = winners[0];
-    span.className = "s-out";
-    span.textContent = top
+    el.className = "ws";
+    el.textContent = top
       ? `${top.rank ? top.rank + "순위에 " : ""}${top.nick}(${(top.score || 0).toLocaleString()}) — 현재 순위 밖`
       : "현재 순위 밖";
-    return span;
   }
 
   function renderWishStrip() {
@@ -203,9 +211,9 @@ const Distribution = (() => {
         slot.classList.add("filled");
         slot.innerHTML = `<div class="wl">${rank}순위</div><div class="wi"></div><div class="ws"></div>`;
         slot.querySelector(".wi").textContent = g.item_name;
-        slot.querySelector(".ws").appendChild(slotStatusEl(g, rank));
+        applySlotStatus(slot.querySelector(".ws"), g, rank);
       } else {
-        slot.innerHTML = `<div class="wl">${rank}순위</div><div class="wempty">${rank === 1 ? "아래 목록에서 지망을 등록하세요" : "—"}</div>`;
+        slot.innerHTML = `<div class="wl">${rank}순위</div><div class="wempty">${rank === 1 ? "목록에서 지망을 등록하세요" : "—"}</div>`;
       }
       wrap.appendChild(slot);
     }
@@ -263,43 +271,63 @@ const Distribution = (() => {
     return `${f.label} 조건`;
   }
 
-  // ── 아이템 목록 (행 + 펼침) ──
+  // ── 아이템 목록: 카테고리 섹션 헤더 그룹핑 (행 + 펼침) ──
+  const GRADE_BAR = { 전설: "g-leg", 신화: "g-myth", 절대자: "g-myth", 희귀: "g-rare", 영웅: "g-hero" };
+
   function renderList() {
     const listEl = document.getElementById("applyList");
-    listEl.querySelectorAll(".aitem").forEach((el) => el.remove());
+    listEl.querySelectorAll(".cathead, .mlist").forEach((el) => el.remove());
     const groups = (data.groups || []).filter((g) => matchesFilter(g, activeFilter));
     const order = GameData.DIST_CATEGORIES;
     groups.sort(
       (a, b) => order.indexOf(cat5(a)) - order.indexOf(cat5(b)) || String(a.item_name).localeCompare(String(b.item_name), "ko"),
     );
     document.getElementById("applyEmpty").style.display = groups.length ? "none" : "block";
-    groups.forEach((g) => listEl.appendChild(buildItem(g)));
+
+    // "아퀴룬 18 ───" 형식 섹션 헤더 + 카테고리별 목록 컨테이너
+    for (const cat of order) {
+      const catGroups = groups.filter((g) => cat5(g) === cat);
+      if (!catGroups.length) continue;
+      const headEl = document.createElement("div");
+      headEl.className = "cathead";
+      headEl.innerHTML = `<span class="cname"></span><span class="ccnt">${catGroups.length}</span><span class="ln"></span>`;
+      headEl.querySelector(".cname").textContent = cat;
+      listEl.appendChild(headEl);
+      const box = document.createElement("div");
+      box.className = "mlist";
+      catGroups.forEach((g) => box.appendChild(buildItem(g)));
+      listEl.appendChild(box);
+    }
   }
 
   function buildItem(g) {
     const item = document.createElement("div");
-    item.className = "aitem" + (openNames.has(g.item_name) ? " open" : "");
+    item.className = "aitem " + (GRADE_BAR[g.grade] || "") + (openNames.has(g.item_name) ? " open" : "");
     const winners = simWinners(g);
     const wishCnt = (g.applicants || []).filter((a) => a.rank != null).length;
     const freeCnt = (g.applicants || []).filter((a) => a.rank == null).length;
 
-    // ── 행(헤더) ──
+    // ── 행(헤더): 등급 컬러바(::before) + 경쟁 강도 배지 ──
     const head = document.createElement("div");
     head.className = "ihead";
     const showQty = (g.quantity || 0) >= 2 && !GameData.isOpenApplyItem(g.item_name);
     let tag = "";
     if (g.raid_type === "연합") tag = `<span class="atag">연합 룻</span>`;
-    else if (g.is_free) tag = `<span class="atag free">자유 신청 · 지망 무관</span>`;
+    else if (g.is_free) tag = `<span class="free-tag">자유 신청</span>`;
     else {
       const lk = !Auth.isStaff() && lackTag(g);
       if (lk) tag = `<span class="atag lack"></span>`;
     }
+    // 경쟁 강도: 지망 없음(회색) / 경쟁 1~2명(초록) / 3명+(황색). 자유 신청은 신청 N명.
+    let comp;
+    if (g.is_free) comp = freeCnt ? `<span class="comp c1">신청 ${freeCnt}명</span>` : `<span class="comp c0">신청 없음</span>`;
+    else if (!wishCnt) comp = `<span class="comp c0">지망 없음</span>`;
+    else comp = `<span class="comp ${wishCnt >= 3 ? "c2" : "c1"}">경쟁 ${wishCnt}명</span>`;
     head.innerHTML = `
-      <span class="gb">${g.grade ? `<span class="badge ${GRADE_BADGE[g.grade] || "b-gray"}">${g.grade}</span>` : ""}</span>
-      <span class="nm"><span class="t"></span>${showQty ? ` <span class="qn">×${g.quantity}</span>` : ""}</span>
+      <span class="nm"><span class="t"></span>${showQty ? `<span class="qn">×${g.quantity}</span>` : ""}</span>
       <span class="mypick" style="display:none"></span>
       ${tag}
-      <span class="appcnt">${g.is_free ? "신청" : "지망"} <b>${g.is_free ? freeCnt : wishCnt}명</b></span>
+      ${comp}
       <span class="chev">▾</span>`;
     head.querySelector(".t").textContent = g.item_name;
     const lackEl = head.querySelector(".atag.lack");
@@ -405,7 +433,7 @@ const Distribution = (() => {
       const clear = document.createElement("button");
       clear.type = "button";
       clear.className = "pbtn clear";
-      clear.textContent = "지망 해제";
+      clear.textContent = "해제";
       clear.disabled = !periodActive();
       clear.addEventListener("click", () => clearWish(g, clear));
       bar.appendChild(clear);
@@ -423,13 +451,10 @@ const Distribution = (() => {
     const winSet = new Set(winners.map((w) => w.user_id));
     const pools = [1, 2, 3].map((r) => (g.applicants || []).filter((a) => a.rank === r));
     if (!pools.some((p) => p.length)) {
+      // 지망자 없는 아이템: 유도 문구 (시안 v2)
       const grp = document.createElement("div");
       grp.className = "rank-group";
-      grp.innerHTML = `<div class="rt">지망자</div>`;
-      const c = document.createElement("span");
-      c.className = "cand none";
-      c.textContent = "아직 없음";
-      grp.appendChild(c);
+      grp.innerHTML = `<div class="rt">아직 지망자가 없습니다 — 1순위로 걸면 현재 선정 1위</div>`;
       body.appendChild(grp);
       return;
     }
@@ -438,7 +463,7 @@ const Distribution = (() => {
       if (!pool.length) return;
       const grp = document.createElement("div");
       grp.className = "rank-group";
-      grp.innerHTML = `<div class="rt">${r}순위 지망${r === 1 ? " (여기서 먼저 선정)" : ""}</div>`;
+      grp.innerHTML = `<div class="rt">${r}순위 지망${r === 1 ? " — 여기서 먼저 선정" : ""}</div>`;
       pool.forEach((a) => grp.appendChild(candChip(a, winSet.has(a.user_id))));
       body.appendChild(grp);
     });
@@ -581,53 +606,9 @@ const Distribution = (() => {
     });
   }
 
-  // ── 운영진 기간 관리 ──
-  function initPeriodForms() {
-    document.getElementById("periodSetBtn").addEventListener("click", async () => {
-      const start = document.getElementById("periodStart").value;
-      const end = document.getElementById("periodEnd").value;
-      if (!start || !end) {
-        toast("시작/마감 시각을 입력해주세요.", true);
-        return;
-      }
-      try {
-        await Api.setDistributionPeriod(start, end);
-        toast("📅 분배 신청 기간이 설정되었습니다.");
-        await load();
-      } catch (err) {
-        toast(err.message || "기간 설정 실패", true);
-      }
-    });
-
-    document.getElementById("periodExtendBtn").addEventListener("click", async () => {
-      const newEnd = document.getElementById("periodNewEnd").value;
-      if (!newEnd || !data.period) return;
-      try {
-        await Api.extendDistributionPeriod(data.period.id, newEnd);
-        toast("마감 시각이 변경되었습니다.");
-        await load();
-      } catch (err) {
-        toast(err.message || "연장 실패", true);
-      }
-    });
-
-    document.getElementById("periodCloseBtn").addEventListener("click", async () => {
-      if (!data.period) return;
-      if (!confirm("기간을 종료하고 자동확정(지망 선정)을 실행할까요? 되돌릴 수 없습니다.")) return;
-      try {
-        const res = await Api.closeDistributionPeriod(data.period.id);
-        toast(`기간 종료 — ${res.confirmed_count || 0}건 자동 확정되었습니다.`);
-        await load();
-      } catch (err) {
-        toast(err.message || "종료 실패", true);
-      }
-    });
-  }
-
   function init() {
     initApplyModal();
-    initPeriodForms();
   }
 
-  return { init, load, goShots };
+  return { init, load, goShots, focusItem };
 })();

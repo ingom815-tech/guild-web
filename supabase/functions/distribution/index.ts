@@ -1185,6 +1185,10 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (!item) return jsonResponse({ error: "해당 재고를 찾을 수 없습니다." }, 404);
     if ((item.raid_type || "결사") === "연합") return jsonResponse({ error: "연합 룻 아이템은 신청할 수 없습니다." }, 400);
+    // 신화 등급은 분배 신청 제외 — 운영진 수동 분배 (창고 탭 안내와 일치하는 방어적 검증)
+    if (item.grade === "신화") {
+      return jsonResponse({ error: "신화 등급은 분배 신청 대상이 아닙니다 — 운영진에게 문의해주세요." }, 400);
+    }
 
     const { data: me } = await supabase
       .from("members")

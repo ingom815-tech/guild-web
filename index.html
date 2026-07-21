@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=47">
-<link rel="stylesheet" href="css/style.css?v=47">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=48">
+<link rel="stylesheet" href="css/style.css?v=48">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=47" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=48" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,7 +91,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=47" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=48" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -115,7 +115,8 @@
 
   <!-- 분배 하위 탭 (분배 상위 탭 선택 시에만 표시) -->
   <div class="row hidden" id="distSubtabs" style="gap:6px;margin:-8px 0 16px;justify-content:flex-start">
-    <span class="fchip on" data-ds="apply" onclick="Tabs.goDist('apply')">분배 신청</span>
+    <span class="fchip on" data-ds="warehouse" onclick="Tabs.goDist('warehouse')">결사 창고</span>
+    <span class="fchip" data-ds="apply" onclick="Tabs.goDist('apply')">분배 신청</span>
     <span class="fchip" data-ds="status" onclick="Tabs.goDist('status')">분배 현황</span>
     <span class="fchip" data-ds="result" onclick="Tabs.goDist('result')">결과</span>
     <span class="fchip" data-ds="history" onclick="Tabs.goDist('history')">이력</span>
@@ -174,23 +175,16 @@
         <b style="font-size:15px" id="periodStatusLabel">기간 정보를 불러오는 중...</b>
         <span class="meta" id="periodTimeInfo"></span>
       </div>
-      <div id="periodStaffBox" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
-        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap" id="periodSetForm">
-          <div class="field" style="margin-bottom:0"><label for="periodStart">시작</label><input type="datetime-local" id="periodStart"></div>
-          <div class="field" style="margin-bottom:0"><label for="periodEnd">마감</label><input type="datetime-local" id="periodEnd"></div>
-          <button type="button" class="btn sm" id="periodSetBtn">📅 기간 설정</button>
-        </div>
-        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px" id="periodActiveForm">
-          <div class="field" style="margin-bottom:0"><label for="periodNewEnd">마감 시각 변경</label><input type="datetime-local" id="periodNewEnd"></div>
-          <button type="button" class="btn ghost sm" id="periodExtendBtn">연장</button>
-          <button type="button" class="btn danger sm" id="periodCloseBtn">기간 종료 (자동확정 실행)</button>
-        </div>
-      </div>
     </div>
 
     <div class="elig" id="eligBanner" style="display:none"></div>
 
-    <div class="rule">갖고 싶은 순서대로 <b>최대 3개</b>를 지망하세요. 각 아이템은 <b>1순위 지망자부터</b>, 같은 순위끼리는 <b>기여점수순</b>으로 선정됩니다. 수령은 <b>회차당 1개</b> — 하나가 확정되면 나머지 지망은 자동 취소됩니다. 마감 전까지 변경 자유.</div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div class="t">최대 3개 지망</div><div class="d">1·2·3순위로 등록</div></div>
+      <div class="step"><span class="n">2</span><div class="t">1순위 지망자 우선</div><div class="d">같은 순위끼린 기여점수순</div></div>
+      <div class="step"><span class="n">3</span><div class="t">회차당 1개 수령</div><div class="d">확정되면 나머지 자동 취소</div></div>
+      <div class="step"><span class="n">4</span><div class="t">마감 전 변경 자유</div><div class="d">경쟁 보고 옮겨도 OK</div></div>
+    </div>
 
     <div class="mywish" id="myWishCard">
       <h4>내 지망 <span class="meta" id="myWishMeta"></span></h4>
@@ -199,7 +193,7 @@
 
     <div class="cat-tabs" id="applyChips"></div>
 
-    <div class="mlist" id="applyList">
+    <div id="applyList">
       <div class="meta" id="applyEmpty" style="display:none;padding:18px;text-align:center">표시할 아이템이 없습니다.</div>
     </div>
   </section>
@@ -260,6 +254,42 @@
       </div>
     </div>
     <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
+  </section>
+
+  <!-- ═══ 결사 창고 (결사원용 재고 열람 — 결사창고_결사원용_시안, 열람 전용) ═══ -->
+  <section class="screen" id="s-warehouse">
+    <div class="toast" id="whToast"></div>
+
+    <!-- 분배 신청 기간 설정 (운영진 전용 — 분배 신청 탭에서 이동해 옴) -->
+    <div class="card blk staff-only" id="whPeriodCard">
+      <div class="round">
+        <b style="font-size:15px" id="whPeriodLabel">기간 정보를 불러오는 중...</b>
+        <span class="meta" id="whPeriodInfo"></span>
+      </div>
+      <div id="periodStaffBox" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap" id="periodSetForm">
+          <div class="field" style="margin-bottom:0"><label for="periodStart">시작</label><input type="datetime-local" id="periodStart"></div>
+          <div class="field" style="margin-bottom:0"><label for="periodEnd">마감</label><input type="datetime-local" id="periodEnd"></div>
+          <button type="button" class="btn sm" id="periodSetBtn">📅 기간 설정</button>
+        </div>
+        <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px" id="periodActiveForm">
+          <div class="field" style="margin-bottom:0"><label for="periodNewEnd">마감 시각 변경</label><input type="datetime-local" id="periodNewEnd"></div>
+          <button type="button" class="btn ghost sm" id="periodExtendBtn">연장</button>
+          <button type="button" class="btn danger sm" id="periodCloseBtn">기간 종료 (자동확정 실행)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="whsub" id="whSummary">불러오는 중...</div>
+    <div class="meta" style="margin:0 0 10px">💡 신청 기간 중에는 아이템을 누르면 신청 화면으로 이동합니다</div>
+    <div class="filterbar">
+      <input type="search" id="qw" name="warehouse-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 아이템명 검색..." oninput="Warehouse.render()">
+    </div>
+    <div class="cat-tabs" id="whChips"></div>
+    <div id="whList">
+      <div class="meta" id="whEmpty" style="display:none;padding:18px;text-align:center">조건에 맞는 아이템이 없습니다.</div>
+    </div>
+    <div class="dtoast" id="whDToast"></div>
   </section>
 
   <!-- ═══ 공금 관리 (공금관리_개선시안.html — 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
@@ -955,23 +985,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=47"></script>
-<script src="js/api.js?v=47"></script>
-<script src="js/auth.js?v=47"></script>
-<script src="js/logParser.js?v=47"></script>
-<script src="js/gamedata.js?v=47"></script>
-<script src="js/imageUtil.js?v=47"></script>
-<script src="js/inventory.js?v=47"></script>
-<script src="js/members.js?v=47"></script>
-<script src="js/treasury.js?v=47"></script>
-<script src="js/dashboard.js?v=47"></script>
-<script src="js/distribution.js?v=47"></script>
-<script src="js/distManage.js?v=47"></script>
-<script src="js/participationParser.js?v=47"></script>
-<script src="js/participation.js?v=47"></script>
-<script src="js/profile.js?v=47"></script>
-<script src="js/register.js?v=47"></script>
-<script src="js/logAdmin.js?v=47"></script>
-<script src="js/app.js?v=47"></script>
+<script src="js/config.js?v=48"></script>
+<script src="js/api.js?v=48"></script>
+<script src="js/auth.js?v=48"></script>
+<script src="js/logParser.js?v=48"></script>
+<script src="js/gamedata.js?v=48"></script>
+<script src="js/imageUtil.js?v=48"></script>
+<script src="js/inventory.js?v=48"></script>
+<script src="js/members.js?v=48"></script>
+<script src="js/treasury.js?v=48"></script>
+<script src="js/dashboard.js?v=48"></script>
+<script src="js/distribution.js?v=48"></script>
+<script src="js/warehouse.js?v=48"></script>
+<script src="js/distManage.js?v=48"></script>
+<script src="js/participationParser.js?v=48"></script>
+<script src="js/participation.js?v=48"></script>
+<script src="js/profile.js?v=48"></script>
+<script src="js/register.js?v=48"></script>
+<script src="js/logAdmin.js?v=48"></script>
+<script src="js/app.js?v=48"></script>
 </body>
 </html>
