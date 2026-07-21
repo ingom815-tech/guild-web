@@ -128,6 +128,88 @@ const Members = (() => {
     return document.getElementById("qmClass").value || "";
   }
 
+  // ── 참여점수 정렬: 반영 시즌 범위 선택 + 합산 ──
+  let seasonList = []; // 스냅샷이 있는 시즌 목록 (내림차순)
+  let currentSeason = null;
+  const seasonScoreCache = {}; // season → Map(user_id → participation_score)
+  let seasonSum = null; // 선택 범위 합산 Map. null = 현재 시즌 실시간 값(members.participation_score) 사용
+
+  function sortKey() {
+    return (document.getElementById("qmSort") || {}).value || "";
+  }
+
+  function partScoreOf(m) {
+    return seasonSum ? seasonSum.get(m.user_id) || 0 : m.participation_score || 0;
+  }
+
+  async function fetchSeasonScores(season) {
+    if (!seasonScoreCache[season]) {
+      const res = await Api.getSeasonScores(season);
+      seasonScoreCache[res.season] = new Map((res.rows || []).map((r) => [r.user_id, r.participation_score || 0]));
+    }
+    return seasonScoreCache[season];
+  }
+
+  async function onSortChange() {
+    const wrap = document.getElementById("qmSeasonWrap");
+    const isPart = sortKey() === "participation_score";
+    wrap.classList.toggle("hidden", !isPart);
+    if (isPart && !seasonList.length) {
+      try {
+        const res = await Api.getSeasonScores(); // 현재 시즌 + 시즌 목록
+        seasonList = res.seasons || [];
+        currentSeason = res.current_season;
+        if (currentSeason != null && !seasonList.includes(currentSeason)) seasonList.unshift(currentSeason);
+        seasonScoreCache[res.season] = new Map((res.rows || []).map((r) => [r.user_id, r.participation_score || 0]));
+        const opts = seasonList
+          .map((s) => `<option value="${s}">시즌 ${s}${s === currentSeason ? " (현재)" : ""}</option>`)
+          .join("");
+        document.getElementById("qmSeasonFrom").innerHTML = opts;
+        document.getElementById("qmSeasonTo").innerHTML = opts;
+        document.getElementById("qmSeasonFrom").value = String(currentSeason);
+        document.getElementById("qmSeasonTo").value = String(currentSeason);
+      } catch (e) {
+        toast(e.message || "시즌 목록 조회 실패", true);
+      }
+    }
+    if (isPart) await applySeasonRange();
+    else seasonSum = null;
+    render();
+  }
+
+  async function applySeasonRange() {
+    const from = parseInt(document.getElementById("qmSeasonFrom").value, 10);
+    const to = parseInt(document.getElementById("qmSeasonTo").value, 10);
+    if (Number.isNaN(from) || Number.isNaN(to)) {
+      seasonSum = null;
+      return;
+    }
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const range = seasonList.filter((s) => s >= lo && s <= hi);
+    // 현재 시즌 하나만 = 실시간 값 그대로 (스냅샷 시차 없이)
+    if (range.length <= 1 && (!range.length || range[0] === currentSeason)) {
+      seasonSum = null;
+      return;
+    }
+    try {
+      const sum = new Map();
+      for (const s of range) {
+        const map = await fetchSeasonScores(s);
+        for (const [uid, sc] of map) sum.set(uid, (sum.get(uid) || 0) + sc);
+      }
+      seasonSum = sum;
+    } catch (e) {
+      toast(e.message || "시즌 점수 조회 실패", true);
+      seasonSum = null;
+    }
+  }
+
+  async function onSeasonRange() {
+    await applySeasonRange();
+    render();
+  }
+
   function filteredRows() {
     const q = (document.getElementById("qm").value || "").trim();
     const clsF = classFilterValue();
@@ -142,9 +224,10 @@ const Members = (() => {
         (m.class || "").includes(q);
       return roleHit && clsHit && qHit;
     });
-    // 정렬: 참여점수/기여점수/전투력 내림차순 (일반·장비·아퀴 뷰 공통 적용)
-    const sortKey = (document.getElementById("qmSort") || {}).value || "";
-    if (sortKey) rows.sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+    // 정렬: 참여점수(시즌 범위 합산 지원)/기여점수/전투력 내림차순 (일반·장비·아퀴 뷰 공통 적용)
+    const key = sortKey();
+    if (key === "participation_score") rows.sort((a, b) => partScoreOf(b) - partScoreOf(a));
+    else if (key) rows.sort((a, b) => (b[key] || 0) - (a[key] || 0));
     return rows;
   }
 
@@ -189,6 +272,14 @@ const Members = (() => {
           </span>
         </div>`;
       row.querySelector(".nm").textContent = m.current_id || m.user_id;
+      // 참여점수 정렬 중엔 정렬 기준 값(선택 시즌 합산)을 닉네임 옆에 표시
+      if (sortKey() === "participation_score") {
+        const pb = document.createElement("span");
+        pb.className = "badge b-green";
+        pb.style.marginLeft = "6px";
+        pb.textContent = `참여 ${partScoreOf(m).toLocaleString()}`;
+        row.querySelector(".nm").appendChild(pb);
+      }
       row.querySelector(".uid").textContent = m.user_id;
       row.querySelector(".guild").textContent = m.guild_name || "-";
       const clsCell = row.querySelector(".cls");
@@ -1039,5 +1130,5 @@ const Members = (() => {
     });
   }
 
-  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection };
+  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection, onSortChange, onSeasonRange };
 })();

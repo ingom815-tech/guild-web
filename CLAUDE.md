@@ -54,7 +54,8 @@
 | bb64e3b | 모바일(<768px) 전면 보완 |
 | 6eaf806 | 관리자 로그 관리 탭 + 참석 보정 + 시즌별 참여 기록 |
 | 7576c4f | 분배 신청 탭 단순화 + 카테고리 5분류 표준화 (v=44) |
-| (최신) | 결사원 목록 정렬 셀렉트(참여점수/기여점수/전투력 순) — **현재 배포 버전 (v=45)** |
+| 943ca02 | 결사원 목록 정렬 셀렉트(참여점수/기여점수/전투력 순) (v=45) |
+| (최신) | 참여점수 정렬에 시즌 범위 합산 선택 추가 — **현재 배포 버전 (v=46)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

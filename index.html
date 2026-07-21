@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=45">
-<link rel="stylesheet" href="css/style.css?v=45">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=46">
+<link rel="stylesheet" href="css/style.css?v=46">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=45" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=46" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,7 +91,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=45" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=46" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -494,12 +494,18 @@
         </div>
         <button type="button" class="btn sm ghost" id="aquiMapBtn">📖 아퀴 매핑</button>
       </span>
-      <select id="qmSort" onchange="Members.filter()" style="margin-left:auto;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card);font-size:13px">
+      <select id="qmSort" onchange="Members.onSortChange()" style="margin-left:auto;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card);font-size:13px">
         <option value="">기본 순</option>
         <option value="participation_score">참여점수 순</option>
         <option value="contribution_score">기여점수 순</option>
         <option value="power">전투력 순</option>
       </select>
+      <span class="season-range hidden" id="qmSeasonWrap">
+        <select id="qmSeasonFrom" onchange="Members.onSeasonRange()"></select>
+        <span class="meta">~</span>
+        <select id="qmSeasonTo" onchange="Members.onSeasonRange()"></select>
+        <span class="meta">시즌 합산</span>
+      </span>
     </div>
     <div class="list" id="membersTable">
       <div class="irow hrow-head" style="background:#fafbfc;font-size:12px;color:var(--txt3);font-weight:500">
@@ -936,23 +942,23 @@
   </div>
 </div>
 
-<script src="js/config.js?v=45"></script>
-<script src="js/api.js?v=45"></script>
-<script src="js/auth.js?v=45"></script>
-<script src="js/logParser.js?v=45"></script>
-<script src="js/gamedata.js?v=45"></script>
-<script src="js/imageUtil.js?v=45"></script>
-<script src="js/inventory.js?v=45"></script>
-<script src="js/members.js?v=45"></script>
-<script src="js/treasury.js?v=45"></script>
-<script src="js/dashboard.js?v=45"></script>
-<script src="js/distribution.js?v=45"></script>
-<script src="js/distManage.js?v=45"></script>
-<script src="js/participationParser.js?v=45"></script>
-<script src="js/participation.js?v=45"></script>
-<script src="js/profile.js?v=45"></script>
-<script src="js/register.js?v=45"></script>
-<script src="js/logAdmin.js?v=45"></script>
-<script src="js/app.js?v=45"></script>
+<script src="js/config.js?v=46"></script>
+<script src="js/api.js?v=46"></script>
+<script src="js/auth.js?v=46"></script>
+<script src="js/logParser.js?v=46"></script>
+<script src="js/gamedata.js?v=46"></script>
+<script src="js/imageUtil.js?v=46"></script>
+<script src="js/inventory.js?v=46"></script>
+<script src="js/members.js?v=46"></script>
+<script src="js/treasury.js?v=46"></script>
+<script src="js/dashboard.js?v=46"></script>
+<script src="js/distribution.js?v=46"></script>
+<script src="js/distManage.js?v=46"></script>
+<script src="js/participationParser.js?v=46"></script>
+<script src="js/participation.js?v=46"></script>
+<script src="js/profile.js?v=46"></script>
+<script src="js/register.js?v=46"></script>
+<script src="js/logAdmin.js?v=46"></script>
+<script src="js/app.js?v=46"></script>
 </body>
 </html>

@@ -499,3 +499,7 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
   .arow .acts{grid-column:3;grid-row:1;margin-left:0}
   .arow .atag{grid-column:2/4;grid-row:2;justify-self:start}
 }
+
+/* ── 결사원 목록: 참여점수 정렬 시즌 범위 합산 ── */
+.season-range{display:flex;gap:4px;align-items:center}
+.season-range select{border:1px solid var(--line);border-radius:9px;padding:8px 8px;background:var(--card);font-size:13px}
