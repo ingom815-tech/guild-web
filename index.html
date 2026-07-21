@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=46">
-<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=47">
+<link rel="stylesheet" href="css/style.css?v=47">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=46" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=47" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -91,7 +91,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=46" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=47" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -190,10 +190,17 @@
 
     <div class="elig" id="eligBanner" style="display:none"></div>
 
+    <div class="rule">갖고 싶은 순서대로 <b>최대 3개</b>를 지망하세요. 각 아이템은 <b>1순위 지망자부터</b>, 같은 순위끼리는 <b>기여점수순</b>으로 선정됩니다. 수령은 <b>회차당 1개</b> — 하나가 확정되면 나머지 지망은 자동 취소됩니다. 마감 전까지 변경 자유.</div>
+
+    <div class="mywish" id="myWishCard">
+      <h4>내 지망 <span class="meta" id="myWishMeta"></span></h4>
+      <div class="wslots" id="wishSlots"></div>
+    </div>
+
     <div class="cat-tabs" id="applyChips"></div>
 
-    <div class="list" id="applyList">
-      <div class="irow meta" id="applyEmpty" style="display:none">표시할 아이템이 없습니다.</div>
+    <div class="mlist" id="applyList">
+      <div class="meta" id="applyEmpty" style="display:none;padding:18px;text-align:center">표시할 아이템이 없습니다.</div>
     </div>
   </section>
   <!-- ═══ 분배 현황 (신청 현황 — 전 회원 조회, 확정은 운영진) ═══ -->
@@ -635,6 +642,9 @@
             <label for="dropLooter">룻자</label>
             <input type="text" id="dropLooter" placeholder="닉네임">
           </div>
+          <div class="field" style="flex:1;min-width:170px;align-self:flex-end">
+            <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600"><input type="checkbox" id="dropFree"> 자유 신청 (대량 소모품)</label>
+          </div>
         </div>
         <button type="submit" class="btn" id="dropSubmitBtn">등록</button>
       </form>
@@ -744,6 +754,9 @@
         <div class="field" style="flex:1"><label for="editQty">수량</label><input type="number" id="editQty" min="0" required></div>
         <div class="field" style="flex:1"><label for="editLooter">룻자</label><input type="text" id="editLooter"></div>
       </div>
+      <div class="field">
+        <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600"><input type="checkbox" id="editFree"> 자유 신청 (대량 소모품 — 지망 없이 전원 신청 가능)</label>
+      </div>
       <div class="row">
         <button type="button" class="btn ghost sm" id="editCancelBtn">취소</button>
         <button type="submit" class="btn sm" id="editSaveBtn">저장</button>
@@ -764,8 +777,8 @@
         <input type="number" id="applyQty" min="1" value="1">
       </div>
       <div id="applyPrefFields" class="hidden">
-        <div class="field"><label for="applyPref1">1순위 (필수)</label><input type="text" id="applyPref1" placeholder="예) 녹색"></div>
-        <div class="field"><label for="applyPref2">2순위 (선택)</label><input type="text" id="applyPref2"></div>
+        <div class="field"><label for="applyPref1">희망 옵션 1 (필수)</label><input type="text" id="applyPref1" placeholder="예) 녹색"></div>
+        <div class="field"><label for="applyPref2">희망 옵션 2 (선택)</label><input type="text" id="applyPref2"></div>
       </div>
       <div class="row">
         <button type="button" class="btn ghost sm" id="applyCancelBtn">취소</button>
@@ -942,23 +955,23 @@
   </div>
 </div>
 
-<script src="js/config.js?v=46"></script>
-<script src="js/api.js?v=46"></script>
-<script src="js/auth.js?v=46"></script>
-<script src="js/logParser.js?v=46"></script>
-<script src="js/gamedata.js?v=46"></script>
-<script src="js/imageUtil.js?v=46"></script>
-<script src="js/inventory.js?v=46"></script>
-<script src="js/members.js?v=46"></script>
-<script src="js/treasury.js?v=46"></script>
-<script src="js/dashboard.js?v=46"></script>
-<script src="js/distribution.js?v=46"></script>
-<script src="js/distManage.js?v=46"></script>
-<script src="js/participationParser.js?v=46"></script>
-<script src="js/participation.js?v=46"></script>
-<script src="js/profile.js?v=46"></script>
-<script src="js/register.js?v=46"></script>
-<script src="js/logAdmin.js?v=46"></script>
-<script src="js/app.js?v=46"></script>
+<script src="js/config.js?v=47"></script>
+<script src="js/api.js?v=47"></script>
+<script src="js/auth.js?v=47"></script>
+<script src="js/logParser.js?v=47"></script>
+<script src="js/gamedata.js?v=47"></script>
+<script src="js/imageUtil.js?v=47"></script>
+<script src="js/inventory.js?v=47"></script>
+<script src="js/members.js?v=47"></script>
+<script src="js/treasury.js?v=47"></script>
+<script src="js/dashboard.js?v=47"></script>
+<script src="js/distribution.js?v=47"></script>
+<script src="js/distManage.js?v=47"></script>
+<script src="js/participationParser.js?v=47"></script>
+<script src="js/participation.js?v=47"></script>
+<script src="js/profile.js?v=47"></script>
+<script src="js/register.js?v=47"></script>
+<script src="js/logAdmin.js?v=47"></script>
+<script src="js/app.js?v=47"></script>
 </body>
 </html>

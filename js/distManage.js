@@ -191,34 +191,55 @@ const DistManage = (() => {
       if (!g.requests.length) {
         body.innerHTML = `<span class="meta">신청자가 없습니다.</span>`;
       } else {
-        // 원본: 상위 quantity명 = 선정 예정(확정권), 이하 = 확정권 밖
-        const cut = g.quantity;
-        const sub = (label, rows, startIdx, inCut) => {
+        // 지망제: 순위 그룹(1→2→3→자유)으로 구분 표시. 선정권 시뮬 = 자동확정과 동일 순서
+        // (1순위 풀부터 기여점수순으로 재고 수량만큼) — 해당 행을 강조.
+        const pools = { 1: [], 2: [], 3: [], free: [] };
+        g.requests.forEach((r) => {
+          (r.wish_rank ? pools[r.wish_rank] : pools.free).push(r);
+        });
+        const winIds = new Set();
+        let remaining = g.quantity;
+        [1, 2, 3].forEach((rk) => pools[rk].forEach((r) => {
+          if (remaining > 0) {
+            winIds.add(r.id);
+            remaining -= 1;
+          }
+        }));
+        if (!openItem) {
+          pools.free.forEach((r) => {
+            if (remaining >= (r.qty || 1)) {
+              winIds.add(r.id);
+              remaining -= r.qty || 1;
+            }
+          });
+        }
+        const sub = (label, rows) => {
           if (!rows.length) return;
           const head = document.createElement("div");
           head.className = "meta";
-          head.style.cssText = `font-weight:600;margin:6px 0 4px;color:${inCut ? "var(--green-dk)" : "var(--txt3)"}`;
+          head.style.cssText = "font-weight:600;margin:6px 0 4px;color:var(--txt2)";
           head.textContent = label;
           body.appendChild(head);
           rows.forEach((r, i) => {
+            const inCut = winIds.has(r.id);
             const line = document.createElement("div");
             line.className = "irow";
             line.style.cssText = inCut ? "background:var(--green-bg);border-radius:8px;margin-bottom:2px" : "";
             line.innerHTML = `
-              <span style="width:26px" class="meta">${startIdx + i + 1}.</span>
+              <span style="width:26px" class="meta">${i + 1}.</span>
               <b class="nm"></b>
               <span class="meta sc" style="width:110px"></span>
               <span class="meta qy" style="width:46px"></span>
               <span class="prefs"></span>
               <span class="warn" style="color:#A32D2D;font-size:12px"></span>
               <span style="margin-left:auto" class="act"></span>`;
-            line.querySelector(".nm").textContent = r.nick;
+            line.querySelector(".nm").textContent = (inCut ? "✅ " : "") + r.nick;
             line.querySelector(".sc").textContent = `기여 ${(r.score || 0).toLocaleString()}`;
             line.querySelector(".qy").textContent = `${r.qty}개`;
             if (r.preference_1) {
               const p = document.createElement("span");
               p.className = "meta";
-              p.textContent = `1순위 ${r.preference_1}${r.preference_2 ? ` · 2순위 ${r.preference_2}` : ""}`;
+              p.textContent = `희망 옵션 1 ${r.preference_1}${r.preference_2 ? ` · 2 ${r.preference_2}` : ""}`;
               line.querySelector(".prefs").appendChild(p);
             }
             if (r.ineligible) {
@@ -245,13 +266,10 @@ const DistManage = (() => {
             body.appendChild(line);
           });
         };
-        if (openItem) {
-          // 컷 구분 없이 전체 나열 — 운영진이 명단에서 직접 확정
-          sub(`🙋 신청자 명단 (${g.requests.length}명)`, g.requests, 0, false);
-        } else {
-          sub(`✅ 선정 예정 (상위 ${Math.min(cut, g.requests.length)}명)`, g.requests.slice(0, cut), 0, true);
-          sub("확정권 밖", g.requests.slice(cut), cut, false);
-        }
+        sub("1순위 지망 (여기서 먼저 선정)", pools[1]);
+        sub("2순위 지망", pools[2]);
+        sub("3순위 지망", pools[3]);
+        sub(openItem ? `🙋 자유 신청 (${pools.free.length}명) — 선정은 운영진 선택` : "자유 신청 (기여점수순)", pools.free);
       }
       listEl.appendChild(card);
     });

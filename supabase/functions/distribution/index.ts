@@ -242,6 +242,23 @@ function checkEligibility(
 // 공식 구분 5분류 (카테고리 표준화 — 프론트 GameData.category5와 동일 규칙).
 // DB 구분 값이 이미 5분류면 그대로, 구 값이면 이름 기반으로 환산한다.
 const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
+
+// 자유 신청 판정 (R5): (a) 전설 아퀴 2회 이상 유찰 (b) 대량 소모품 free_apply 플래그
+// (c) 심연석 3종(별빛/조각/찬란한) — 수량 개념 없이 신청만 받고 운영진이 선정하는 기존 결정 유지.
+// 자유 신청은 지망 칸을 쓰지 않고(R5), 회차당 1개 제한(R3)에도 포함되지 않는다.
+function isFreeApplyItem(
+  itemName: string,
+  category: string | null,
+  grade: string | null,
+  unsoldCount: number,
+  freeFlag: boolean,
+): boolean {
+  if (freeFlag) return true;
+  const ns = itemName.replace(/ /g, "");
+  if (ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"))) return true;
+  const cat = (category || "").replace(/ /g, "");
+  return (cat === "아퀴" || cat === "아퀴룬") && grade === "전설" && (unsoldCount || 0) >= 2;
+}
 function classifyTab(itemName: string, category: string | null, _grade: string | null): string {
   if (category && DIST_CATEGORIES.includes(category)) return category;
   const noSpace = itemName.replace(/ /g, "");
@@ -783,12 +800,12 @@ Deno.serve(async (req: Request) => {
       const staff = isStaff(user);
       const { data: inv, error: invErr } = await supabase
         .from("inventory")
-        .select("id, item_name, grade, category, quantity, looter, raid_type, is_category_item, unsold_period_count")
+        .select("id, item_name, grade, category, quantity, looter, raid_type, is_category_item, unsold_period_count, free_apply")
         .eq("status", "재고");
       if (invErr) return jsonResponse({ error: "재고 조회에 실패했습니다." }, 500);
       const { data: reqs, error: reqErr } = await supabase
         .from("item_requests")
-        .select("id, user_id, item_id, requested_quantity, current_contribution_score, request_date, preference_1, preference_2")
+        .select("id, user_id, item_id, requested_quantity, current_contribution_score, request_date, preference_1, preference_2, wish_rank")
         .eq("status", "대기");
       if (reqErr) return jsonResponse({ error: "신청 조회에 실패했습니다." }, 500);
 
@@ -831,6 +848,7 @@ Deno.serve(async (req: Request) => {
             item_name: it.item_name, grade: it.grade, category: it.category,
             quantity: 0, looters: [] as string[], item_ids: [] as number[],
             is_category_item: false, unsold_period_count: 0, raid_type: it.raid_type || "결사",
+            free_apply: false,
             requests: [] as Record<string, unknown>[],
           };
           groups.set(it.item_name, g);
@@ -840,6 +858,7 @@ Deno.serve(async (req: Request) => {
         if (it.looter && !(g.looters as string[]).includes(it.looter)) (g.looters as string[]).push(it.looter);
         g.is_category_item = (g.is_category_item as boolean) || !!it.is_category_item;
         g.unsold_period_count = Math.max(g.unsold_period_count as number, it.unsold_period_count || 0);
+        g.free_apply = (g.free_apply as boolean) || !!it.free_apply;
       }
 
       for (const r of reqs || []) {
@@ -859,6 +878,7 @@ Deno.serve(async (req: Request) => {
           request_date: r.request_date,
           preference_1: r.preference_1,
           preference_2: r.preference_2,
+          wish_rank: r.wish_rank ?? null,
         };
         if (staff && m) {
           const part = partByUser.get(r.user_id) ?? 0;
@@ -881,6 +901,10 @@ Deno.serve(async (req: Request) => {
           (a, b) => b.score - a.score || String(a.request_date).localeCompare(String(b.request_date)),
         );
         g.tab = classifyTab(String(g.item_name), g.category as string | null, g.grade as string | null);
+        g.is_free = isFreeApplyItem(
+          String(g.item_name), g.category as string | null, g.grade as string | null,
+          g.unsold_period_count as number, !!g.free_apply,
+        );
         return g;
       });
       const period = await getActivePeriod();
@@ -969,7 +993,7 @@ Deno.serve(async (req: Request) => {
     if (view === "my") {
       const { data, error } = await supabase
         .from("item_requests")
-        .select("id, item_id, requested_quantity, preference_1, preference_2, request_date, current_contribution_score, status")
+        .select("id, item_id, requested_quantity, preference_1, preference_2, request_date, current_contribution_score, status, wish_rank")
         .eq("user_id", user.user_id)
         .eq("status", "대기")
         .order("request_date", { ascending: false });
@@ -1003,7 +1027,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: inv, error: invErr } = await supabase
       .from("inventory")
-      .select("id, item_name, grade, category, quantity, looter, raid_type, drop_date, unsold_period_count, is_category_item")
+      .select("id, item_name, grade, category, quantity, looter, raid_type, drop_date, unsold_period_count, is_category_item, free_apply")
       .eq("status", "재고");
     if (invErr) return jsonResponse({ error: "재고 조회에 실패했습니다." }, 500);
 
@@ -1019,15 +1043,25 @@ Deno.serve(async (req: Request) => {
     // 본인의 기존 신청(대기/확정) — item_name 기준 중복 표시용
     const { data: myReqs } = await supabase
       .from("item_requests")
-      .select("item_id, status")
+      .select("item_id, status, wish_rank")
       .eq("user_id", user.user_id)
       .in("status", ["대기", "확정"]);
     const invById = new Map((inv || []).map((i) => [i.id, i]));
     const myRequestedNames = new Set<string>();
+    let hasConfirmedWish = false;
     for (const r of myReqs || []) {
       const it = invById.get(r.item_id);
       if (it) myRequestedNames.add(it.item_name);
+      if (r.status === "확정" && r.wish_rank != null) hasConfirmedWish = true;
     }
+
+    // 지망/신청 현황 공개 (시안: 누가 몇 순위로 걸었는지 전원 공개 — 닉네임+기여점수)
+    const { data: pendReqs } = await supabase
+      .from("item_requests")
+      .select("user_id, item_id, wish_rank, current_contribution_score, request_date")
+      .eq("status", "대기");
+    const { data: allMems } = await supabase.from("members").select("user_id, current_id");
+    const nickByUid2 = new Map((allMems || []).map((m) => [m.user_id, m.current_id || m.user_id]));
 
     // (item_name, raid_type) 그룹핑 — 원본 6527-6560
     const groups = new Map<string, Record<string, unknown>>();
@@ -1071,12 +1105,30 @@ Deno.serve(async (req: Request) => {
         String(g.item_name), g.category as string | null, g.grade as string | null,
         memberRow, regs, participation, g.unsold_period_count as number,
       );
+      const free = isFreeApplyItem(
+        String(g.item_name), g.category as string | null, g.grade as string | null,
+        g.unsold_period_count as number, !!g.free_apply,
+      );
+      const ids = new Set(g.item_ids as number[]);
+      const applicants = (pendReqs || [])
+        .filter((r) => ids.has(r.item_id))
+        .map((r) => ({
+          user_id: r.user_id,
+          nick: nickByUid2.get(r.user_id) || r.user_id,
+          score: r.current_contribution_score || 0,
+          rank: r.wish_rank ?? null,
+          request_date: r.request_date,
+        }))
+        .sort((a, b) => b.score - a.score || String(a.request_date).localeCompare(String(b.request_date)));
+      const mine = applicants.find((a) => a.user_id === user.user_id);
+
       let blocked: string | null = null;
       if (g.raid_type === "연합") blocked = "🔒 연합 룻 (신청불가)";
       else if (myRequestedNames.has(String(g.item_name))) blocked = "✅ 신청 완료";
       else if (!periodActive) blocked = "⏳ 신청 기간이 아닙니다";
       else if (!hasPowerSs) blocked = "📸 전투력 스샷 미등록 (신청불가)";
       else if (!hasAquiSs) blocked = "📸 아퀴룬 스샷 미등록 (신청불가)";
+      else if (!free && hasConfirmedWish) blocked = "✅ 이번 회차 확정 완료 (재지망 불가)";
       else if (!elig.eligible && !staff) blocked = "❌ 자격 미달";
 
       return {
@@ -1087,13 +1139,23 @@ Deno.serve(async (req: Request) => {
         eligibility: elig,
         blocked_reason: blocked,
         can_apply: blocked === null,
+        is_free: free,
+        my_rank: mine && mine.rank != null ? mine.rank : null,
+        my_free_applied: !!(mine && mine.rank == null),
+        applicants,
       };
     });
 
     return jsonResponse({
       period,
       auto_confirmed: autoConfirmed,
-      my: { participation_rate: participation, contribution_score: memberRow.contribution_score || 0, has_power_ss: hasPowerSs, has_aqui_ss: hasAquiSs },
+      my: {
+        participation_rate: participation,
+        contribution_score: memberRow.contribution_score || 0,
+        has_power_ss: hasPowerSs,
+        has_aqui_ss: hasAquiSs,
+        has_confirmed_wish: hasConfirmedWish,
+      },
       groups: groupList,
     });
   }
@@ -1117,7 +1179,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: item } = await supabase
       .from("inventory")
-      .select("id, item_name, grade, category, raid_type, unsold_period_count, is_category_item")
+      .select("id, item_name, grade, category, raid_type, unsold_period_count, is_category_item, free_apply")
       .eq("id", itemId)
       .eq("status", "재고")
       .maybeSingle();
@@ -1150,33 +1212,52 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: `신청 자격 미달 — ${reason}` }, 403);
     }
 
-    // 심연석류(별빛 심연석·조각, 찬란한 심연석)는 수량·재고 개념 없이 신청만 받는다 —
-    // 수량 1 고정, 재고 수량 상한 검증 없음. 선정은 운영진이 신청자 중에서 직접 확정.
-    const openNameNorm = item.item_name.replace(/ /g, "");
-    const isOpenApply = openNameNorm.includes("별빛심연석") ||
-      (openNameNorm.includes("찬란한") && openNameNorm.includes("심연석"));
+    // ── 지망제 (R1~R5) ──
+    // 자유 신청 아이템(유찰 전설아퀴 / free_apply 대량 소모품 / 심연석 3종)은 지망 칸을 쓰지 않고,
+    // 그 외 아이템은 wish_rank(1~3) 필수. 같은 순위 교체·같은 아이템 순위 이동은 RPC가 처리.
+    const isFree = isFreeApplyItem(
+      item.item_name, item.category, item.grade, maxUnsold, !!item.free_apply,
+    );
+    const rawRank = body.wish_rank;
+    const wishRank = rawRank == null ? null : Number(rawRank);
+    if (wishRank != null && ![1, 2, 3].includes(wishRank)) {
+      return jsonResponse({ error: "지망 순위는 1~3만 가능합니다." }, 400);
+    }
+    if (isFree && wishRank != null) {
+      return jsonResponse({ error: "자유 신청 아이템은 지망 없이 신청합니다." }, 400);
+    }
+    if (!isFree && wishRank == null) {
+      return jsonResponse({ error: "지망 순위(1~3)를 선택해주세요." }, 400);
+    }
 
     let qty = 1;
     let pref1 = "";
     let pref2 = "";
     if (item.is_category_item) {
-      // 카테고리 아이템: 수량 1 고정, 1순위 필수 (원본 다이얼로그 동일)
+      // 카테고리 아이템: 수량 1 고정, 희망 옵션 1 필수 (원본 다이얼로그 동일)
       pref1 = typeof body.preference_1 === "string" ? body.preference_1.trim() : "";
       pref2 = typeof body.preference_2 === "string" ? body.preference_2.trim() : "";
-      if (!pref1) return jsonResponse({ error: "1순위 선호를 입력해주세요." }, 400);
-    } else if (isOpenApply) {
-      qty = 1;
+      if (!pref1) return jsonResponse({ error: "희망 옵션 1을 입력해주세요." }, 400);
+    } else if (wishRank != null) {
+      qty = 1; // 지망은 수량 1 고정 (R2 — 재고 수량만큼 위에서부터 확정)
     } else {
-      qty = Number(body.quantity);
-      if (!Number.isInteger(qty) || qty < 1) return jsonResponse({ error: "수량은 1 이상의 정수여야 합니다." }, 400);
-      const nameNorm = item.item_name.replace(/ /g, "");
-      const cap = nameNorm.includes("찬란한") ? Math.min(totalQty, 3) : totalQty;
-      if (qty > cap) return jsonResponse({ error: `신청 수량은 최대 ${cap}개입니다.` }, 400);
+      // 자유 신청: 기존 수량 규칙 유지. 심연석 3종은 수량 개념 없음(1 고정, 상한 검증 생략).
+      const ns = item.item_name.replace(/ /g, "");
+      const isSimyeon = ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
+      if (isSimyeon) {
+        qty = 1;
+      } else {
+        qty = Number(body.quantity ?? 1);
+        if (!Number.isInteger(qty) || qty < 1) return jsonResponse({ error: "수량은 1 이상의 정수여야 합니다." }, 400);
+        const cap = ns.includes("찬란한") ? Math.min(totalQty, 3) : totalQty;
+        if (qty > cap) return jsonResponse({ error: `신청 수량은 최대 ${cap}개입니다.` }, 400);
+      }
     }
 
-    const { data: rpcResult, error: rpcErr } = await supabase.rpc("add_item_request_safe", {
+    const { data: rpcResult, error: rpcErr } = await supabase.rpc("add_item_wish_safe", {
       p_user_id: user.user_id,
       p_item_id: itemId,
+      p_rank: wishRank,
       p_score: me.contribution_score || 0,
       p_qty: qty,
       p_pref1: pref1,
@@ -1184,6 +1265,9 @@ Deno.serve(async (req: Request) => {
     });
     if (rpcErr) return jsonResponse({ error: "신청 처리에 실패했습니다." }, 500);
 
+    if (rpcResult === "already_confirmed") {
+      return jsonResponse({ error: "이번 회차에 이미 확정된 아이템이 있어 지망할 수 없습니다. (회차당 1개)" }, 409);
+    }
     if (rpcResult === "dup_confirmed") {
       return jsonResponse({ error: "이미 확정 대기 중인 신청이 있습니다. 나감 처리 후 재신청할 수 있습니다." }, 409);
     }

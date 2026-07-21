@@ -36,6 +36,7 @@
 - **아퀴 매핑 단일 출처**: `js/gamedata.js`(원본 app.py AQUI_ITEMS 이식본). 신화 아퀴룬 직업별 매핑도 gamedata.js MYTHIC_RUNES 참조(야만투사 2번 없음). 새 매핑 테이블 생성 금지.
 - **아이템 구분 5분류 단일 출처**: 아퀴룬 | 브로치 | 별빛심연석 | 찬란한심연석 | 전파편 및 기타 — `GameData.category5(name, category, grade)` (서버 distribution classifyTab 동일 규칙, 구 값은 이름 기반 환산). DB category는 2026-07-21 5분류로 일괄 마이그레이션 완료. 자격 판정·분배 시 아퀴 자동 갱신은 "아퀴"(구)·"아퀴룬"(신) 동일 취급 — 자격 규칙 자체는 원본 불변.
 - **심연석 3종(별빛 심연석/조각/찬란한 심연석)은 수량·재고 개념 없음**: `GameData.isOpenApplyItem` — 신청 수량 1 고정(서버도 재고 상한 검증 생략, 찬란한 1인 3개 상한 소멸), ×N 표기 없음, 선정은 운영진이 분배 현황 신청자 명단에서 직접 확정. 목록 노출은 재고 행 기반(행이 있으면 수량 0이어도 신청 가능). 룻자·룻일자는 결사원 화면 비노출(운영진 전용).
+- **분배 신청 = 지망제** (0011 마이그레이션 + 시안 `고니\분배신청_지망제_시안.html`, 2026-07-21 적용): 회차당 최대 3개를 1·2·3순위 지망(`item_requests.wish_rank`, NULL=자유 신청, 대기 상태 한정 user×rank 유니크). 선정은 `close_distribution_period` 3패스(1→2→3순위 풀, 풀 안은 기여점수 DESC·신청일 ASC) — 확정 즉시 잔여 지망 자동 취소(R3, 수동 confirm도 동일), 순위 밖 반려, 유찰은 확정 0건 전설아퀴만 +1. **자유 신청**(`isFreeApplyItem` = free_apply 플래그 ∥ 심연석 3종 ∥ 전설아퀴 2회 유찰)은 지망 칸·R3 미적용, 기존 기여점수순 확정. 신청 RPC는 `add_item_wish_safe`(같은 순위 교체/같은 아이템 순위 이동 자동 처리, 구 `add_item_request_safe`는 미사용 존치). 자격 검사(R6)·finalize·공금·분배취소는 불변. 카테고리 아이템 preference_1/2 화면 용어 = "희망 옵션 1·2".
 - **모바일 문법** (767px 이하, 데스크톱 불변): 상단 탭 한 줄 스크롤+sticky+축약(`.lf` 풀네임/`.ls` 축약 스팬), 필터 칩 한 줄 스크롤+0건 숨김, 목록 행은 `.irow.two` + `.r1`/`.r2` 래퍼(데스크톱은 `display:contents`로 투명 → 컬럼 레이아웃 유지), 표는 가로 스크롤+첫 컬럼 sticky. 새 목록 화면을 만들 땐 이 문법을 따를 것.
 - **직업 엠블럼**: `img/classes/*.svg`(넥슨 공식, 단색) + `GameData.classEmblemEl(직업, 크기, "dark")` — 밝은 배경엔 "dark" variant. 내정보 아바타/대시보드 카드/결사원 목록/직업 분포에 적용됨.
 
@@ -55,7 +56,8 @@
 | 6eaf806 | 관리자 로그 관리 탭 + 참석 보정 + 시즌별 참여 기록 |
 | 7576c4f | 분배 신청 탭 단순화 + 카테고리 5분류 표준화 (v=44) |
 | 943ca02 | 결사원 목록 정렬 셀렉트(참여점수/기여점수/전투력 순) (v=45) |
-| (최신) | 참여점수 정렬에 시즌 범위 합산 선택 추가 — **현재 배포 버전 (v=46)** |
+| c8beb64 | 참여점수 정렬에 시즌 범위 합산 선택 추가 (v=46) |
+| (최신) | 분배 신청 지망제 개편 (0011 + inventory/distribution 함수 재배포) — **현재 배포 버전 (v=47)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

@@ -172,6 +172,7 @@ const Inventory = (() => {
         category: document.getElementById("dropCategory").value,
         quantity: parseInt(document.getElementById("dropQty").value, 10) || 1,
         looter: document.getElementById("dropLooter").value.trim(),
+        free_apply: document.getElementById("dropFree").checked,
       };
       try {
         await Api.createInventoryItem(payload);
@@ -490,6 +491,7 @@ const Inventory = (() => {
     document.getElementById("editCategory").value = GameData.category5(it.item_name, it.category, it.grade);
     document.getElementById("editQty").value = it.quantity;
     document.getElementById("editLooter").value = it.looter || "";
+    document.getElementById("editFree").checked = !!it.free_apply;
     document.getElementById("editForm").dataset.id = it.id;
     document.getElementById("editModalBackdrop").classList.add("on");
   }
@@ -507,6 +509,7 @@ const Inventory = (() => {
         category: document.getElementById("editCategory").value,
         quantity: parseInt(document.getElementById("editQty").value, 10),
         looter: document.getElementById("editLooter").value.trim(),
+        free_apply: document.getElementById("editFree").checked,
       };
       try {
         await Api.updateInventoryItem(id, payload);

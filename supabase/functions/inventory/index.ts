@@ -80,6 +80,7 @@ interface InventoryPayload {
   category: string;
   quantity: number;
   looter?: string;
+  free_apply: boolean; // 대량 소모품 자유 신청 (지망제 R5-b)
 }
 
 function validateInventoryPayload(
@@ -104,9 +105,10 @@ function validateInventoryPayload(
   }
 
   const looter = typeof body.looter === "string" ? body.looter.trim() : "";
+  const free_apply = body.free_apply === true;
 
   if (errors.length) return { valid: false, errors };
-  return { valid: true, errors: [], value: { item_name, grade, category, quantity, looter } };
+  return { valid: true, errors: [], value: { item_name, grade, category, quantity, looter, free_apply } };
 }
 
 interface InventoryExtra {
@@ -162,6 +164,7 @@ async function upsertInventoryItem(
       drop_date: normalizeDropDate(extra.drop_date),
       boss_name: extra.boss_name,
       raid_type: extra.raid_type,
+      free_apply: item.free_apply,
     })
     .select()
     .single();
@@ -265,6 +268,7 @@ Deno.serve(async (req: Request) => {
         category: item.category,
         quantity: item.quantity,
         looter: item.looter || null,
+        free_apply: item.free_apply,
       })
       .eq("id", id)
       .eq("status", "재고")
