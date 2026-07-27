@@ -17,6 +17,8 @@ const Warehouse = (() => {
   let period = null;
   let periodActive = false;
   let activeChip = "전체";
+  let loadedOnce = false;
+  let syncVer = -1; // DistSync 캐시 버전 — 탭 전환 시 데이터가 그대로면 재조회 생략
 
   function toast(msg, isErr) {
     const t = document.getElementById("whToast");
@@ -60,11 +62,24 @@ const Warehouse = (() => {
     return Date.now() + 9 * 3600 * 1000 - t < 7 * 86400 * 1000;
   }
 
+  // 탭 진입용: 분배 데이터가 안 바뀌었으면(DistSync 버전 동일) 캐시로 즉시 렌더
+  async function open() {
+    if (!loadedOnce || syncVer !== DistSync.ver) {
+      await load();
+      return;
+    }
+    renderPeriodCard();
+    renderSummary();
+    renderChips();
+    render();
+  }
+
   async function load() {
     try {
       const [items, dist] = await Promise.all([
         Api.listInventory(),
-        Api.getDistributionItems().catch(() => null), // 신청 연결/기간 폼용 — 실패해도 열람은 유지
+        // 신청 연결/기간 폼용 — 경량 기간 조회(view=period). 실패해도 열람은 유지
+        Api.getDistributionPeriod().catch(() => null),
       ]);
       period = (dist && dist.period) || null;
       periodActive = !!(period && period.status === "진행중");
@@ -82,6 +97,8 @@ const Warehouse = (() => {
         if (it.registered_at && (!g.newest || String(it.registered_at) > String(g.newest))) g.newest = it.registered_at;
       }
       groups = [...map.values()];
+      loadedOnce = true;
+      syncVer = DistSync.ver;
     } catch (e) {
       toast(e.message || "창고 조회 실패", true);
       return;
@@ -123,6 +140,7 @@ const Warehouse = (() => {
       }
       try {
         await Api.setDistributionPeriod(start, end);
+        DistSync.bump(); // 다른 분배 하위 탭 캐시 무효화
         toast("📅 분배 신청 기간이 설정되었습니다.");
         await load();
       } catch (err) {
@@ -135,6 +153,7 @@ const Warehouse = (() => {
       if (!newEnd || !period) return;
       try {
         await Api.extendDistributionPeriod(period.id, newEnd);
+        DistSync.bump();
         toast("마감 시각이 변경되었습니다.");
         await load();
       } catch (err) {
@@ -147,6 +166,7 @@ const Warehouse = (() => {
       if (!confirm("기간을 종료하고 자동확정(지망 선정)을 실행할까요? 되돌릴 수 없습니다.")) return;
       try {
         const res = await Api.closeDistributionPeriod(period.id);
+        DistSync.bump();
         toast(`기간 종료 — ${res.confirmed_count || 0}건 자동 확정되었습니다.`);
         await load();
       } catch (err) {
@@ -274,5 +294,5 @@ const Warehouse = (() => {
     initPeriodForms();
   }
 
-  return { init, load, render };
+  return { init, load, open, render };
 })();

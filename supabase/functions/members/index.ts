@@ -354,14 +354,6 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(data);
     }
 
-    const { data, error } = await supabase
-      .from("members")
-      .select(
-        "user_id, current_id, guild_name, class, level, power, role, subjugation_rank, abyss_level, contribution_score, participation_score, registered_at, equipment_info, status_check",
-      )
-      .order("current_id", { ascending: true });
-    if (error) return jsonResponse({ error: "결사원 목록 조회에 실패했습니다." }, 500);
-
     // 스샷 유무 플래그 — 이미지 원문(레거시 base64 블랍)은 목록에서 절대 select하지 않는다.
     // 원본 get_all_members도 같은 이유로 has_power_img 불리언만 계산했다(database.py:1160).
     const imgFlagSet = async (col: string): Promise<Set<string>> => {
@@ -373,8 +365,19 @@ Deno.serve(async (req: Request) => {
       if (e || !rows) return new Set();
       return new Set(rows.map((r: { user_id: string }) => r.user_id));
     };
-    const hasPower = await imgFlagSet("power_img_url");
-    const hasAqui = await imgFlagSet("status_check_img_url");
+    // 성능: 목록 + 스샷 플래그 2종은 서로 독립 — 순차 3회 왕복 → 병렬 1웨이브
+    const [listRes, hasPower, hasAqui] = await Promise.all([
+      supabase
+        .from("members")
+        .select(
+          "user_id, current_id, guild_name, class, level, power, role, subjugation_rank, abyss_level, contribution_score, participation_score, registered_at, equipment_info, status_check",
+        )
+        .order("current_id", { ascending: true }),
+      imgFlagSet("power_img_url"),
+      imgFlagSet("status_check_img_url"),
+    ]);
+    const { data, error } = listRes;
+    if (error) return jsonResponse({ error: "결사원 목록 조회에 실패했습니다." }, 500);
     return jsonResponse(
       (data ?? []).map((m) => ({
         ...m,

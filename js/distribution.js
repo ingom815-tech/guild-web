@@ -9,6 +9,7 @@ const Distribution = (() => {
   let openNames = new Set(); // 재렌더 후에도 펼침 상태 유지
   let applyTarget = null; // 모달 대상 { g, rank } (rank null = 자유 신청 수량 입력)
   let pendingFocus = null; // 결사 창고에서 넘어올 때 포커스할 아이템명
+  let syncVer = -1; // DistSync 캐시 버전 — 탭 전환 시 데이터가 그대로면 재조회 생략
 
   function toast(msg, isErr) {
     const t = document.getElementById("applyToast");
@@ -76,11 +77,26 @@ const Distribution = (() => {
     return winners;
   }
 
+  // 탭 진입용: 분배 데이터가 안 바뀌었으면(DistSync 버전 동일) 캐시로 즉시 렌더
+  async function open() {
+    if (!data || syncVer !== DistSync.ver) {
+      await load();
+      return;
+    }
+    renderPeriod();
+    renderBanner();
+    renderWishStrip();
+    renderChips();
+    renderList();
+    if (pendingFocus) applyFocus();
+  }
+
   async function load() {
     try {
       const [items, my] = await Promise.all([Api.getDistributionItems(), Api.getMyRequests()]);
       data = items;
       myRequests = my;
+      syncVer = DistSync.ver;
     } catch (e) {
       toast(e.message || "분배 정보 조회 실패", true);
       return;
@@ -284,7 +300,8 @@ const Distribution = (() => {
     );
     document.getElementById("applyEmpty").style.display = groups.length ? "none" : "block";
 
-    // "아퀴룬 18 ───" 형식 섹션 헤더 + 카테고리별 목록 컨테이너
+    // "아퀴룬 18 ───" 형식 섹션 헤더 + 카테고리별 목록 컨테이너 — 모아서 1회 삽입
+    const frag = document.createDocumentFragment();
     for (const cat of order) {
       const catGroups = groups.filter((g) => cat5(g) === cat);
       if (!catGroups.length) continue;
@@ -292,12 +309,13 @@ const Distribution = (() => {
       headEl.className = "cathead";
       headEl.innerHTML = `<span class="cname"></span><span class="ccnt">${catGroups.length}</span><span class="ln"></span>`;
       headEl.querySelector(".cname").textContent = cat;
-      listEl.appendChild(headEl);
+      frag.appendChild(headEl);
       const box = document.createElement("div");
       box.className = "mlist";
       catGroups.forEach((g) => box.appendChild(buildItem(g)));
-      listEl.appendChild(box);
+      frag.appendChild(box);
     }
+    listEl.appendChild(frag);
   }
 
   function buildItem(g) {
@@ -474,6 +492,7 @@ const Distribution = (() => {
     btn.disabled = true;
     try {
       await Api.createItemRequest({ item_id: g.first_item_id, wish_rank: rank });
+      DistSync.bump(); // 다른 분배 하위 탭 캐시 무효화
       toast(`✓ ${g.item_name} — ${rank}순위 지망 등록`);
       await load();
     } catch (err) {
@@ -489,6 +508,7 @@ const Distribution = (() => {
     btn.disabled = true;
     try {
       await Api.cancelItemRequest(pending.id);
+      DistSync.bump();
       toast("지망을 해제했습니다.");
       await load();
     } catch (err) {
@@ -508,6 +528,7 @@ const Distribution = (() => {
           return;
         }
         await Api.cancelItemRequest(pending.id);
+        DistSync.bump();
         toast("신청이 취소되었습니다.");
         await load();
         return;
@@ -523,6 +544,7 @@ const Distribution = (() => {
         return;
       }
       await Api.createItemRequest({ item_id: g.first_item_id, quantity: 1 });
+      DistSync.bump();
       toast(`✅ ${g.item_name} 신청 완료!`);
       await load();
     } catch (err) {
@@ -589,6 +611,7 @@ const Distribution = (() => {
           body.quantity = parseInt(document.getElementById("applyQty").value, 10) || 1;
         }
         await Api.createItemRequest(body);
+        DistSync.bump();
         document.getElementById("applyModalBackdrop").classList.remove("on");
         toast(rank != null ? `✓ ${g.item_name} — ${rank}순위 지망 등록` : `✅ ${g.item_name} 신청 완료!`);
         applyTarget = null;
@@ -605,5 +628,5 @@ const Distribution = (() => {
     initApplyModal();
   }
 
-  return { init, load, goShots, goRules, focusItem };
+  return { init, load, open, goShots, goRules, focusItem };
 })();

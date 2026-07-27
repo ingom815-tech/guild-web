@@ -22,23 +22,38 @@ const Members = (() => {
     toast._t = setTimeout(() => (t.style.display = "none"), 4000);
   }
 
+  let loaded = false; // 탭 전환 캐시 — 수정 액션은 항상 load()를 다시 불러 갱신한다
+
   async function load() {
     try {
-      members = await Api.listMembers();
+      // 성능: 목록·결사 조회는 서로 독립 — 병렬 (guilds 실패 시에도 목록 화면은 유지)
+      const [mem, gld] = await Promise.all([
+        Api.listMembers(),
+        Api.getGuilds().catch(() => []),
+      ]);
+      members = mem;
+      guilds = gld;
     } catch (e) {
       toast(e.message || "결사원 목록 조회 실패", true);
       return;
     }
-    try {
-      guilds = await Api.getGuilds();
-    } catch (e) {
-      guilds = []; // guilds 미배포/조회 실패 시에도 목록 화면은 유지
-    }
+    loaded = true;
     renderGuildChips();
     renderGuildAdmin();
     fillMemberGuildSelect();
     render();
     loadRegistrations();
+  }
+
+  // 탭 진입용: 캐시가 있으면 재조회 없이 그대로 렌더 (데이터 수정 시엔 load()가 다시 불림)
+  async function open() {
+    if (!loaded) {
+      await load();
+      return;
+    }
+    renderGuildChips();
+    render();
+    renderRegistrations();
   }
 
   // 등록/수정 모달의 소속결사를 guilds 선택형으로 (구 값은 openEdit에서 옵션 보강)
@@ -206,6 +221,7 @@ const Members = (() => {
     document.getElementById("regRequestsEmpty").style.display = regs.length ? "none" : "flex";
     document.getElementById("regBulkBar").style.display = regs.length ? "flex" : "none";
 
+    const regFrag = document.createDocumentFragment(); // 행 일괄 삽입 (대량 가입 대비)
     shown.forEach((r) => {
       const row = document.createElement("div");
       row.className = "irow";
@@ -255,8 +271,9 @@ const Members = (() => {
           await load();
         });
       });
-      listEl.appendChild(row);
+      regFrag.appendChild(row);
     });
+    listEl.appendChild(regFrag);
     updateRegBulkBtn();
     syncRegCheckAll();
   }
@@ -453,6 +470,7 @@ const Members = (() => {
     emptyRow.style.display = rows.length ? "none" : "flex";
 
     const isAdmin = (Auth.getUser() || {}).role === "관리자";
+    const frag = document.createDocumentFragment(); // 행을 모아 1회 삽입 (181명 대비)
     rows.forEach((m) => {
       const row = document.createElement("div");
       row.className = "irow two"; // r1/r2 래퍼는 데스크톱에서 display:contents (레이아웃 불변), 모바일 2단 행
@@ -532,8 +550,9 @@ const Members = (() => {
         delBtn.title = "탈퇴 처리는 관리자만 가능합니다.";
         delBtn.style.opacity = ".4";
       }
-      container.appendChild(row);
+      frag.appendChild(row);
     });
+    container.appendChild(frag);
   }
 
   // ── 스샷 보기 모달 (열 때 해당 결사원의 요청한 종류 이미지만 서버에서 가져옴) ──
@@ -1362,5 +1381,5 @@ const Members = (() => {
     });
   }
 
-  return { init, load, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection, onSortChange, onSeasonRange };
+  return { init, load, open, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection, onSortChange, onSeasonRange };
 })();

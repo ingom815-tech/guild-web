@@ -370,7 +370,7 @@ function naiveKstToEpoch(ts: string): number {
 async function getActivePeriod(): Promise<Record<string, unknown> | null> {
   const { data } = await supabase
     .from("distribution_period")
-    .select("*")
+    .select("id, start_time, end_time, status")
     .eq("status", "진행중")
     .order("id", { ascending: false })
     .limit(1);
@@ -741,30 +741,40 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const view = url.searchParams.get("view") || "items";
 
+    // 결사 창고용 경량 조회: 활성 기간만 (view=items의 전체 재고/자격 계산 없이)
+    if (view === "period") {
+      return jsonResponse({ period: await getActivePeriod() });
+    }
+
     // ── 신청 현황 (전 회원 조회 — 원본 get_items_with_requests_full) ──
     if (view === "status") {
       const staff = isStaff(user);
-      const { data: inv, error: invErr } = await supabase
-        .from("inventory")
-        .select("id, item_name, grade, category, quantity, looter, raid_type, is_category_item, unsold_period_count, free_apply")
-        .eq("status", "재고");
+      // 성능: 독립 조회 병렬화. members는 이 화면에서 닉/권한만 쓰므로(자격 검사는 합병
+      // 개정판에서 참여율 단일 관문 — 회원 정보 미사용) equipment_info 등 큰 컬럼 제외.
+      const [invRes, reqRes, memRes, period, regsStaff] = await Promise.all([
+        supabase
+          .from("inventory")
+          .select("id, item_name, grade, category, quantity, looter, raid_type, is_category_item, unsold_period_count, free_apply")
+          .eq("status", "재고"),
+        supabase
+          .from("item_requests")
+          .select("id, user_id, item_id, requested_quantity, current_contribution_score, request_date, preference_1, preference_2, wish_rank")
+          .eq("status", "대기"),
+        supabase.from("members").select("user_id, current_id, role"),
+        getActivePeriod(),
+        staff ? getRegulations() : Promise.resolve({} as Record<string, unknown>),
+      ]);
+      const { data: inv, error: invErr } = invRes;
       if (invErr) return jsonResponse({ error: "재고 조회에 실패했습니다." }, 500);
-      const { data: reqs, error: reqErr } = await supabase
-        .from("item_requests")
-        .select("id, user_id, item_id, requested_quantity, current_contribution_score, request_date, preference_1, preference_2, wish_rank")
-        .eq("status", "대기");
+      const { data: reqs, error: reqErr } = reqRes;
       if (reqErr) return jsonResponse({ error: "신청 조회에 실패했습니다." }, 500);
-
-      const { data: mems } = await supabase
-        .from("members")
-        .select("user_id, current_id, role, power, equipment_info, contribution_score");
+      const mems = memRes.data;
       const memById = new Map((mems || []).map((m) => [m.user_id, m]));
 
       // 운영진 화면용 자격 재검사 (원본 자격미달 일괄취소 블록) — 참여율은 시즌 단위 일괄 조회
       let partByUser = new Map<string, number>();
-      let regs: Record<string, unknown> = {};
+      const regs: Record<string, unknown> = regsStaff;
       if (staff) {
-        regs = await getRegulations();
         let season = 1;
         const setting = regs.participation_rate_season;
         if (setting === "current" || setting == null) {
@@ -828,9 +838,10 @@ Deno.serve(async (req: Request) => {
         };
         if (staff && m) {
           const part = partByUser.get(r.user_id) ?? 0;
+          // 합병 개정판 checkEligibility는 회원 정보를 쓰지 않음(참여율 단일 관문) — null로 충분
           const elig = checkEligibility(
             it.item_name, it.category, it.grade,
-            { power: m.power, equipment_info: m.equipment_info, power_img_url: null, status_check_img_url: null, contribution_score: m.contribution_score },
+            { power: null, equipment_info: null, power_img_url: null, status_check_img_url: null, contribution_score: null },
             regs, part, (groups.get(it.item_name)?.unsold_period_count as number) || 0,
           );
           row.ineligible = !elig.eligible && m.role !== "관리자" && m.role !== "운영진";
@@ -853,7 +864,6 @@ Deno.serve(async (req: Request) => {
         );
         return g;
       });
-      const period = await getActivePeriod();
       return jsonResponse({ period, is_staff: staff, groups: list });
     }
 
@@ -869,24 +879,26 @@ Deno.serve(async (req: Request) => {
       const { data: reqs, error } = await q;
       if (error) return jsonResponse({ error: "확정 목록 조회에 실패했습니다." }, 500);
 
+      // 성능: 아이템/닉네임/규정 조회는 서로 독립 — 병렬화
       const itemIds = [...new Set((reqs || []).map((r) => r.item_id))];
-      const invById = new Map<number, Record<string, unknown>>();
-      if (itemIds.length) {
-        const { data: items } = await supabase
-          .from("inventory")
-          .select("id, item_name, grade, category, quantity, looter, looter_user_id")
-          .in("id", itemIds)
-          .eq("status", "재고");
-        for (const it of items || []) invById.set(it.id, it);
-      }
       const uids = [...new Set((reqs || []).map((r) => r.user_id))];
+      const [itemsRes, msRes, confRegs] = await Promise.all([
+        itemIds.length
+          ? supabase
+            .from("inventory")
+            .select("id, item_name, grade, category, quantity, looter, looter_user_id")
+            .in("id", itemIds)
+            .eq("status", "재고")
+          : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+        uids.length
+          ? supabase.from("members").select("user_id, current_id").in("user_id", uids)
+          : Promise.resolve({ data: [] as { user_id: string; current_id: string | null }[] }),
+        getRegulations(), // 내판가 표시용
+      ]);
+      const invById = new Map<number, Record<string, unknown>>();
+      for (const it of itemsRes.data || []) invById.set(it.id as number, it);
       const nickByUid = new Map<string, string>();
-      if (uids.length) {
-        const { data: ms } = await supabase.from("members").select("user_id, current_id").in("user_id", uids);
-        for (const m of ms || []) nickByUid.set(m.user_id, m.current_id || m.user_id);
-      }
-
-      const confRegs = await getRegulations(); // 내판가 표시용
+      for (const m of msRes.data || []) nickByUid.set(m.user_id, m.current_id || m.user_id);
       const rows = (reqs || [])
         .filter((r) => invById.has(r.item_id)) // 원본: i.status='재고' 조인 조건
         .map((r) => {
@@ -964,7 +976,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // view === "items"
-    let period = await getActivePeriod();
+    // 성능: 독립 조회는 병렬(Promise.all) — 순차 왕복 ~9회 → 3웨이브.
+    // 자동확정(close RPC)은 신청/재고 상태를 바꾸므로, 재고·신청 조회는 반드시 그 뒤에 유지.
+    const meQuery = supabase
+      .from("members")
+      .select("power, equipment_info, power_img_url, status_check_img_url, contribution_score, participation_score")
+      .eq("user_id", user.user_id)
+      .maybeSingle();
+    let [period, regs, meRes] = await Promise.all([getActivePeriod(), getRegulations(), meQuery]);
+    const me = meRes.data;
     let autoConfirmed = 0;
     if (period && kstNowEpoch() >= naiveKstToEpoch(String(period.end_time))) {
       // 원본과 동일: 화면 로드 시점에 마감 경과 감지 → 자동확정 + 종료 (RPC가 중복 실행 방지)
@@ -973,27 +993,31 @@ Deno.serve(async (req: Request) => {
       period = { ...period, status: "종료" };
     }
 
-    const { data: inv, error: invErr } = await supabase
-      .from("inventory")
-      .select("id, item_name, grade, category, quantity, looter, raid_type, drop_date, unsold_period_count, is_category_item, free_apply")
-      .eq("status", "재고");
+    const [invRes, participation, myReqsRes, pendReqsRes, allMemsRes] = await Promise.all([
+      supabase
+        .from("inventory")
+        .select("id, item_name, grade, category, quantity, looter, raid_type, drop_date, unsold_period_count, is_category_item, free_apply")
+        .eq("status", "재고"),
+      getParticipationRate(user.user_id, regs),
+      // 본인의 기존 신청(대기/확정) — item_name 기준 중복 표시용
+      supabase
+        .from("item_requests")
+        .select("item_id, status, wish_rank")
+        .eq("user_id", user.user_id)
+        .in("status", ["대기", "확정"]),
+      // 지망/신청 현황 공개 (시안: 누가 몇 순위로 걸었는지 전원 공개 — 닉네임+기여점수)
+      supabase
+        .from("item_requests")
+        .select("user_id, item_id, wish_rank, current_contribution_score, request_date")
+        .eq("status", "대기"),
+      supabase.from("members").select("user_id, current_id"),
+    ]);
+    const { data: inv, error: invErr } = invRes;
     if (invErr) return jsonResponse({ error: "재고 조회에 실패했습니다." }, 500);
+    const myReqs = myReqsRes.data;
+    const pendReqs = pendReqsRes.data;
+    const allMems = allMemsRes.data;
 
-    // 본인 정보 + 규정 + 참여율
-    const { data: me } = await supabase
-      .from("members")
-      .select("power, equipment_info, power_img_url, status_check_img_url, contribution_score, participation_score")
-      .eq("user_id", user.user_id)
-      .maybeSingle();
-    const regs = await getRegulations();
-    const participation = await getParticipationRate(user.user_id, regs);
-
-    // 본인의 기존 신청(대기/확정) — item_name 기준 중복 표시용
-    const { data: myReqs } = await supabase
-      .from("item_requests")
-      .select("item_id, status, wish_rank")
-      .eq("user_id", user.user_id)
-      .in("status", ["대기", "확정"]);
     const invById = new Map((inv || []).map((i) => [i.id, i]));
     const myRequestedNames = new Set<string>();
     let hasConfirmedWish = false;
@@ -1003,13 +1027,15 @@ Deno.serve(async (req: Request) => {
       if (r.status === "확정" && r.wish_rank != null) hasConfirmedWish = true;
     }
 
-    // 지망/신청 현황 공개 (시안: 누가 몇 순위로 걸었는지 전원 공개 — 닉네임+기여점수)
-    const { data: pendReqs } = await supabase
-      .from("item_requests")
-      .select("user_id, item_id, wish_rank, current_contribution_score, request_date")
-      .eq("status", "대기");
-    const { data: allMems } = await supabase.from("members").select("user_id, current_id");
     const nickByUid2 = new Map((allMems || []).map((m) => [m.user_id, m.current_id || m.user_id]));
+
+    // 지망/신청을 item_id별로 1회 그룹핑 — 그룹마다 전체 배열 필터 반복 방지
+    const pendByItem = new Map();
+    for (const r of pendReqs || []) {
+      const arr = pendByItem.get(r.item_id);
+      if (arr) arr.push(r);
+      else pendByItem.set(r.item_id, [r]);
+    }
 
     // (item_name, raid_type) 그룹핑 — 원본 6527-6560
     const groups = new Map<string, Record<string, unknown>>();
@@ -1057,9 +1083,8 @@ Deno.serve(async (req: Request) => {
         String(g.item_name), g.category as string | null, g.grade as string | null,
         g.unsold_period_count as number, !!g.free_apply,
       );
-      const ids = new Set(g.item_ids as number[]);
-      const applicants = (pendReqs || [])
-        .filter((r) => ids.has(r.item_id))
+      const applicants = (g.item_ids as number[])
+        .flatMap((id) => pendByItem.get(id) || [])
         .map((r) => ({
           user_id: r.user_id,
           nick: nickByUid2.get(r.user_id) || r.user_id,
@@ -1122,43 +1147,50 @@ Deno.serve(async (req: Request) => {
     const itemId = Number(body.item_id);
     if (!itemId) return jsonResponse({ error: "item_id가 필요합니다." }, 400);
 
-    const period = await getActivePeriod();
+    // 성능: 독립 조회 병렬화 (검사 순서·에러 우선순위는 기존 그대로 유지)
+    const [period, itemRes, meRes, regs] = await Promise.all([
+      getActivePeriod(),
+      supabase
+        .from("inventory")
+        .select("id, item_name, grade, category, raid_type, unsold_period_count, is_category_item, free_apply")
+        .eq("id", itemId)
+        .eq("status", "재고")
+        .maybeSingle(),
+      supabase
+        .from("members")
+        .select("power, equipment_info, power_img_url, status_check_img_url, contribution_score, participation_score")
+        .eq("user_id", user.user_id)
+        .maybeSingle(),
+      getRegulations(),
+    ]);
     if (!period || kstNowEpoch() >= naiveKstToEpoch(String(period.end_time))) {
       return jsonResponse({ error: "분배 신청 기간이 아닙니다." }, 400);
     }
 
-    const { data: item } = await supabase
-      .from("inventory")
-      .select("id, item_name, grade, category, raid_type, unsold_period_count, is_category_item, free_apply")
-      .eq("id", itemId)
-      .eq("status", "재고")
-      .maybeSingle();
+    const item = itemRes.data;
     if (!item) return jsonResponse({ error: "해당 재고를 찾을 수 없습니다." }, 404);
     if ((item.raid_type || "결사") === "연합") return jsonResponse({ error: "연합 룻 아이템은 신청할 수 없습니다." }, 400);
     // 신화 등급은 분배 신청 제외 — 운영진 수동 분배 (창고 탭 안내와 일치하는 방어적 검증)
     if (item.grade === "신화") {
       return jsonResponse({ error: "신화 등급은 분배 신청 대상이 아닙니다 — 운영진에게 문의해주세요." }, 400);
     }
-    const { data: me } = await supabase
-      .from("members")
-      .select("power, equipment_info, power_img_url, status_check_img_url, contribution_score, participation_score")
-      .eq("user_id", user.user_id)
-      .maybeSingle();
+    const me = meRes.data;
     if (!me) return jsonResponse({ error: "회원 정보를 찾을 수 없습니다." }, 500);
     if (!me.power_img_url) return jsonResponse({ error: "전투력 스샷 미등록 상태라 신청할 수 없습니다." }, 400);
     if (!me.status_check_img_url) return jsonResponse({ error: "아퀴룬 스샷 미등록 상태라 신청할 수 없습니다." }, 400);
 
-    // 같은 이름 재고 총량 (수량 상한)
-    const { data: sameName } = await supabase
-      .from("inventory")
-      .select("quantity, unsold_period_count")
-      .eq("item_name", item.item_name)
-      .eq("status", "재고");
+    // 같은 이름 재고 총량 (수량 상한) + 참여율 — 서로 독립이라 병렬
+    const [sameNameRes, participation] = await Promise.all([
+      supabase
+        .from("inventory")
+        .select("quantity, unsold_period_count")
+        .eq("item_name", item.item_name)
+        .eq("status", "재고"),
+      getParticipationRate(user.user_id, regs),
+    ]);
+    const sameName = sameNameRes.data;
     const totalQty = (sameName || []).reduce((s, r) => s + (r.quantity || 0), 0);
     const maxUnsold = Math.max(0, ...(sameName || []).map((r) => r.unsold_period_count || 0));
-
-    const regs = await getRegulations();
-    const participation = await getParticipationRate(user.user_id, regs);
     const elig = checkEligibility(item.item_name, item.category, item.grade, me, regs, participation, maxUnsold);
     if (!elig.eligible && !isStaff(user)) {
       const reason = elig.failed.map((f) => `${f.label}: ${f.current} (기준 ${f.required})`).join(", ");

@@ -6,6 +6,17 @@ const Api = (() => {
     return localStorage.getItem("session_token");
   }
 
+  // ── 분배 탭 캐시 동기화 버스 ──────────────────────────────────
+  // 분배 하위 탭(창고/신청/현황/결과/이력)은 탭 전환 때 재조회하지 않고 캐시를 쓴다.
+  // 데이터를 바꾸는 액션(신청/취소/확정/기간 설정 등)은 bump()로 버전을 올리고,
+  // 각 화면은 자기 캐시 버전이 다르면 다음 진입 때 다시 조회한다.
+  window.DistSync = {
+    ver: 0,
+    bump() {
+      this.ver += 1;
+    },
+  };
+
   async function call(fnName, { method = "GET", body, query } = {}) {
     let url = `${BASE}/${fnName}`;
     if (query) {
@@ -70,6 +81,7 @@ const Api = (() => {
       call("members", { method: "DELETE", query: { user_id, confirm: confirmDelete ? "true" : "false" } }),
     getDashboard: () => call("dashboard", { method: "GET" }),
     getDistributionItems: () => call("distribution", { method: "GET", query: { view: "items" } }),
+    getDistributionPeriod: () => call("distribution", { method: "GET", query: { view: "period" } }),
     getMyRequests: () => call("distribution", { method: "GET", query: { view: "my" } }),
     createItemRequest: (reqBody) => call("distribution", { method: "POST", body: reqBody }),
     cancelItemRequest: (id) => call("distribution", { method: "DELETE", query: { id } }),

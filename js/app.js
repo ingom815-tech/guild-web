@@ -1,12 +1,13 @@
 // 부트스트랩: 로그인 폼, 화면 전환, 탭 네비게이션, 로그아웃/비밀번호 변경 모달 배선
 const Tabs = (() => {
   // 분배 상위 탭의 하위 화면 (섹션 id = s-{sub})과 로더 — 첫 페이지는 결사 창고
+  // open() = 캐시 진입점: 분배 데이터가 안 바뀌었으면(DistSync) 재조회 없이 렌더만
   const DIST_SUBS = {
-    warehouse: () => Warehouse.load(),
-    apply: () => Distribution.load(),
-    status: () => DistManage.loadStatus(),
-    result: () => DistManage.loadResult(),
-    history: () => DistManage.loadHistory(),
+    warehouse: () => Warehouse.open(),
+    apply: () => Distribution.open(),
+    status: () => DistManage.openStatus(),
+    result: () => DistManage.openResult(),
+    history: () => DistManage.openHistory(),
   };
   let distSub = "warehouse"; // 마지막으로 보던 하위 탭 기억 (기본 = 결사 창고)
 
@@ -29,7 +30,7 @@ const Tabs = (() => {
       Inventory.loadItemMaster();
     }
     if (id === "drop") Inventory.loadItemMaster();
-    if (id === "members") Members.load();
+    if (id === "members") Members.open(); // 캐시 진입점 — 수정 액션이 load()로 갱신
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();
     if (id === "part") Participation.load();

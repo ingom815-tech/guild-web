@@ -8,6 +8,10 @@ const DistManage = (() => {
   let staffList = []; // 다이아 지급 대상(룻자) 선택용 — 운영진/관리자만
   let historyData = null;
   let confirmAction = null;
+  // DistSync 캐시 버전 (화면별) — 탭 전환 시 데이터가 그대로면 재조회 생략
+  let statusVer = -1;
+  let resultVer = -1;
+  let historyVer = -1;
 
   function toast(sectionId, msg, isErr) {
     const t = document.getElementById(sectionId);
@@ -51,9 +55,19 @@ const DistManage = (() => {
 
   // ═══════════════ 1) 신청 현황 ═══════════════
 
+  // 탭 진입용 캐시 게이트
+  async function openStatus() {
+    if (statusData && statusVer === DistSync.ver) {
+      renderStatus();
+      return;
+    }
+    await loadStatus();
+  }
+
   async function loadStatus() {
     try {
       statusData = await Api.getDistStatus();
+      statusVer = DistSync.ver;
     } catch (e) {
       toast("statusToast", e.message || "신청 현황 조회 실패", true);
       return;
@@ -111,6 +125,7 @@ const DistManage = (() => {
         openConfirm("자격 미달 일괄 취소", `자격 미달 신청 ${ineligRows.length}건을 전부 취소할까요?`, async () => {
           try {
             const res = await Api.bulkCancelRequests(ineligRows.map((r) => r.id));
+            DistSync.bump(); // 다른 분배 하위 탭 캐시 무효화
             toast("statusToast", `✓ ${res.cancelled}건 취소했습니다.`);
             await loadStatus();
           } catch (e) {
@@ -167,6 +182,7 @@ const DistManage = (() => {
       return;
     }
 
+    const statusFrag = document.createDocumentFragment(); // 카드 일괄 삽입
     tabGroups.forEach((g) => {
       const card = document.createElement("div");
       card.className = "card";
@@ -254,6 +270,7 @@ const DistManage = (() => {
                 openConfirm("분배 확정", `"${r.nick}"님에게 [${g.item_name}] ${r.qty}개를 확정할까요?`, async () => {
                   try {
                     await Api.confirmDistribution(r.item_id, r.user_id);
+                    DistSync.bump();
                     toast("statusToast", `✓ ${r.nick} — ${g.item_name} 확정`);
                     await loadStatus();
                   } catch (e) {
@@ -271,15 +288,36 @@ const DistManage = (() => {
         sub("3순위 지망", pools[3]);
         sub(openItem ? `🙋 자유 신청 (${pools.free.length}명) — 선정은 운영진 선택` : "자유 신청 (기여점수순)", pools.free);
       }
-      listEl.appendChild(card);
+      statusFrag.appendChild(card);
     });
+    listEl.appendChild(statusFrag);
   }
 
   // ═══════════════ 2) 결과 (확정 처리) ═══════════════
 
+  async function openResult() {
+    if (resultData && resultVer === DistSync.ver) {
+      document.getElementById("resultStaff").classList.toggle("hidden", !resultData.is_staff);
+      document.getElementById("resultMine").innerHTML = "";
+      if (resultData.is_staff) renderResultStaff();
+      else renderResultMine();
+      return;
+    }
+    await loadResult();
+  }
+
   async function loadResult() {
     try {
-      resultData = await Api.getConfirmedDistributions();
+      // 성능: 확정 목록과 룻자용 운영진 목록은 독립 — 병렬 조회
+      // (운영진 목록은 스태프 계정에서 최초 1회만 필요, 실패해도 확정 화면은 유지)
+      const needStaffList = Auth.isStaff() && !staffList.length;
+      const [confirmed, members] = await Promise.all([
+        Api.getConfirmedDistributions(),
+        needStaffList ? Api.listMembers().catch(() => null) : Promise.resolve(null),
+      ]);
+      resultData = confirmed;
+      resultVer = DistSync.ver;
+      if (members) staffList = members.filter((m) => m.role === "운영진" || m.role === "관리자");
     } catch (e) {
       toast("resultToast", e.message || "확정 목록 조회 실패", true);
       return;
@@ -287,15 +325,6 @@ const DistManage = (() => {
     document.getElementById("resultStaff").classList.toggle("hidden", !resultData.is_staff);
     document.getElementById("resultMine").innerHTML = "";
     if (resultData.is_staff) {
-      // 다이아 지급 대상(룻자) 선택 박스용 운영진 목록
-      if (!staffList.length) {
-        try {
-          const members = await Api.listMembers();
-          staffList = members.filter((m) => m.role === "운영진" || m.role === "관리자");
-        } catch (e) {
-          // 목록 조회 실패 시 선택 박스는 비어 있음 — 다이아 입력 시 검증에서 걸러짐
-        }
-      }
       renderResultStaff();
     } else {
       renderResultMine();
@@ -383,6 +412,7 @@ const DistManage = (() => {
                   const res = await Api.declineConflict(t.request_id);
                   if (res.promoted) promoted.push(`${t.item_name}→${res.promoted}`);
                 }
+                DistSync.bump();
                 toast("resultToast", `✓ 충돌 해결 완료${promoted.length ? ` · 승격: ${promoted.join(", ")}` : ""}`);
                 await loadResult();
               } catch (e) {
@@ -449,6 +479,7 @@ const DistManage = (() => {
           openConfirm("확정 삭제", `"${r.nick}"님의 [${r.item_name}] 확정을 삭제할까요? (신청 자체가 제거됩니다)`, async () => {
             try {
               await Api.revertConfirmed(r.request_id);
+              DistSync.bump();
               toast("resultToast", "✓ 확정을 삭제했습니다.");
               await loadResult();
             } catch (e) {
@@ -499,6 +530,7 @@ const DistManage = (() => {
         async () => {
           try {
             const res = await Api.finalizeDistributions(entries);
+            DistSync.bump();
             const fails = (res.results || []).filter((x) => !x.ok);
             const warns = (res.results || []).filter((x) => x.ok && x.warn);
             if (fails.length) toast("resultToast", `일부 실패: ${fails.length}건 — 다시 시도하세요.`, true);
@@ -518,9 +550,18 @@ const DistManage = (() => {
 
   // ═══════════════ 3) 분배 이력 ═══════════════
 
+  async function openHistory() {
+    if (historyData && historyVer === DistSync.ver) {
+      renderHistory();
+      return;
+    }
+    await loadHistory();
+  }
+
   async function loadHistory() {
     try {
       historyData = await Api.getDistHistory();
+      historyVer = DistSync.ver;
     } catch (e) {
       toast("historyToast", e.message || "이력 조회 실패", true);
       return;
@@ -574,6 +615,7 @@ const DistManage = (() => {
       return;
     }
 
+    const histFrag = document.createDocumentFragment(); // 최대 500행 — 일괄 삽입
     rows.forEach((r) => {
       const tr = document.createElement("tr");
       tr.innerHTML =
@@ -595,6 +637,7 @@ const DistManage = (() => {
             async () => {
               try {
                 await Api.cancelDistHistory(r.id);
+                DistSync.bump();
                 toast("historyToast", "✓ 분배를 취소하고 재고/공금을 복원했습니다.");
                 await loadHistory();
               } catch (e) {
@@ -608,6 +651,7 @@ const DistManage = (() => {
           openConfirm("이력 삭제", `[${r.item_name}] 이력을 삭제할까요?\n(복원 없이 기록만 지웁니다 — 되돌릴 수 없음)`, async () => {
             try {
               await Api.deleteDistHistory(r.id);
+              DistSync.bump();
               toast("historyToast", "🗑️ 이력을 삭제했습니다.");
               await loadHistory();
             } catch (e) {
@@ -616,13 +660,14 @@ const DistManage = (() => {
           }, "삭제"),
         );
       }
-      table.appendChild(tr);
+      histFrag.appendChild(tr);
     });
+    table.appendChild(histFrag);
   }
 
   function init() {
     initConfirmModal();
   }
 
-  return { init, loadStatus, renderStatus, setStatusTab, loadResult, loadHistory, renderHistory };
+  return { init, loadStatus, openStatus, renderStatus, setStatusTab, loadResult, openResult, loadHistory, openHistory, renderHistory };
 })();
