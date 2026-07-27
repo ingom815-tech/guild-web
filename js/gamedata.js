@@ -211,14 +211,14 @@ const GameData = (() => {
     return "전파편 및 기타";
   }
 
-  // 수량·재고 개념 없이 신청만 받는 아이템 (별빛 심연석·조각, 찬란한 심연석).
+  // 수량·재고 개념 없이 신청만 받는 아이템 (심연석 계열 전체: 별빛·조각·찬란한·전설).
   // 신청 수량 1 고정, ×N 표기·수량 입력 없음 — 선정은 운영진이 신청자 중에서 직접 선택.
   function isOpenApplyItem(itemName) {
     const ns = String(itemName || "").replace(/ /g, "");
-    return ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
+    return ns.includes("심연석");
   }
 
-  // 전설 심연석: 시즌 마감 시 기여점수 상위 순 수동 분배 — 신청 대상 제외 (합병 개정판).
+  // 전설 심연석 판정 (내판가 5천 원 표시 등 구분용 — 규정 개정으로 신청은 허용됨).
   // 별빛/찬란한/조각 제외 — "심연석" 단독 계열만 해당. 서버 isLegendSimyeonItem과 동일 규칙.
   function isLegendSimyeonItem(itemName) {
     const ns = String(itemName || "").replace(/ /g, "");

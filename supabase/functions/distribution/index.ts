@@ -86,6 +86,7 @@ const DEFAULT_REGULATIONS: Record<string, unknown> = {
   // 내판가 (표시용 — 공금 자동 기록 없음, 수동 현금 입금 흐름 유지)
   price_krw_legend_aqui: 100000,
   price_krw_starlight: 50000,
+  price_krw_legend_sim: 5000,
 };
 
 async function getRegulations(): Promise<Record<string, unknown>> {
@@ -161,14 +162,14 @@ function checkEligibility(
   return { eligible: true, failed: [], rule: "" };
 }
 
-// 전설 심연석: 시즌 마감 시 기여점수 상위 순 수동 분배 — 신청 대상 제외 (합병 개정판).
+// 전설 심연석 판정 (내판가 구분용 — 규정 개정으로 신청은 허용, 자유 신청으로 접수).
 // 별빛/찬란한/조각은 제외 — "심연석" 단독 계열(전설 심연석)만 해당.
 function isLegendSimyeonItem(itemName: string): boolean {
   const ns = itemName.replace(/ /g, "");
   return ns.includes("심연석") && !ns.includes("조각") && !ns.includes("별빛") && !ns.includes("찬란한");
 }
 
-// 내판가 (표시 전용): 전설 아퀴 = 100,000원 / 별빛 심연석 = 50,000원. 그 외 없음.
+// 내판가 (표시 전용): 전설 아퀴 = 100,000원 / 별빛 심연석 = 50,000원 / 전설 심연석 = 5,000원.
 function salePriceKrw(
   itemName: string,
   category: string | null,
@@ -176,6 +177,7 @@ function salePriceKrw(
   regs: Record<string, unknown>,
 ): number | null {
   const ns = itemName.replace(/ /g, "");
+  if (isLegendSimyeonItem(itemName)) return Number(regs.price_krw_legend_sim ?? 5000);
   if (ns.includes("별빛심연석") && !ns.includes("조각")) return Number(regs.price_krw_starlight ?? 50000);
   const cat = (category || "").replace(/ /g, "");
   if ((cat === "아퀴" || cat === "아퀴룬") && grade === "전설") return Number(regs.price_krw_legend_aqui ?? 100000);
@@ -187,7 +189,8 @@ function salePriceKrw(
 const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
 
 // 자유 신청 판정 (R5): (a) 전설 아퀴 2회 이상 유찰 (b) 대량 소모품 free_apply 플래그
-// (c) 심연석 3종(별빛/조각/찬란한) — 수량 개념 없이 신청만 받고 운영진이 선정하는 기존 결정 유지.
+// (c) 심연석 계열 전체(별빛/조각/찬란한/전설) — 수량 개념 없이 신청만 받고 운영진이 선정.
+//     전설 심연석은 규정 개정으로 신청 허용 (시즌당 1인 최대 10개 한도는 운영진 선정 시 관리).
 // 자유 신청은 지망 칸을 쓰지 않고(R5), 회차당 1개 제한(R3)에도 포함되지 않는다.
 function isFreeApplyItem(
   itemName: string,
@@ -198,7 +201,7 @@ function isFreeApplyItem(
 ): boolean {
   if (freeFlag) return true;
   const ns = itemName.replace(/ /g, "");
-  if (ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"))) return true;
+  if (ns.includes("심연석")) return true;
   const cat = (category || "").replace(/ /g, "");
   return (cat === "아퀴" || cat === "아퀴룬") && grade === "전설" && (unsoldCount || 0) >= 2;
 }
@@ -1136,11 +1139,6 @@ Deno.serve(async (req: Request) => {
     if (item.grade === "신화") {
       return jsonResponse({ error: "신화 등급은 분배 신청 대상이 아닙니다 — 운영진에게 문의해주세요." }, 400);
     }
-    // 전설 심연석은 시즌 마감 수동 분배 — 신청 대상 제외 (합병 개정판)
-    if (isLegendSimyeonItem(item.item_name)) {
-      return jsonResponse({ error: "전설 심연석은 시즌 마감 시 기여점수 상위 순으로 분배됩니다 — 운영진에게 1:1 신청해주세요." }, 400);
-    }
-
     const { data: me } = await supabase
       .from("members")
       .select("power, equipment_info, power_img_url, status_check_img_url, contribution_score, participation_score")
@@ -1168,7 +1166,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 지망제 (R1~R5) ──
-    // 자유 신청 아이템(유찰 전설아퀴 / free_apply 대량 소모품 / 심연석 3종)은 지망 칸을 쓰지 않고,
+    // 자유 신청 아이템(유찰 전설아퀴 / free_apply 대량 소모품 / 심연석 계열 전체)은 지망 칸을 쓰지 않고,
     // 그 외 아이템은 wish_rank(1~3) 필수. 같은 순위 교체·같은 아이템 순위 이동은 RPC가 처리.
     const isFree = isFreeApplyItem(
       item.item_name, item.category, item.grade, maxUnsold, !!item.free_apply,
@@ -1196,9 +1194,9 @@ Deno.serve(async (req: Request) => {
     } else if (wishRank != null) {
       qty = 1; // 지망은 수량 1 고정 (R2 — 재고 수량만큼 위에서부터 확정)
     } else {
-      // 자유 신청: 기존 수량 규칙 유지. 심연석 3종은 수량 개념 없음(1 고정, 상한 검증 생략).
+      // 자유 신청: 기존 수량 규칙 유지. 심연석 계열(별빛/조각/찬란한/전설)은 수량 개념 없음(1 고정, 상한 검증 생략).
       const ns = item.item_name.replace(/ /g, "");
-      const isSimyeon = ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
+      const isSimyeon = ns.includes("심연석");
       if (isSimyeon) {
         qty = 1;
       } else {

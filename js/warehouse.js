@@ -234,17 +234,15 @@ const Warehouse = (() => {
   function buildTile(g) {
     const tile = document.createElement("div");
     const myth = isMyth(g);
-    const legendSim = !myth && GameData.isLegendSimyeonItem(g.item_name); // 전설 심연석 = 시즌 마감 수동 분배
     const union = g.raid_type === "연합";
     tile.className = "tile" + (myth ? " myth" : "") + (union ? " noapply" : "");
-    // 우측 상단 배지는 예외만: 신화="문의" / 전설 심연석="1:1 신청" / 연합="연합". 일반 카드는 배지 없음.
+    // 우측 상단 배지는 예외만: 신화="문의" / 연합="연합". 일반 카드는 배지 없음.
+    // (전설 심연석은 규정 개정으로 일반 신청 흐름 — 별도 배지 없음)
     const corner = myth
       ? `<span class="corner ask">문의</span>`
-      : legendSim
-        ? `<span class="corner ask">1:1 신청</span>`
-        : union
-          ? `<span class="corner no">연합</span>`
-          : "";
+      : union
+        ? `<span class="corner no">연합</span>`
+        : "";
     tile.innerHTML = `
       ${corner}
       <div class="tn">${isNew(g) ? `<span class="newdot" title="최근 입고"></span>` : ""}<span class="t"></span></div>
@@ -257,9 +255,6 @@ const Warehouse = (() => {
     if (myth) {
       tile.addEventListener("click", () =>
         dtoast("신화 등급은 분배 신청 대상이 아닙니다 — 운영진에게 문의해주세요 · 자세한 내용은 규정 탭 참고"));
-    } else if (legendSim) {
-      tile.addEventListener("click", () =>
-        dtoast("전설 심연석은 시즌 마감 시 기여점수 상위 순으로 분배됩니다 — 필요하신 분은 운영진에게 1:1 신청해주세요"));
     } else if (!union) {
       tile.addEventListener("click", () => {
         if (periodActive) goApply(g);

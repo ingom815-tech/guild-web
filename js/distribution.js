@@ -85,10 +85,8 @@ const Distribution = (() => {
       toast(e.message || "분배 정보 조회 실패", true);
       return;
     }
-    // 신청 대상 제외 품목 (합병 개정판): 신화 등급 전체 + 전설 심연석(시즌 마감 수동 분배)
-    data.groups = (data.groups || []).filter(
-      (g) => g.grade !== "신화" && !GameData.isLegendSimyeonItem(g.item_name),
-    );
+    // 신청 대상 제외 품목: 신화 등급 전체 (전설 심연석은 규정 개정으로 신청 허용 — 자유 신청)
+    data.groups = (data.groups || []).filter((g) => g.grade !== "신화");
     if (data.auto_confirmed > 0) {
       toast(`⏰ 신청 기간이 마감되어 ${data.auto_confirmed}건이 자동 확정되었습니다.`);
     }
