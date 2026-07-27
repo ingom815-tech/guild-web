@@ -106,6 +106,12 @@ const Api = (() => {
     uploadProfileImages: (kind, images) =>
       call("profile", { method: "POST", query: { action: "images" }, body: { kind, images } }),
     register: (payload) => call("register", { method: "POST", body: payload }),
+    getPublicGuilds: () => call("register", { method: "GET" }),
+    getGuilds: () => call("members", { method: "GET", query: { view: "guilds" } }),
+    updateGuild: (id, name) =>
+      call("members", { method: "POST", query: { action: "guild_update" }, body: { id, name } }),
+    addGuild: (name) => call("members", { method: "POST", query: { action: "guild_add" }, body: { name } }),
+    deleteGuild: (id) => call("members", { method: "POST", query: { action: "guild_delete" }, body: { id } }),
     getRegistrations: () => call("members", { method: "GET", query: { view: "registrations" } }),
     approveRegistration: (request_id) =>
       call("members", { method: "POST", query: { action: "approve" }, body: { request_id } }),

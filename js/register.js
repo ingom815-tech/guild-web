@@ -14,6 +14,28 @@ const Register = (() => {
     document.getElementById("loginScreen").classList.add("hidden");
     document.getElementById("registerScreen").classList.remove("hidden");
     buildGrids();
+    loadGuildOptions();
+  }
+
+  // 소속결사 선택지 (guilds 목록 — 무인증 조회, 합병 준비). 화면 열 때마다 재시도.
+  async function loadGuildOptions() {
+    const sel = document.getElementById("regGuild");
+    sel.innerHTML = `<option value="">불러오는 중...</option>`;
+    try {
+      const list = await Api.getPublicGuilds();
+      sel.innerHTML = `<option value="">선택...</option>`;
+      (list || []).forEach((g) => {
+        const o = document.createElement("option");
+        o.value = g.name;
+        o.textContent = g.name;
+        sel.appendChild(o);
+      });
+      if (!list || !list.length) {
+        sel.innerHTML = `<option value="">결사 목록이 비어 있습니다 — 운영진에게 문의해주세요</option>`;
+      }
+    } catch (e) {
+      sel.innerHTML = `<option value="">목록을 불러오지 못했습니다 — 새로고침 후 다시 시도해주세요</option>`;
+    }
   }
 
   function hide() {
@@ -156,8 +178,8 @@ const Register = (() => {
           user_id: document.getElementById("regUserId").value.trim(),
           password: pw,
           current_id: document.getElementById("regNick").value.trim(),
-          role: document.getElementById("regRole").value,
-          guild_name: document.getElementById("regGuild").value.trim(),
+          role: "결사원", // 가입은 전부 결사원 — 운영진 지정은 관리자가 결사원 관리에서
+          guild_name: document.getElementById("regGuild").value,
           subjugation_rank: document.getElementById("regRank").value.trim(),
           class: document.getElementById("regClass").value.trim(),
           level: parseInt(document.getElementById("regLevel").value, 10) || 0,

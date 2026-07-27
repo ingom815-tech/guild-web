@@ -197,6 +197,65 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
 
+  // ── 결사명 관리 (합병 준비 — guilds 테이블) ──
+  // 이름 수정 = 운영진, 추가/삭제 = 관리자. 이름 변경 시 members/registration_requests의
+  // 기존 이름을 함께 전파해 문자열 guild_name 정합을 유지한다.
+  if (action === "guild_update" || action === "guild_add" || action === "guild_delete") {
+    if (req.method !== "POST") return jsonResponse({ error: "지원하지 않는 메서드입니다." }, 405);
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+
+    if (action === "guild_update") {
+      const id = Number(body.id);
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      if (!id || !name) return jsonResponse({ error: "id와 name이 필요합니다." }, 400);
+      const { data: g } = await supabase.from("guilds").select("id, name").eq("id", id).maybeSingle();
+      if (!g) return jsonResponse({ error: "해당 결사를 찾을 수 없습니다." }, 404);
+      if (g.name === name) return jsonResponse({ ok: true, renamed: 0 });
+      const { data: dup } = await supabase.from("guilds").select("id").eq("name", name).maybeSingle();
+      if (dup) return jsonResponse({ error: "이미 같은 이름의 결사가 있습니다." }, 409);
+      const { error: upErr } = await supabase.from("guilds").update({ name }).eq("id", id);
+      if (upErr) return jsonResponse({ error: "결사명 변경에 실패했습니다." }, 500);
+      // 기존 이름을 쓰던 회원/가입 신청에 새 이름 전파
+      const { data: renamed } = await supabase
+        .from("members").update({ guild_name: name }).eq("guild_name", g.name).select("user_id");
+      await supabase.from("registration_requests").update({ guild_name: name }).eq("guild_name", g.name);
+      return jsonResponse({ ok: true, renamed: (renamed || []).length });
+    }
+
+    if (!isAdmin(user)) return jsonResponse({ error: "결사 추가/삭제는 관리자만 가능합니다." }, 403);
+
+    if (action === "guild_add") {
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      if (!name) return jsonResponse({ error: "name이 필요합니다." }, 400);
+      const { data: maxRow } = await supabase
+        .from("guilds").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+      const nextOrder = ((maxRow && maxRow[0] && maxRow[0].sort_order) || 0) + 1;
+      const { data, error } = await supabase
+        .from("guilds").insert({ name, sort_order: nextOrder }).select().single();
+      if (error) return jsonResponse({ error: "결사 추가에 실패했습니다 (이름 중복 여부 확인)." }, 500);
+      return jsonResponse(data, 201);
+    }
+
+    // guild_delete: 소속 회원이 있으면 차단
+    const id = Number(body.id);
+    if (!id) return jsonResponse({ error: "id가 필요합니다." }, 400);
+    const { data: g } = await supabase.from("guilds").select("id, name").eq("id", id).maybeSingle();
+    if (!g) return jsonResponse({ error: "해당 결사를 찾을 수 없습니다." }, 404);
+    const { count } = await supabase
+      .from("members").select("user_id", { count: "exact", head: true }).eq("guild_name", g.name);
+    if ((count || 0) > 0) {
+      return jsonResponse({ error: `"${g.name}" 소속 회원이 ${count}명 있어 삭제할 수 없습니다. 회원 소속을 먼저 변경해주세요.` }, 409);
+    }
+    const { error: delErr } = await supabase.from("guilds").delete().eq("id", id);
+    if (delErr) return jsonResponse({ error: "삭제에 실패했습니다." }, 500);
+    return jsonResponse({ ok: true });
+  }
+
   // ── 가입 신청 승인/거절 (원본 approve_registration/reject_registration, database.py:3300) ──
   if ((action === "approve" || action === "reject") && req.method === "POST") {
     let body: Record<string, unknown> = {};
@@ -259,6 +318,16 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const view = url.searchParams.get("view");
+
+    // 결사 목록 (합병 준비 — 필터/결사명 관리 UI용)
+    if (view === "guilds") {
+      const { data, error } = await supabase
+        .from("guilds")
+        .select("id, name, sort_order, active")
+        .order("sort_order", { ascending: true });
+      if (error) return jsonResponse({ error: "결사 목록 조회에 실패했습니다." }, 500);
+      return jsonResponse(data || []);
+    }
 
     // 가입 신청 목록 (대기 중)
     if (view === "registrations") {
@@ -396,11 +465,16 @@ Deno.serve(async (req: Request) => {
 
     const { data: current, error: findErr } = await supabase
       .from("members")
-      .select("power, participation_score")
+      .select("power, participation_score, role")
       .eq("user_id", targetId)
       .maybeSingle();
     if (findErr) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
     if (!current) return jsonResponse({ error: "해당 회원을 찾을 수 없습니다." }, 404);
+
+    // 권한(운영진/관리자 지정) 변경은 관리자 전용 — 합병 운영 방침
+    if (patch.role !== undefined && patch.role !== current.role && !isAdmin(user)) {
+      return jsonResponse({ error: "권한 변경은 관리자만 가능합니다." }, 403);
+    }
 
     // 전투력이 바뀌면 기여점수를 서버에서 재계산 (database.py: participation_score*0.7 + power*0.3).
     const nextPower = patch.power !== undefined ? patch.power : current.power;

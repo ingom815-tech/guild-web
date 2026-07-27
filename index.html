@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=49">
-<link rel="stylesheet" href="css/style.css?v=49">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=50">
+<link rel="stylesheet" href="css/style.css?v=50">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=49" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=50" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -36,19 +36,22 @@
     <div class="meta" style="text-align:center;margin-bottom:16px">운영진 승인 후 로그인할 수 있습니다.</div>
     <div class="err-msg" id="registerErr"></div>
     <form id="registerForm">
-      <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regUserId">아이디 (고정)</label><input type="text" id="regUserId" autocomplete="off" required></div>
-        <div class="field" style="flex:1"><label for="regNick">닉네임 (게임 내)</label><input type="text" id="regNick" required></div>
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="field" style="flex:1"><label for="regUserId">아이디 (고정)</label><input type="text" id="regUserId" autocomplete="off" required>
+          <div class="meta" style="margin-top:3px">로그인용 아이디입니다 — 가입 후 변경할 수 없어요</div>
+        </div>
+        <div class="field" style="flex:1"><label for="regNick">닉네임 (인게임)</label><input type="text" id="regNick" required>
+          <div class="meta" style="margin-top:3px">닉네임이 달라질 경우 시즌마다 내 정보에서 변경해주셔야 합니다</div>
+        </div>
       </div>
       <div class="row" style="gap:10px">
         <div class="field" style="flex:1"><label for="regPw">비밀번호 (4자 이상)</label><input type="password" id="regPw" autocomplete="new-password" required></div>
         <div class="field" style="flex:1"><label for="regPw2">비밀번호 확인</label><input type="password" id="regPw2" autocomplete="new-password" required></div>
       </div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="regRole">권한</label>
-          <select id="regRole" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="결사원">결사원</option><option value="운영진">운영진</option></select>
+        <div class="field" style="flex:1"><label for="regGuild">소속결사 (필수)</label>
+          <select id="regGuild" required style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="">선택...</option></select>
         </div>
-        <div class="field" style="flex:1"><label for="regGuild">소속결사</label><input type="text" id="regGuild"></div>
         <div class="field" style="flex:1"><label for="regRank">토벌순위</label><input type="text" id="regRank"></div>
       </div>
       <div class="row" style="gap:10px">
@@ -91,7 +94,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=49" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=50" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -399,7 +402,7 @@
         <form id="profileInfoForm">
           <div class="row" style="gap:10px">
             <div class="field" style="flex:1"><label for="pfNick">닉네임</label><input type="text" id="pfNick" required></div>
-            <div class="field" style="flex:1"><label for="pfGuild">소속결사</label><input type="text" id="pfGuild"></div>
+            <div class="field" style="flex:1"><label for="pfGuild">소속결사 (변경은 운영진 문의)</label><input type="text" id="pfGuild" disabled style="opacity:.7"></div>
             <div class="field" style="flex:1"><label for="pfRank">토벌순위</label><input type="text" id="pfRank"></div>
           </div>
           <div class="row" style="gap:10px">
@@ -500,6 +503,11 @@
       <div class="card">
         <b style="font-size:15px;color:var(--amber-dk)">가입 신청 대기 목록</b>
         <div class="meta" style="margin-top:4px">승인하면 즉시 결사원으로 등록되고 로그인할 수 있습니다. 거절해도 신청 기록은 남습니다.</div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px" id="regGuildChips"></div>
+        <div class="row" style="gap:8px;margin-top:8px" id="regBulkBar">
+          <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;cursor:pointer"><input type="checkbox" id="regCheckAll"> 표시된 신청 전체 선택</label>
+          <button type="button" class="btn sm" id="regBulkApproveBtn" disabled style="margin-left:auto">선택 0명 일괄 승인</button>
+        </div>
         <div class="list" id="regRequestsList" style="border:0;margin-top:8px">
           <div class="irow meta" id="regRequestsEmpty" style="display:none">대기 중인 가입 신청이 없습니다.</div>
         </div>
@@ -516,6 +524,7 @@
       <span class="fchip" data-ri="관리자" onclick="Members.setRole(this)">관리자</span>
       <button type="button" class="btn sm" id="memberAddBtn" style="margin-left:auto">+ 결사원 등록</button>
     </div>
+    <div class="cat-tabs" id="memberGuildChips" style="display:none"><span class="lbl">결사</span></div>
     <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <div class="vtoggle" id="memberViewToggle">
         <span class="on" data-mv="general" onclick="Members.setView(this)">일반정보</span>
@@ -558,6 +567,17 @@
     </div>
     <div class="mtable mgmt-scroll hidden" id="membersEquipTable"></div>
     <div class="hidden" id="membersAquiTable"></div>
+
+    <!-- 결사명 관리 (합병 준비 — 이름 수정: 운영진 / 추가·삭제: 관리자) -->
+    <div class="card blk staff-only" id="guildAdminCard" style="margin-top:14px">
+      <b style="font-size:15px">🏰 결사명 관리</b>
+      <div class="meta" style="margin-top:2px">임시명(알파/베타/감마/델타)을 실명 확정 시 수정하세요. 이름을 바꾸면 소속 회원·가입 신청의 결사명도 함께 바뀝니다.</div>
+      <div id="guildAdminList" style="margin-top:10px"></div>
+      <div class="row admin-only" style="gap:8px;margin-top:8px">
+        <input type="text" id="guildAddName" placeholder="새 결사명" style="border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px">
+        <button type="button" class="btn sm ghost" id="guildAddBtn">+ 결사 추가</button>
+      </div>
+    </div>
     </div><!-- /membersSectionList -->
   </section>
 
@@ -596,6 +616,7 @@
         <b style="font-size:15px">📊 참여 현황</b>
         <input type="search" id="qp" name="part-filter-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="닉네임 검색..." style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;min-width:160px">
       </div>
+      <div class="row" id="partGuildChips" style="gap:6px;flex-wrap:wrap;margin-bottom:8px;display:none"></div>
       <div class="mtable" style="max-height:420px;overflow:auto"><table id="partStatusTable"></table></div>
     </div>
 
@@ -865,7 +886,9 @@
       </div>
       <div class="field"><label for="memberCurrentId">닉네임</label><input type="text" id="memberCurrentId" required></div>
       <div class="row" style="gap:10px">
-        <div class="field" style="flex:1"><label for="memberGuild">소속결사</label><input type="text" id="memberGuild"></div>
+        <div class="field" style="flex:1"><label for="memberGuild">소속결사</label>
+          <select id="memberGuild" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"><option value="">선택...</option></select>
+        </div>
         <div class="field" style="flex:1"><label for="memberClass">직업</label><input type="text" id="memberClass"></div>
       </div>
       <div class="row" style="gap:10px">
@@ -985,24 +1008,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=49"></script>
-<script src="js/api.js?v=49"></script>
-<script src="js/auth.js?v=49"></script>
-<script src="js/logParser.js?v=49"></script>
-<script src="js/gamedata.js?v=49"></script>
-<script src="js/imageUtil.js?v=49"></script>
-<script src="js/inventory.js?v=49"></script>
-<script src="js/members.js?v=49"></script>
-<script src="js/treasury.js?v=49"></script>
-<script src="js/dashboard.js?v=49"></script>
-<script src="js/distribution.js?v=49"></script>
-<script src="js/warehouse.js?v=49"></script>
-<script src="js/distManage.js?v=49"></script>
-<script src="js/participationParser.js?v=49"></script>
-<script src="js/participation.js?v=49"></script>
-<script src="js/profile.js?v=49"></script>
-<script src="js/register.js?v=49"></script>
-<script src="js/logAdmin.js?v=49"></script>
-<script src="js/app.js?v=49"></script>
+<script src="js/config.js?v=50"></script>
+<script src="js/api.js?v=50"></script>
+<script src="js/auth.js?v=50"></script>
+<script src="js/logParser.js?v=50"></script>
+<script src="js/gamedata.js?v=50"></script>
+<script src="js/imageUtil.js?v=50"></script>
+<script src="js/inventory.js?v=50"></script>
+<script src="js/members.js?v=50"></script>
+<script src="js/treasury.js?v=50"></script>
+<script src="js/dashboard.js?v=50"></script>
+<script src="js/distribution.js?v=50"></script>
+<script src="js/warehouse.js?v=50"></script>
+<script src="js/distManage.js?v=50"></script>
+<script src="js/participationParser.js?v=50"></script>
+<script src="js/participation.js?v=50"></script>
+<script src="js/profile.js?v=50"></script>
+<script src="js/register.js?v=50"></script>
+<script src="js/logAdmin.js?v=50"></script>
+<script src="js/app.js?v=50"></script>
 </body>
 </html>

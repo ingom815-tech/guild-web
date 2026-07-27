@@ -459,7 +459,7 @@ const Profile = (() => {
       e.preventDefault();
       const patch = {
         current_id: document.getElementById("pfNick").value.trim(),
-        guild_name: document.getElementById("pfGuild").value.trim(),
+        // 소속결사는 본인 수정 불가 (합병 준비 — 운영진만 결사원 관리에서 변경)
         subjugation_rank: document.getElementById("pfRank").value.trim(),
         class: document.getElementById("pfClass").value.trim(),
         level: parseInt(document.getElementById("pfLevel").value, 10) || 0,

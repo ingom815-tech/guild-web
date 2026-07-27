@@ -7,7 +7,7 @@ import bcrypt from "npm:bcryptjs@2.4.3";
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -51,8 +51,7 @@ const AQUI_IDS = new Set(
     `${g}_pot`, `${g}_s1`, `${g}_s2`, `${g}_s3`, `${g}_s4`, `${g}_s5`, `${g}_s6`,
   ]),
 );
-// 원본 가입 폼의 권한 선택지 그대로 (결사원/운영진 — 관리자는 불가)
-const REG_ROLES = ["결사원", "운영진"];
+// 합병 준비: 가입은 전부 결사원으로만 접수 — 운영진 승격은 관리자가 결사원 관리에서 지정.
 
 function validateEquipmentInfo(raw: string): string | null {
   try {
@@ -131,6 +130,17 @@ Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
   if (preflight) return preflight;
 
+  // GET: 가입 폼용 결사 목록 (무인증 — 결사명만 공개, 합병 준비)
+  if (req.method === "GET") {
+    const { data, error } = await supabase
+      .from("guilds")
+      .select("id, name, sort_order")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) return jsonResponse({ error: "결사 목록 조회에 실패했습니다." }, 500);
+    return jsonResponse(data || []);
+  }
+
   if (req.method !== "POST") return jsonResponse({ error: "POST만 지원합니다." }, 405);
 
   let body: Record<string, unknown>;
@@ -147,7 +157,14 @@ Deno.serve(async (req: Request) => {
   if (!password || password.length < 4) return jsonResponse({ error: "비밀번호는 4자 이상이어야 합니다." }, 400);
   if (!current_id) return jsonResponse({ error: "닉네임을 입력해주세요." }, 400);
 
-  const role = typeof body.role === "string" && REG_ROLES.includes(body.role) ? body.role : "결사원";
+  const role = "결사원"; // 요청 값과 무관하게 고정
+
+  // 소속결사: guilds 목록 중 선택 필수 (합병 준비 — 자유 입력 폐지)
+  const guildName = typeof body.guild_name === "string" ? body.guild_name.trim() : "";
+  if (!guildName) return jsonResponse({ error: "소속결사를 선택해주세요." }, 400);
+  const { data: guildRow } = await supabase
+    .from("guilds").select("id").eq("name", guildName).eq("active", true).maybeSingle();
+  if (!guildRow) return jsonResponse({ error: "유효한 결사를 선택해주세요." }, 400);
 
   // 중복 체크 (원본 add_registration_request와 동일: 기존 신청 / 기존 회원)
   const { data: existingReq } = await supabase
@@ -196,7 +213,7 @@ Deno.serve(async (req: Request) => {
     password: passwordHash,
     current_id,
     role,
-    guild_name: typeof body.guild_name === "string" ? body.guild_name.trim() || null : null,
+    guild_name: guildName,
     subjugation_rank: typeof body.subjugation_rank === "string" ? body.subjugation_rank.trim() || null : null,
     level: Number.isInteger(Number(body.level)) && Number(body.level) >= 0 ? Number(body.level) : 0,
     class: typeof body.class === "string" ? body.class.trim() || null : null,

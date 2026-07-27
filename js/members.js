@@ -2,6 +2,11 @@
 const Members = (() => {
   let members = [];
   let activeRoleFilter = "전체";
+  let guilds = []; // 합병 준비 — guilds 설정 테이블 (필터/결사명 관리)
+  let activeGuildFilter = "전체";
+  let regsCache = []; // 가입 신청 캐시 (결사 필터/일괄 승인용)
+  let regGuildFilter = "전체";
+  const regChecked = new Set();
   let activeView = "general"; // general | equip | aqui
   let aquiView = "p"; // p(사람별) | r(룬별 현황)
   let runeFilter = ""; // 특정 룬 기준 보기 (슬롯 코드)
@@ -24,8 +29,122 @@ const Members = (() => {
       toast(e.message || "결사원 목록 조회 실패", true);
       return;
     }
+    try {
+      guilds = await Api.getGuilds();
+    } catch (e) {
+      guilds = []; // guilds 미배포/조회 실패 시에도 목록 화면은 유지
+    }
+    renderGuildChips();
+    renderGuildAdmin();
+    fillMemberGuildSelect();
     render();
     loadRegistrations();
+  }
+
+  // 등록/수정 모달의 소속결사를 guilds 선택형으로 (구 값은 openEdit에서 옵션 보강)
+  function fillMemberGuildSelect() {
+    const sel = document.getElementById("memberGuild");
+    sel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "선택...";
+    sel.appendChild(opt0);
+    guilds.forEach((g) => {
+      const o = document.createElement("option");
+      o.value = g.name;
+      o.textContent = g.name;
+      sel.appendChild(o);
+    });
+  }
+
+  // ── 결사 필터 칩 (전체 | 결사들 — 건수 배지) ──
+  function renderGuildChips() {
+    const wrap = document.getElementById("memberGuildChips");
+    if (!guilds.length) {
+      wrap.style.display = "none";
+      return;
+    }
+    wrap.style.display = "";
+    wrap.querySelectorAll(".fchip").forEach((el) => el.remove());
+    const names = ["전체", ...guilds.map((g) => g.name)];
+    if (!names.includes(activeGuildFilter)) activeGuildFilter = "전체";
+    names.forEach((n) => {
+      const chip = document.createElement("span");
+      chip.className = "fchip" + (activeGuildFilter === n ? " on" : "");
+      const cnt = n === "전체" ? members.length : members.filter((m) => (m.guild_name || "") === n).length;
+      chip.textContent = n;
+      const c = document.createElement("span");
+      c.className = "cnt";
+      c.textContent = cnt;
+      chip.appendChild(c);
+      chip.addEventListener("click", () => {
+        activeGuildFilter = n;
+        renderGuildChips();
+        render();
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
+  // ── 결사명 관리 (이름 수정: 운영진 / 추가·삭제: 관리자) ──
+  function renderGuildAdmin() {
+    const listEl = document.getElementById("guildAdminList");
+    listEl.innerHTML = "";
+    if (!guilds.length) {
+      listEl.innerHTML = `<div class="meta">결사 목록을 불러오지 못했습니다 (guilds 테이블/함수 배포 필요).</div>`;
+      return;
+    }
+    guilds.forEach((g) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.style.cssText = "gap:8px;margin-bottom:6px;flex-wrap:wrap";
+      const memberCnt = members.filter((m) => (m.guild_name || "") === g.name).length;
+      row.innerHTML = `
+        <input type="text" class="gname" style="border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;width:160px">
+        <span class="meta">${memberCnt}명</span>
+        <button type="button" class="btn sm ghost gsave">이름 저장</button>
+        <button type="button" class="btn sm ghost gdel admin-only" style="color:#A32D2D">삭제</button>`;
+      const input = row.querySelector(".gname");
+      input.value = g.name;
+      row.querySelector(".gsave").addEventListener("click", async () => {
+        const name = input.value.trim();
+        if (!name || name === g.name) return;
+        if (!confirm(`"${g.name}" → "${name}"(으)로 변경할까요? 소속 회원 ${memberCnt}명의 결사명도 함께 바뀝니다.`)) return;
+        try {
+          const res = await Api.updateGuild(g.id, name);
+          toast(`✓ 결사명 변경 완료 (회원 ${res.renamed || 0}명 반영)`);
+          await load();
+        } catch (e) {
+          toast(e.message || "결사명 변경 실패", true);
+        }
+      });
+      row.querySelector(".gdel").addEventListener("click", async () => {
+        if (!confirm(`"${g.name}" 결사를 삭제할까요? (소속 회원이 있으면 삭제되지 않습니다)`)) return;
+        try {
+          await Api.deleteGuild(g.id);
+          toast("🗑️ 결사가 삭제되었습니다.");
+          await load();
+        } catch (e) {
+          toast(e.message || "삭제 실패", true);
+        }
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  function initGuildAdmin() {
+    document.getElementById("guildAddBtn").addEventListener("click", async () => {
+      const name = document.getElementById("guildAddName").value.trim();
+      if (!name) return;
+      try {
+        await Api.addGuild(name);
+        document.getElementById("guildAddName").value = "";
+        toast(`✓ "${name}" 결사가 추가되었습니다.`);
+        await load();
+      } catch (e) {
+        toast(e.message || "결사 추가 실패", true);
+      }
+    });
   }
 
   // ── 가입 신청 관리 (하위탭) ──
@@ -42,20 +161,52 @@ const Members = (() => {
   }
 
   async function loadRegistrations() {
-    let regs = [];
     try {
-      regs = await Api.getRegistrations();
+      regsCache = await Api.getRegistrations();
     } catch (e) {
       return; // 조회 실패 시 기존 표시 유지
     }
+    regChecked.clear();
+    renderRegistrations();
+  }
+
+  // 가입 승인 화면: 결사별 필터 + 일괄 승인 (대량 유입 대비)
+  function renderRegistrations() {
+    const regs = regsCache;
     const cnt = document.getElementById("regRequestsCount");
     cnt.textContent = regs.length;
     cnt.classList.toggle("alert", regs.length > 0); // 대기 건이 있으면 탭 배지를 주황으로
+
+    // 결사별 필터 칩
+    const chipWrap = document.getElementById("regGuildChips");
+    chipWrap.innerHTML = "";
+    const guildNames = [...new Set(regs.map((r) => r.guild_name || "(미지정)"))];
+    const names = ["전체", ...guildNames];
+    if (!names.includes(regGuildFilter)) regGuildFilter = "전체";
+    if (regs.length) {
+      names.forEach((n) => {
+        const chip = document.createElement("span");
+        chip.className = "fchip" + (regGuildFilter === n ? " on" : "");
+        chip.textContent = n;
+        const c = document.createElement("span");
+        c.className = "cnt";
+        c.textContent = n === "전체" ? regs.length : regs.filter((r) => (r.guild_name || "(미지정)") === n).length;
+        chip.appendChild(c);
+        chip.addEventListener("click", () => {
+          regGuildFilter = n;
+          renderRegistrations();
+        });
+        chipWrap.appendChild(chip);
+      });
+    }
+
+    const shown = regs.filter((r) => regGuildFilter === "전체" || (r.guild_name || "(미지정)") === regGuildFilter);
     const listEl = document.getElementById("regRequestsList");
     listEl.querySelectorAll(".irow[data-reg]").forEach((el) => el.remove());
     document.getElementById("regRequestsEmpty").style.display = regs.length ? "none" : "flex";
+    document.getElementById("regBulkBar").style.display = regs.length ? "flex" : "none";
 
-    regs.forEach((r) => {
+    shown.forEach((r) => {
       const row = document.createElement("div");
       row.className = "irow";
       row.dataset.reg = r.id;
@@ -65,6 +216,7 @@ const Members = (() => {
       const thumb = (src) =>
         `<a href="${src}" target="_blank"><img src="${src}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"></a>`;
       row.innerHTML = `
+        <input type="checkbox" class="regchk" style="align-self:flex-start;margin-top:4px">
         <div style="min-width:200px">
           <b class="nm"></b> <span class="meta uid"></span>
           <div class="meta detail"></div>
@@ -81,6 +233,14 @@ const Members = (() => {
       row.querySelector(".detail").textContent =
         `${r.role || "결사원"} · ${r.class || "-"} · Lv ${r.level ?? 0} · 전투력 ${(r.power ?? 0).toLocaleString()} · ${r.guild_name || "-"}` +
         ` · 스샷 전투력 ${powerImgs.length}장/아퀴 ${aquiImgs.length}장`;
+      const chk = row.querySelector(".regchk");
+      chk.checked = regChecked.has(r.id);
+      chk.addEventListener("change", (e) => {
+        if (e.target.checked) regChecked.add(r.id);
+        else regChecked.delete(r.id);
+        updateRegBulkBtn();
+        syncRegCheckAll();
+      });
       row.querySelector('[data-act="approve"]').addEventListener("click", () => {
         openRegConfirm("가입 승인", `"${r.current_id || r.user_id}"님의 가입을 승인할까요? 즉시 로그인 가능해집니다.`, async () => {
           await Api.approveRegistration(r.id);
@@ -96,6 +256,49 @@ const Members = (() => {
         });
       });
       listEl.appendChild(row);
+    });
+    updateRegBulkBtn();
+    syncRegCheckAll();
+  }
+
+  function shownRegs() {
+    return regsCache.filter((r) => regGuildFilter === "전체" || (r.guild_name || "(미지정)") === regGuildFilter);
+  }
+
+  function updateRegBulkBtn() {
+    const btn = document.getElementById("regBulkApproveBtn");
+    btn.textContent = `선택 ${regChecked.size}명 일괄 승인`;
+    btn.disabled = regChecked.size === 0;
+  }
+
+  function syncRegCheckAll() {
+    const shown = shownRegs();
+    document.getElementById("regCheckAll").checked = shown.length > 0 && shown.every((r) => regChecked.has(r.id));
+  }
+
+  function initRegBulk() {
+    document.getElementById("regCheckAll").addEventListener("change", (e) => {
+      shownRegs().forEach((r) => (e.target.checked ? regChecked.add(r.id) : regChecked.delete(r.id)));
+      renderRegistrations();
+    });
+    document.getElementById("regBulkApproveBtn").addEventListener("click", () => {
+      if (!regChecked.size) return;
+      const ids = [...regChecked];
+      openRegConfirm("일괄 승인", `선택한 ${ids.length}명의 가입을 전부 승인할까요? 즉시 로그인 가능해집니다.`, async () => {
+        let ok = 0;
+        let fail = 0;
+        for (const id of ids) {
+          try {
+            await Api.approveRegistration(id);
+            ok++;
+          } catch (e) {
+            fail++;
+          }
+        }
+        toast(fail ? `⚠️ ${ok}명 승인, ${fail}명 실패` : `✓ ${ok}명 일괄 승인 완료`, !!fail);
+        regChecked.clear();
+        await load();
+      });
     });
   }
 
@@ -215,6 +418,7 @@ const Members = (() => {
     const clsF = classFilterValue();
     const rows = members.filter((m) => {
       const roleHit = activeRoleFilter === "전체" || m.role === activeRoleFilter;
+      const guildHit = activeGuildFilter === "전체" || (m.guild_name || "") === activeGuildFilter;
       const clsHit = !clsF || m.class === clsF;
       const qHit =
         !q ||
@@ -222,7 +426,7 @@ const Members = (() => {
         (m.user_id || "").includes(q) ||
         (m.guild_name || "").includes(q) ||
         (m.class || "").includes(q);
-      return roleHit && clsHit && qHit;
+      return roleHit && guildHit && clsHit && qHit;
     });
     // 정렬: 참여점수(시즌 범위 합산 지원)/기여점수/전투력 내림차순 (일반·장비·아퀴 뷰 공통 적용)
     const key = sortKey();
@@ -257,7 +461,7 @@ const Members = (() => {
         <div class="r1">
           <span class="nm"></span>
           <span style="width:110px" class="meta uid m-hide"></span>
-          <span style="width:90px" class="meta guild m-hide"></span>
+          <span style="width:90px" class="guild"></span>
           <span style="width:96px" class="meta cls"></span>
           <span style="width:50px" class="m-hide">${m.level ?? 0}</span>
           <span style="width:80px" class="pw">${(m.power ?? 0).toLocaleString()}</span>
@@ -281,7 +485,10 @@ const Members = (() => {
         row.querySelector(".nm").appendChild(pb);
       }
       row.querySelector(".uid").textContent = m.user_id;
-      row.querySelector(".guild").textContent = m.guild_name || "-";
+      const gb = document.createElement("span");
+      gb.className = "badge b-gray";
+      gb.textContent = m.guild_name || "-";
+      row.querySelector(".guild").appendChild(gb);
       const clsCell = row.querySelector(".cls");
       const clsEmblem = GameData.classEmblemEl(m.class, 14, "dark");
       if (clsEmblem) {
@@ -960,6 +1167,13 @@ const Members = (() => {
     document.getElementById("memberForm").dataset.mode = "create";
     document.getElementById("memberForm").dataset.userId = "";
     document.getElementById("memberModalTitle").textContent = "결사원 등록";
+    {
+      // 신규 등록도 기본 결사원 — 권한 지정은 관리자만
+      const roleSel = document.getElementById("memberRole");
+      roleSel.value = "결사원";
+      roleSel.disabled = (Auth.getUser() || {}).role !== "관리자";
+      roleSel.title = roleSel.disabled ? "권한 변경은 관리자만 가능합니다" : "";
+    }
     document.getElementById("memberIdRow").classList.remove("hidden");
     document.getElementById("memberUserId").disabled = false;
     document.getElementById("memberPwResetBox").classList.add("hidden");
@@ -982,11 +1196,27 @@ const Members = (() => {
     // 아이디/비밀번호는 등록 전용 필드라 수정 모드에서는 숨김(아이디는 PK라 변경 불가, 비번은 아래 별도 재설정 박스 사용).
     document.getElementById("memberIdRow").classList.add("hidden");
     document.getElementById("memberCurrentId").value = m.current_id || "";
-    document.getElementById("memberGuild").value = m.guild_name || "";
+    {
+      // 매핑 전 구 결사명이면 선택지에 임시로 추가해 값 보존
+      const gsel = document.getElementById("memberGuild");
+      if (m.guild_name && ![...gsel.options].some((o) => o.value === m.guild_name)) {
+        const o = document.createElement("option");
+        o.value = m.guild_name;
+        o.textContent = `${m.guild_name} (구 값)`;
+        gsel.appendChild(o);
+      }
+      gsel.value = m.guild_name || "";
+    }
     document.getElementById("memberClass").value = m.class || "";
     document.getElementById("memberLevel").value = m.level ?? 0;
     document.getElementById("memberPower").value = m.power ?? 0;
-    document.getElementById("memberRole").value = m.role || "결사원";
+    {
+      // 권한 변경(운영진 지정)은 관리자 전용 — 운영진에게는 비활성 표시
+      const roleSel = document.getElementById("memberRole");
+      roleSel.value = m.role || "결사원";
+      roleSel.disabled = (Auth.getUser() || {}).role !== "관리자";
+      roleSel.title = roleSel.disabled ? "권한 변경은 관리자만 가능합니다" : "";
+    }
     document.getElementById("memberSubjRank").value = m.subjugation_rank || "";
     document.getElementById("memberAbyss").value = m.abyss_level || "";
 
@@ -1121,6 +1351,8 @@ const Members = (() => {
     initMemberModal();
     initDeleteModal();
     initRegConfirmModal();
+    initGuildAdmin();
+    initRegBulk();
     document.getElementById("shotCloseBtn").addEventListener("click", () => {
       document.getElementById("shotModalBackdrop").classList.remove("on");
     });

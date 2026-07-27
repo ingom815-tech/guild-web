@@ -38,6 +38,7 @@ const Participation = (() => {
     renderSeason();
     renderStatusTable();
     renderLogs();
+    loadGuildFilter(); // 결사 필터 칩 — 실패해도 나머지 화면 유지
     loadSeasonScores(); // 시즌별 기록은 별도 조회 — 실패해도 나머지 화면은 유지
   }
 
@@ -228,11 +229,59 @@ const Participation = (() => {
     saveBtn.textContent = `💾 ${savable}개 세션 저장`;
   }
 
+  // ── 결사 필터 (합병 준비 — guilds 목록 + 회원 결사 매핑은 클라이언트 조인) ──
+  let guildByUid = new Map();
+  let guildNames = [];
+  let activeGuildFilter = "전체";
+
+  async function loadGuildFilter() {
+    try {
+      const [guilds, mems] = await Promise.all([Api.getGuilds(), Api.listMembers()]);
+      guildNames = (guilds || []).map((g) => g.name);
+      guildByUid = new Map((mems || []).map((m) => [m.user_id, m.guild_name || ""]));
+    } catch (e) {
+      guildNames = [];
+      guildByUid = new Map();
+    }
+    renderGuildChips();
+  }
+
+  function renderGuildChips() {
+    const wrap = document.getElementById("partGuildChips");
+    if (!guildNames.length) {
+      wrap.style.display = "none";
+      return;
+    }
+    wrap.style.display = "flex";
+    wrap.innerHTML = "";
+    const names = ["전체", ...guildNames];
+    if (!names.includes(activeGuildFilter)) activeGuildFilter = "전체";
+    names.forEach((n) => {
+      const chip = document.createElement("span");
+      chip.className = "fchip" + (activeGuildFilter === n ? " on" : "");
+      const cnt = n === "전체"
+        ? (status && status.members ? status.members.length : 0)
+        : (status && status.members ? status.members.filter((m) => guildByUid.get(m.user_id) === n).length : 0);
+      chip.textContent = n;
+      const c = document.createElement("span");
+      c.className = "cnt";
+      c.textContent = cnt;
+      chip.appendChild(c);
+      chip.addEventListener("click", () => {
+        activeGuildFilter = n;
+        renderGuildChips();
+        renderStatusTable();
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
   // ── 참여 현황 표 ──
   function renderStatusTable() {
     const q = (document.getElementById("qp").value || "").trim();
     const rows = (status.members || [])
       .filter((m) => !q || (m.current_id || "").includes(q))
+      .filter((m) => activeGuildFilter === "전체" || guildByUid.get(m.user_id) === activeGuildFilter)
       .slice()
       .sort((a, b) => (b.participation_score || 0) - (a.participation_score || 0));
 
