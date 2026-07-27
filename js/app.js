@@ -57,6 +57,7 @@ const App = (() => {
   function showApp(user) {
     document.getElementById("loginScreen").classList.add("hidden");
     document.getElementById("appScreen").classList.remove("hidden");
+    Auth.startActivityTracking(); // 자동 로그아웃용 마지막 활동 시각 기록 시작
     Auth.applyRoleUI(user);
     Tabs.go("dashboard", document.querySelector('.tab[data-s="dashboard"]'));
   }
@@ -132,6 +133,10 @@ const App = (() => {
     Profile.init();
     Register.init();
     LogAdmin.init();
+    // 웹을 닫고 일정 시간(Auth.AUTO_LOGOUT_MS) 지나 다시 열면 자동 로그아웃
+    if (Auth.isLoggedIn() && Auth.isExpiredByInactivity()) {
+      Auth.expireSession();
+    }
     if (Auth.isLoggedIn()) {
       showApp(Auth.getUser());
     } else {
