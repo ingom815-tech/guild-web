@@ -416,6 +416,7 @@ const DistManage = (() => {
         row.innerHTML = `
           <input type="checkbox" class="sel">
           <b class="inm"></b> ${gradeBadge(r.grade)}
+          ${r.sale_price_krw ? `<span class="meta" style="color:var(--txt2);font-weight:600">내판가 ${r.sale_price_krw.toLocaleString()}원</span>` : ""}
           <b class="nm" style="width:100px"></b>
           <span class="meta" style="width:110px">기여 ${(r.score || 0).toLocaleString()}</span>
           <span class="meta" style="width:44px">${r.qty}개</span>

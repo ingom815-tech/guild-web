@@ -75,54 +75,18 @@ function kstNowString(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19);
 }
 
-// ── 원본 app.py 상수/로직 이식 ─────────────────────────────────────────────
+// ── 규정 (합병 개정판 2026-07-22) ─────────────────────────────────────────
+// 품목별 자격 조건(전투력/개별 참여율/절대자 풀셋) 전면 폐지 — 공통 관문 하나로 통일.
+// 절대자 풀셋 판정·장비 파싱은 자격 검사 외 용도가 없어 함께 제거됨.
 
-const EQUIPMENT_GRADES = ["희귀", "영웅", "전설", "신화", "절대자"];
-
-// 절대자 풀셋 판정 슬롯 (app.py:710-713 그대로)
-const ABSO_FULL_SLOTS = [
-  "주무기", "특화무기", "투구", "상의", "망토", "허리띠", "바지", "신발", "장갑",
-  "반지 1", "반지 2", "귀걸이 1", "귀걸이 2", "팔찌", "목걸이",
-];
-
-// 자격 조건 기본값 (app.py DEFAULT_REGULATIONS 중 이 단계에서 쓰는 키만)
 const DEFAULT_REGULATIONS: Record<string, unknown> = {
   participation_rate_season: "current",
-  legend_simyeon_min_power: 20000,
-  legend_simyeon_min_participation_pct: 35,
-  legend_aqui_min_power: 32000,
-  legend_aqui_min_participation_pct: 65,
-  starlight_min_power: 35000,
-  starlight_min_participation_pct: 70,
-  brooch_min_participation_pct: 35,
+  // 공통 신청 관문: 참여율 N% 이상 (스샷 2종 관문은 호출부에서 별도 검사)
+  apply_min_participation_pct: 35,
+  // 내판가 (표시용 — 공금 자동 기록 없음, 수동 현금 입금 흐름 유지)
+  price_krw_legend_aqui: 100000,
+  price_krw_starlight: 50000,
 };
-
-function normalizeGrade(g: string): string {
-  if (!g) return g;
-  const s = g.trim();
-  for (const grade of EQUIPMENT_GRADES) {
-    if (s.startsWith(grade)) return grade;
-  }
-  return s;
-}
-
-// equipment_info: JSON 문자열 또는 "슬롯:등급|슬롯:등급" 레거시 포맷 (app.py:1080-1094)
-function parseEquipmentInfo(raw: string | null): Record<string, string> {
-  if (!raw) return {};
-  let result: Record<string, string> = {};
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) result = parsed;
-  } catch {
-    for (const part of raw.split("|")) {
-      const p = part.trim();
-      const idx = p.indexOf(":");
-      if (idx > 0) result[p.slice(0, idx).trim()] = p.slice(idx + 1).trim();
-    }
-  }
-  for (const slot of Object.keys(result)) result[slot] = normalizeGrade(String(result[slot]));
-  return result;
-}
 
 async function getRegulations(): Promise<Record<string, unknown>> {
   const { data } = await supabase.from("app_settings").select("value").eq("key", "guild_regulations").maybeSingle();
@@ -173,70 +137,49 @@ interface Eligibility {
   rule: string;
 }
 
-// 원본 _check_item_eligibility (app.py:5987-6044) 그대로 이식.
+// 합병 개정판: 자격 = 공통 관문(참여율 N% 이상) 하나. 품목별 조건 전면 폐지.
+// 유찰 2회 아이템·free_apply 대량 소모품도 예외 없이 적용 (유찰은 자격을 면제하지 않고
+// "지망 칸을 쓰지 않는 자유 신청 상태"만 유지). 운영진 예외(자격 미달 신청 가능)는 호출부에서 기존대로.
+// 3단 브로치·영웅 재해는 별도 조건 없이 일반 품목 — 추후 규정 확정 시 여기에 반영 예정.
 function checkEligibility(
+  _itemName: string,
+  _category: string | null,
+  _grade: string | null,
+  _member: MemberRow,
+  regs: Record<string, unknown>,
+  participation: number,
+  _unsoldCount: number,
+): Eligibility {
+  const minPct = Number(regs.apply_min_participation_pct ?? 35);
+  if (participation < minPct) {
+    return {
+      eligible: false,
+      failed: [{ label: "참여율", current: participation, required: minPct }],
+      rule: "공통 자격",
+    };
+  }
+  return { eligible: true, failed: [], rule: "" };
+}
+
+// 전설 심연석: 시즌 마감 시 기여점수 상위 순 수동 분배 — 신청 대상 제외 (합병 개정판).
+// 별빛/찬란한/조각은 제외 — "심연석" 단독 계열(전설 심연석)만 해당.
+function isLegendSimyeonItem(itemName: string): boolean {
+  const ns = itemName.replace(/ /g, "");
+  return ns.includes("심연석") && !ns.includes("조각") && !ns.includes("별빛") && !ns.includes("찬란한");
+}
+
+// 내판가 (표시 전용): 전설 아퀴 = 100,000원 / 별빛 심연석 = 50,000원. 그 외 없음.
+function salePriceKrw(
   itemName: string,
   category: string | null,
   grade: string | null,
-  member: MemberRow,
   regs: Record<string, unknown>,
-  participation: number,
-  unsoldCount: number,
-): Eligibility {
-  const myPower = member.power || 0;
-  const nameNorm = itemName.replace(/ /g, "").toLowerCase();
-  const cat = (category || "").replace(/ /g, "").toLowerCase();
-  // 카테고리 표준화 호환: "아퀴"(구) / "아퀴룬"(신) 모두 아퀴로 취급 — 규칙 자체는 원본 그대로.
-  const isAquiCat = cat === "아퀴" || cat === "아퀴룬";
-
-  if (isAquiCat && grade === "전설" && (unsoldCount || 0) >= 2) {
-    return { eligible: true, failed: [], rule: "전설 아퀴 (2회 유찰 — 무조건 신청 가능)" };
-  }
-
-  let conditions: [string, number, number][] = [];
-  let rule = "";
-
-  if (nameNorm.includes("찬란한") && nameNorm.includes("심연석")) {
-    const equip = parseEquipmentInfo(member.equipment_info);
-    const allAbso = ABSO_FULL_SLOTS.every((s) => equip[s] === "절대자");
-    if (!allAbso) {
-      return { eligible: false, failed: [{ label: "장비", current: "절대자 풀셋 미달성", required: "전 슬롯 절대자 장착 필요" }], rule: "찬란한 심연석" };
-    }
-    return { eligible: true, failed: [], rule: "찬란한 심연석" };
-  } else if (nameNorm.includes("별빛심연석")) {
-    const equip = parseEquipmentInfo(member.equipment_info);
-    const allAbso = ABSO_FULL_SLOTS.every((s) => equip[s] === "절대자");
-    if (allAbso) {
-      return { eligible: false, failed: [{ label: "장비", current: "전 슬롯 절대자 달성", required: "신청 불가" }], rule: "별빛 심연석" };
-    }
-    conditions = [
-      ["전투력", myPower, Number(regs.starlight_min_power ?? 35000)],
-      ["참여도", participation, Number(regs.starlight_min_participation_pct ?? 70)],
-    ];
-    rule = "별빛 심연석";
-  } else if (nameNorm.includes("심연석") && !nameNorm.includes("조각") && grade === "전설") {
-    conditions = [
-      ["전투력", myPower, Number(regs.legend_simyeon_min_power ?? 20000)],
-      ["참여도", participation, Number(regs.legend_simyeon_min_participation_pct ?? 35)],
-    ];
-    rule = "전설 심연석";
-  } else if (isAquiCat && grade === "전설") {
-    conditions = [
-      ["전투력", myPower, Number(regs.legend_aqui_min_power ?? 32000)],
-      ["참여도", participation, Number(regs.legend_aqui_min_participation_pct ?? 65)],
-    ];
-    rule = "전설 아퀴";
-  } else if (nameNorm.includes("브로치") && itemName.includes("3단")) {
-    conditions = [["참여도", participation, Number(regs.brooch_min_participation_pct ?? 35)]];
-    rule = "3단 브로치";
-  }
-
-  if (!conditions.length) return { eligible: true, failed: [], rule: "" };
-
-  const failed = conditions
-    .filter(([, current, required]) => current < required)
-    .map(([label, current, required]) => ({ label, current, required }));
-  return { eligible: failed.length === 0, failed, rule };
+): number | null {
+  const ns = itemName.replace(/ /g, "");
+  if (ns.includes("별빛심연석") && !ns.includes("조각")) return Number(regs.price_krw_starlight ?? 50000);
+  const cat = (category || "").replace(/ /g, "");
+  if ((cat === "아퀴" || cat === "아퀴룬") && grade === "전설") return Number(regs.price_krw_legend_aqui ?? 100000);
+  return null;
 }
 
 // 공식 구분 5분류 (카테고리 표준화 — 프론트 GameData.category5와 동일 규칙).
@@ -940,6 +883,7 @@ Deno.serve(async (req: Request) => {
         for (const m of ms || []) nickByUid.set(m.user_id, m.current_id || m.user_id);
       }
 
+      const confRegs = await getRegulations(); // 내판가 표시용
       const rows = (reqs || [])
         .filter((r) => invById.has(r.item_id)) // 원본: i.status='재고' 조인 조건
         .map((r) => {
@@ -959,6 +903,7 @@ Deno.serve(async (req: Request) => {
             request_date: r.request_date,
             is_dispatched: !!r.is_dispatched,
             dispatched_at: r.dispatched_at,
+            sale_price_krw: salePriceKrw(String(it.item_name), it.category as string | null, it.grade as string | null, confRegs),
           };
         });
       return jsonResponse({ is_staff: staff, rows });
@@ -1142,6 +1087,7 @@ Deno.serve(async (req: Request) => {
         is_free: free,
         my_rank: mine && mine.rank != null ? mine.rank : null,
         my_free_applied: !!(mine && mine.rank == null),
+        sale_price_krw: salePriceKrw(String(g.item_name), g.category as string | null, g.grade as string | null, regs),
         applicants,
       };
     });
@@ -1155,6 +1101,7 @@ Deno.serve(async (req: Request) => {
         has_power_ss: hasPowerSs,
         has_aqui_ss: hasAquiSs,
         has_confirmed_wish: hasConfirmedWish,
+        apply_min_pct: Number(regs.apply_min_participation_pct ?? 35),
       },
       groups: groupList,
     });
@@ -1188,6 +1135,10 @@ Deno.serve(async (req: Request) => {
     // 신화 등급은 분배 신청 제외 — 운영진 수동 분배 (창고 탭 안내와 일치하는 방어적 검증)
     if (item.grade === "신화") {
       return jsonResponse({ error: "신화 등급은 분배 신청 대상이 아닙니다 — 운영진에게 문의해주세요." }, 400);
+    }
+    // 전설 심연석은 시즌 마감 수동 분배 — 신청 대상 제외 (합병 개정판)
+    if (isLegendSimyeonItem(item.item_name)) {
+      return jsonResponse({ error: "전설 심연석은 시즌 마감 시 기여점수 상위 순으로 분배됩니다 — 운영진에게 1:1 신청해주세요." }, 400);
     }
 
     const { data: me } = await supabase

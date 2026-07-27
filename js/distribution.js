@@ -85,8 +85,10 @@ const Distribution = (() => {
       toast(e.message || "분배 정보 조회 실패", true);
       return;
     }
-    // 신화 등급은 분배 신청 대상이 아님 — 운영진 수동 분배 (창고에서 "문의" 안내)
-    data.groups = (data.groups || []).filter((g) => g.grade !== "신화");
+    // 신청 대상 제외 품목 (합병 개정판): 신화 등급 전체 + 전설 심연석(시즌 마감 수동 분배)
+    data.groups = (data.groups || []).filter(
+      (g) => g.grade !== "신화" && !GameData.isLegendSimyeonItem(g.item_name),
+    );
     if (data.auto_confirmed > 0) {
       toast(`⏰ 신청 기간이 마감되어 ${data.auto_confirmed}건이 자동 확정되었습니다.`);
     }
@@ -137,22 +139,27 @@ const Distribution = (() => {
     }
   }
 
-  // ── 자격 배너: 공통 관문(전투력/아퀴룬 스샷)만 안내 ──
+  // ── 자격 배너: 단일 관문 (스샷 2종 + 참여율 N%) — 합병 개정판, 미충족 항목만 강조 ──
   function renderBanner() {
     const el = document.getElementById("eligBanner");
     const my = data.my || {};
+    const minPct = my.apply_min_pct != null ? my.apply_min_pct : 35;
+    const rate = my.participation_rate != null ? my.participation_rate : 0;
     const missing = [];
-    if (!my.has_power_ss) missing.push("전투력 스샷 등록");
-    if (!my.has_aqui_ss) missing.push("아퀴룬 스샷 등록");
+    if (!my.has_power_ss) missing.push({ txt: "전투력 스샷 등록", shot: true });
+    if (!my.has_aqui_ss) missing.push({ txt: "아퀴룬 스샷 등록", shot: true });
+    if (rate < minPct) missing.push({ txt: `참여율 ${minPct}% 이상 (현재 ${rate}%)`, shot: false });
 
     if (missing.length) {
+      const needsShot = missing.some((m) => m.shot);
       el.className = "elig bad";
       el.style.display = "flex";
       el.innerHTML = `
         <span class="ic">⚠️</span>
-        <div><b>지금은 지망할 수 없어요.</b> 지망하려면 다음이 필요합니다:<br>
-          ${missing.map((m) => "· " + m).join(" &nbsp;")}
-          <span class="fix" onclick="Distribution.goShots()">지금 등록하기 →</span></div>`;
+        <div><b>지금은 신청할 수 없어요.</b> 신청하려면: 스샷 2종 등록 + 참여율 ${minPct}% 이상<br>
+          미충족: ${missing.map((m) => "<b>" + m.txt + "</b>").join(" · ")}
+          ${needsShot ? `<span class="fix" onclick="Distribution.goShots()">지금 등록하기 →</span>` : ""}
+          <span class="fix" onclick="Distribution.goRules()">규정 보기 →</span></div>`;
       return;
     }
     if (my.has_confirmed_wish) {
@@ -167,10 +174,15 @@ const Distribution = (() => {
     }
     el.className = "elig ok";
     el.style.display = "flex";
-    const rate = my.participation_rate != null ? my.participation_rate + "%" : "-";
     el.innerHTML = `
       <span class="ic">✅</span>
-      <div><b>지망 가능 상태입니다.</b> 참여도 ${rate} · 기여점수 ${(my.contribution_score || 0).toLocaleString()} · 전투력/아퀴룬 스샷 등록됨</div>`;
+      <div><b>신청 가능 상태입니다.</b> 스샷 2종 등록됨 · 참여율 ${rate}% (기준 ${minPct}%) · 기여점수 ${(my.contribution_score || 0).toLocaleString()}
+        <span class="fix" onclick="Distribution.goRules()">규정 보기 →</span></div>`;
+  }
+
+  // "규정 보기 →" — 규정 탭으로 전환
+  function goRules() {
+    Tabs.go("rules", document.querySelector('.tab[data-s="rules"]'));
   }
 
   function goShots() {
@@ -260,18 +272,8 @@ const Distribution = (() => {
     }
   }
 
-  // ── 자격 미달 축약 태그 (부족 조건 하나만) ──
-  function lackTag(g) {
-    const elig = g.eligibility || {};
-    if (elig.eligible || !(elig.failed || []).length) return null;
-    const f = elig.failed[0];
-    if (f.label === "참여도") return `참여도 ${f.required}↑`;
-    if (f.label === "전투력") return `전투력 ${Number(f.required).toLocaleString()}↑`;
-    if (f.label === "장비") return elig.rule === "찬란한 심연석" ? "절대자 풀셋 필요" : "절대자 달성자 제외";
-    return `${f.label} 조건`;
-  }
-
   // ── 아이템 목록: 카테고리 섹션 헤더 그룹핑 (행 + 펼침) ──
+  // 합병 개정판: 품목별 자격 조건 폐지 — 부족 조건 축약 태그("참여도 65↑" 등)도 제거됨.
   const GRADE_BAR = { 전설: "g-leg", 신화: "g-myth", 절대자: "g-myth", 희귀: "g-rare", 영웅: "g-hero" };
 
   function renderList() {
@@ -314,24 +316,18 @@ const Distribution = (() => {
     let tag = "";
     if (g.raid_type === "연합") tag = `<span class="atag">연합 룻</span>`;
     else if (g.is_free) tag = `<span class="free-tag">자유 신청</span>`;
-    else {
-      const lk = !Auth.isStaff() && lackTag(g);
-      if (lk) tag = `<span class="atag lack"></span>`;
-    }
     // 경쟁 강도: 지망 없음(회색) / 경쟁 1~2명(초록) / 3명+(황색). 자유 신청은 신청 N명.
     let comp;
     if (g.is_free) comp = freeCnt ? `<span class="comp c1">신청 ${freeCnt}명</span>` : `<span class="comp c0">신청 없음</span>`;
     else if (!wishCnt) comp = `<span class="comp c0">지망 없음</span>`;
     else comp = `<span class="comp ${wishCnt >= 3 ? "c2" : "c1"}">경쟁 ${wishCnt}명</span>`;
     head.innerHTML = `
-      <span class="nm"><span class="t"></span>${showQty ? `<span class="qn">×${g.quantity}</span>` : ""}</span>
+      <span class="nm"><span class="t"></span>${showQty ? `<span class="qn">×${g.quantity}</span>` : ""}${g.sale_price_krw ? `<span class="prtag">내판가 ${g.sale_price_krw.toLocaleString()}원</span>` : ""}</span>
       <span class="mypick" style="display:none"></span>
       ${tag}
       ${comp}
       <span class="chev">▾</span>`;
     head.querySelector(".t").textContent = g.item_name;
-    const lackEl = head.querySelector(".atag.lack");
-    if (lackEl) lackEl.textContent = lackTag(g);
     const mp = head.querySelector(".mypick");
     if (g.my_rank != null) {
       mp.style.display = "";
@@ -378,11 +374,12 @@ const Distribution = (() => {
   function buildFreeBody(body, g, winners) {
     const ns = String(g.item_name).replace(/ /g, "");
     const isSimyeon = ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
+    // 합병 개정판: 유찰/대량 소모품도 참여율 관문 적용 — "전원 가능" 표현 제거
     const why = g.free_apply
-      ? "대량 소모품 — 전원 신청 가능, 지망 칸을 쓰지 않습니다."
+      ? "대량 소모품 — 자유 신청 · 지망 칸을 쓰지 않습니다."
       : isSimyeon
         ? "재고 무관 신청 — 지망 칸을 쓰지 않고, 선정은 운영진이 결정합니다."
-        : `${g.unsold_period_count}회 유찰 — 전원 신청 가능, 지망 칸을 쓰지 않습니다.`;
+        : `${g.unsold_period_count}회 유찰 — 자유 신청 · 지망 칸을 쓰지 않습니다.`;
     const bar = document.createElement("div");
     bar.className = "pickbar";
     bar.innerHTML = `<span class="pl"></span>`;
@@ -610,5 +607,5 @@ const Distribution = (() => {
     initApplyModal();
   }
 
-  return { init, load, goShots, focusItem };
+  return { init, load, goShots, goRules, focusItem };
 })();

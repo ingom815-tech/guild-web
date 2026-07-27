@@ -218,6 +218,13 @@ const GameData = (() => {
     return ns.includes("별빛심연석") || (ns.includes("찬란한") && ns.includes("심연석"));
   }
 
+  // 전설 심연석: 시즌 마감 시 기여점수 상위 순 수동 분배 — 신청 대상 제외 (합병 개정판).
+  // 별빛/찬란한/조각 제외 — "심연석" 단독 계열만 해당. 서버 isLegendSimyeonItem과 동일 규칙.
+  function isLegendSimyeonItem(itemName) {
+    const ns = String(itemName || "").replace(/ /g, "");
+    return ns.includes("심연석") && !ns.includes("조각") && !ns.includes("별빛") && !ns.includes("찬란한");
+  }
+
   // 직업 엠블럼 <i> 요소 (SVG mask 채색). variant "dark" = 밝은 배경용 어두운 금색.
   // 매핑 없는 직업(미선택 포함)은 null — 호출부가 기존 표시를 그대로 유지하면 된다.
   function classEmblemEl(memberClass, size, variant) {
@@ -239,6 +246,6 @@ const GameData = (() => {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP, DIST_CATEGORIES,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
-    aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl, category5, isOpenApplyItem,
+    aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl, category5, isOpenApplyItem, isLegendSimyeonItem,
   };
 })();
