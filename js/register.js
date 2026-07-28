@@ -118,17 +118,44 @@ const Register = (() => {
     });
   }
 
-  async function onFileChange(inputId, previewId, maxCount, target) {
+  // 진단 로그 (실패 무시) — 첨부/전송 실패 시 원인 수집. 파일 내용은 보내지 않는다.
+  function diag(context, detail) {
+    try {
+      Api.sendDiag(context, detail);
+    } catch (_) {
+      // 무시
+    }
+  }
+
+  async function onFileChange(inputId, previewId, statusId, maxCount, target) {
     const input = document.getElementById(inputId);
+    const status = document.getElementById(statusId);
     if (!input.files.length) return;
+    const files = [...input.files];
+    status.textContent = "처리 중...";
+    status.style.color = "";
     try {
       const arr = await ImageUtil.filesToDataUrls(input.files, maxCount);
       target.length = 0;
       target.push(...arr);
       renderPreviews(previewId, target);
+      status.textContent = `✅ ${arr.length}장 첨부됨`;
       showErr("");
     } catch (err) {
-      showErr(err.message || "이미지 처리 실패");
+      // 실패 이유를 첨부칸 바로 아래에 표시 (폼 상단 에러 박스는 화면 밖일 수 있음)
+      const heic = files.some((f) => /\.hei[cf]$/i.test(f.name || "") || /hei[cf]/i.test(f.type || ""));
+      const msg = (err.message || "이미지 처리 실패") +
+        (heic ? " — 아이폰 HEIC 사진은 지원되지 않아요. 게임 스크린샷(PNG/JPG)을 올려주세요." : "");
+      status.textContent = "⚠️ " + msg;
+      status.style.color = "#A32D2D";
+      showErr(msg);
+      diag("register_attach", {
+        input: inputId,
+        error: err.message || String(err),
+        files: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
+      });
+      target.length = 0;
+      renderPreviews(previewId, target);
       input.value = "";
     }
   }
@@ -158,9 +185,9 @@ const Register = (() => {
     });
     document.getElementById("regClass").addEventListener("change", rebuildAquiGrid);
     document.getElementById("regPowerImg").addEventListener("change", () =>
-      onFileChange("regPowerImg", "regPowerPreview", 1, powerImages));
+      onFileChange("regPowerImg", "regPowerPreview", "regPowerStatus", 1, powerImages));
     document.getElementById("regAquiImg").addEventListener("change", () =>
-      onFileChange("regAquiImg", "regAquiPreview", 10, aquiImages));
+      onFileChange("regAquiImg", "regAquiPreview", "regAquiStatus", 10, aquiImages));
 
     document.getElementById("registerForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -196,9 +223,16 @@ const Register = (() => {
         aquiImages = [];
         renderPreviews("regPowerPreview", []);
         renderPreviews("regAquiPreview", []);
+        document.getElementById("regPowerStatus").textContent = "";
+        document.getElementById("regAquiStatus").textContent = "";
         hide();
       } catch (err) {
         showErr(err.message || "가입 신청 실패");
+        diag("register_submit", {
+          error: err.message || String(err),
+          power_count: powerImages.length,
+          aqui_count: aquiImages.length,
+        });
       } finally {
         btn.disabled = false;
         btn.textContent = "가입 신청";

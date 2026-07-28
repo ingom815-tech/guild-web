@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=54** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=55** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -67,7 +67,8 @@
 | 0923e3a | 분배 규정 합병 개정판(자격 = 스샷+참여율 35% 단일 관문, 내판가) + 규정 탭(열람 전용, 규정탭_시안_v4 — 정적, 개정 시 index.html s-rules 직접 수정) (v=51) |
 | 83f4cbd | 합병 초기화 마이그레이션 기록(0013~0016) + 전설 심연석 신청 허용(자유 신청, 내판가 5천, distribution 함수 재배포) + 규정 카드 개정(신화 PVP 1:1, 심연석 "분배 기간에 신청", 주둔지 카드) (v=52) |
 | d375111 | 미접속 30분 자동 로그아웃 (auth.js `AUTO_LOGOUT_MS` 상수, last_active_at 하트비트 30초, 부팅 시 만료 검사 → 서버 세션 무효화+로컬 정리; 기록 없는 기존 세션은 첫 접속부터 기록 시작) (v=53) |
-| (최신) | 성능 최적화: Edge Function 병렬화(view=items 9회 순차→3웨이브, status/confirmed/POST/members 목록), status에서 equipment_info 제외, 경량 `view=period`(창고용), 분배 하위탭·결사원 탭 캐시(`DistSync` 버전 버스 — 변경 액션이 bump로 무효화, 가입 신청 하위탭은 캐시 제외), DOM 일괄 삽입(DocumentFragment) — **현재 배포 버전 (v=54, distribution·members 함수 재배포됨)** |
+| fe1127d | 성능 최적화: Edge Function 병렬화(view=items 9회 순차→3웨이브, status/confirmed/POST/members 목록), status에서 equipment_info 제외, 경량 `view=period`(창고용), 분배 하위탭·결사원 탭 캐시(`DistSync` 버전 버스 — 변경 액션이 bump로 무효화, 가입 신청 하위탭은 캐시 제외), DOM 일괄 삽입(DocumentFragment) (v=54, distribution·members 함수 재배포) |
+| (최신) | 가입 스샷 첨부 피드백("N장 첨부됨"/실패 사유를 첨부칸 아래 표시, HEIC·인앱 브라우저 안내) + 진단 로그(0017 `client_diag_logs`, register `action=diag` 무인증 — 첨부/전송 실패 시 파일명·형식·크기·에러·UA 자동 수집, 합병 기간 임시) — **현재 배포 버전 (v=55, register 함수 재배포됨)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

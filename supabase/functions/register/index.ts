@@ -130,6 +130,26 @@ Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
   if (preflight) return preflight;
 
+  const url = new URL(req.url);
+
+  // 진단 로그 (무인증) — 가입 화면 스샷 첨부/전송 실패 원인 수집 (합병 대량 가입 기간 임시).
+  // client_diag_logs 테이블(0017)에 기록. 테이블이 없거나 실패해도 조용히 무시 — 가입 흐름에 영향 없음.
+  if (req.method === "POST" && url.searchParams.get("action") === "diag") {
+    try {
+      const body = await req.json();
+      const context = typeof body.context === "string" ? body.context.slice(0, 60) : "unknown";
+      const detail = typeof body.detail === "string" ? body.detail.slice(0, 2000) : "";
+      await supabase.from("client_diag_logs").insert({
+        context,
+        detail,
+        user_agent: (req.headers.get("user-agent") || "").slice(0, 300),
+      });
+    } catch {
+      // 무시
+    }
+    return jsonResponse({ ok: true });
+  }
+
   // GET: 가입 폼용 결사 목록 (무인증 — 결사명만 공개, 합병 준비)
   if (req.method === "GET") {
     const { data, error } = await supabase

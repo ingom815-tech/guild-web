@@ -80,6 +80,9 @@ const Api = (() => {
     deleteMember: (user_id, confirmDelete) =>
       call("members", { method: "DELETE", query: { user_id, confirm: confirmDelete ? "true" : "false" } }),
     getDashboard: () => call("dashboard", { method: "GET" }),
+    // 진단 로그 (무인증, 실패 무시) — 가입 화면 스샷 첨부 실패 원인 수집용
+    sendDiag: (context, detail) =>
+      call("register", { method: "POST", query: { action: "diag" }, body: { context, detail: JSON.stringify(detail) } }).catch(() => null),
     getDistributionItems: () => call("distribution", { method: "GET", query: { view: "items" } }),
     getDistributionPeriod: () => call("distribution", { method: "GET", query: { view: "period" } }),
     getMyRequests: () => call("distribution", { method: "GET", query: { view: "my" } }),
