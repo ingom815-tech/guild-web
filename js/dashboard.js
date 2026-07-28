@@ -1,8 +1,6 @@
 // 대시보드 — "대시보드_최종통합_시안_v2.html" 레이아웃 구현
 // KPI 4칸(무채색) / 직업분포 단색바 / 신화 아퀴룬 보유 표 / 멤버 정렬표+페이지네이션 / 장비·아퀴 인셋 패널 카드
 const Dashboard = (() => {
-  const PAGE_SIZE = 20;
-
   // 직업별 신화 아퀴룬 매핑 (0번 데이터 검증 결과와 대조 완료 — 표 컬럼명은 섹션 중립 "신화 1번/2번").
   // 실제 저장 섹션은 룬마다 다름(PVP/지원/PVE 혼재) — 카드 아퀴 뷰는 DB 저장 섹션(ID 접두) 그대로 렌더링.
   const MYTHIC_RUNES = {
@@ -21,7 +19,6 @@ const Dashboard = (() => {
   let cardView = "basic"; // basic | equip | aqui
   let sortKey = "contribution_score";
   let sortDir = -1; // -1 desc, 1 asc
-  let page = 0;
 
   function toast(msg, isErr) {
     const t = document.getElementById("dashToast");
@@ -52,7 +49,6 @@ const Dashboard = (() => {
     }
     sortKey = Auth.isStaff() ? "power" : "participation_score";
     sortDir = -1;
-    page = 0;
     renderKpi();
     renderClassBars();
     renderMythTable();
@@ -222,7 +218,7 @@ const Dashboard = (() => {
     const v = document.getElementById("dashSort").value;
     sortKey = SORT_MAP[v] || "contribution_score";
     sortDir = -1;
-    page = 0;
+
     renderMemberArea();
   }
 
@@ -233,7 +229,7 @@ const Dashboard = (() => {
       sortKey = key;
       sortDir = key === "current_id" || key === "class" || key === "role" ? 1 : -1;
     }
-    page = 0;
+
     renderMemberArea();
   }
 
@@ -262,12 +258,12 @@ const Dashboard = (() => {
     document.querySelectorAll(".vtoggle span[data-vi]").forEach((c) => c.classList.remove("on"));
     el.classList.add("on");
     cardView = el.dataset.vi;
-    page = 0;
+
     renderMemberArea();
   }
 
   function filter() {
-    page = 0;
+
     renderMemberArea();
   }
 
@@ -289,15 +285,15 @@ const Dashboard = (() => {
   // ── 기본 뷰: 정렬 가능한 표 + 20명 페이지네이션 ──
   function renderTable(rows) {
     const staff = Auth.isStaff();
-    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-    page = Math.min(page, totalPages - 1);
-    const slice = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+    // 페이지 넘김 대신 표 안 세로 스크롤 (전원 렌더 — 181명 수준은 렌더 비용 미미)
+    const slice = rows;
 
     const arrow = (key) => (sortKey === key ? (sortDir === -1 ? " ↓" : " ↑") : "");
     const th = (label, key, num) =>
       `<th class="${num ? "num" : ""}" onclick="Dashboard.sortBy('${key}')">${label}${arrow(key)}</th>`;
 
     let header = "<tr>";
+    header += `<th class="num" style="width:44px;padding-right:22px">#</th>`; // 현재 정렬 기준 순번
     header += th("닉네임", "current_id");
     header += th("구분", "role");
     header += th("직업", "class");
@@ -309,12 +305,13 @@ const Dashboard = (() => {
     header += "</tr>";
 
     const bodyHtml = slice
-      .map((m) => {
+      .map((m, i) => {
         const isStaffRole = m.role === "운영진" || m.role === "관리자";
         const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
         const rateHtml = m.participation_rate != null && m.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
         return `<tr>
-          <td><b class="nm"></b></td>
+          <td class="num gtext" style="padding-right:22px">${i + 1}</td>
+          <td><span class="badge b-gray gld" style="display:inline-block;min-width:56px;text-align:center;margin-right:9px"></span><b class="nm"></b></td>
           <td><span class="role ${isStaffRole ? "r-staff" : "r-member"}"></span></td>
           <td class="gtext cls"></td>
           <td class="num">${m.level ?? 0}</td>
@@ -333,22 +330,14 @@ const Dashboard = (() => {
     slice.forEach((m, i) => {
       const tr = trs[i + 1];
       tr.querySelector(".nm").textContent = m.current_id || m.user_id;
+      const gld = tr.querySelector(".gld");
+      if (m.guild_name) gld.textContent = m.guild_name;
+      else gld.style.visibility = "hidden"; // 미지정도 자리는 유지 — 닉네임 시작 위치 정렬
       tr.querySelector(".role").textContent = m.role || "";
       tr.querySelector(".cls").textContent = `${m.class || "-"}${m.subjugation_rank ? " · 토벌 " + m.subjugation_rank : ""}`;
     });
 
-    const from = page * PAGE_SIZE + 1;
-    const to = Math.min(rows.length, (page + 1) * PAGE_SIZE);
-    const pager = document.getElementById("dashPager");
-    pager.innerHTML =
-      `${page > 0 ? `<span style="cursor:pointer" onclick="Dashboard.goPage(-1)">◂ 이전 · </span>` : ""}` +
-      `${from}–${to} / ${rows.length}명` +
-      `${to < rows.length ? `<span style="cursor:pointer" onclick="Dashboard.goPage(1)"> · 다음 ▸</span>` : ""}`;
-  }
-
-  function goPage(delta) {
-    page += delta;
-    renderMemberArea();
+    document.getElementById("dashPager").textContent = `총 ${rows.length}명`;
   }
 
   // ── 장비/아퀴 카드 공통 헤더 ──
@@ -447,5 +436,5 @@ const Dashboard = (() => {
 
   function init() {}
 
-  return { init, load, filter, setClassTab, setCardView, sortSelect, sortBy, goPage };
+  return { init, load, filter, setClassTab, setCardView, sortSelect, sortBy };
 })();

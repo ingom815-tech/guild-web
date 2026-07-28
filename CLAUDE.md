@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=56** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=57** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -69,7 +69,8 @@
 | d375111 | 미접속 30분 자동 로그아웃 (auth.js `AUTO_LOGOUT_MS` 상수, last_active_at 하트비트 30초, 부팅 시 만료 검사 → 서버 세션 무효화+로컬 정리; 기록 없는 기존 세션은 첫 접속부터 기록 시작) (v=53) |
 | fe1127d | 성능 최적화: Edge Function 병렬화(view=items 9회 순차→3웨이브, status/confirmed/POST/members 목록), status에서 equipment_info 제외, 경량 `view=period`(창고용), 분배 하위탭·결사원 탭 캐시(`DistSync` 버전 버스 — 변경 액션이 bump로 무효화, 가입 신청 하위탭은 캐시 제외), DOM 일괄 삽입(DocumentFragment) (v=54, distribution·members 함수 재배포) |
 | ac2d932 | 가입 스샷 첨부 피드백("N장 첨부됨"/실패 사유를 첨부칸 아래 표시, HEIC·인앱 브라우저 안내) + 진단 로그(0017 `client_diag_logs`, register `action=diag` 무인증 — 합병 기간 임시) (v=55, register 함수 재배포) |
-| (최신) | 내정보 소속결사 셀프 변경 허용 — pfGuild input→guilds 드롭다운(구 값 "(구 값)" 보존), 저장 patch에 guild_name 포함 (profile 함수는 원래 수용 — 재배포 불필요). 합병 소속 매핑을 결사원 셀프서비스로 대체 — **현재 배포 버전 (v=56)** |
+| 52232b0 | 내정보 소속결사 셀프 변경 허용 — pfGuild input→guilds 드롭다운(구 값 보존), 저장 patch에 guild_name (profile 함수 재배포 불필요). 합병 소속 매핑을 셀프서비스로 대체 (v=56) |
+| (최신) | 대시보드 결사원 표: # 순번 열 + 결사 배지(닉네임 앞 고정폭 56px — 시작 위치 정렬, 미지정은 투명 자리) + 페이지 넘김→표 안 세로 스크롤 30명(`.dash-scroll` 1170px, th sticky, "총 N명") · 결사원 관리: 관리자 전용 결사 배지 클릭 즉시 변경(quickGuildEdit — 부분 PUT, 서버 재배포 불필요) — **현재 배포 버전 (v=57)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

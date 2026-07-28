@@ -506,6 +506,12 @@ const Members = (() => {
       const gb = document.createElement("span");
       gb.className = "badge b-gray";
       gb.textContent = m.guild_name || "-";
+      if (isAdmin) {
+        // 관리자 전용: 배지 클릭 → 그 자리에서 소속결사 즉시 변경 (수정 모달 없이)
+        gb.style.cursor = "pointer";
+        gb.title = "클릭해서 소속결사 변경";
+        gb.addEventListener("click", () => quickGuildEdit(row.querySelector(".guild"), m));
+      }
       row.querySelector(".guild").appendChild(gb);
       const clsCell = row.querySelector(".cls");
       const clsEmblem = GameData.classEmblemEl(m.class, 14, "dark");
@@ -553,6 +559,47 @@ const Members = (() => {
       frag.appendChild(row);
     });
     container.appendChild(frag);
+  }
+
+  // ── 소속결사 즉시 변경 (관리자 전용 — 목록의 결사 배지 클릭) ──
+  function quickGuildEdit(cell, m) {
+    if (cell.querySelector("select")) return; // 이미 편집 중
+    cell.innerHTML = "";
+    const sel = document.createElement("select");
+    sel.style.cssText = "border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px;background:var(--card);max-width:86px";
+    sel.innerHTML = `<option value="">- (미지정)</option>`;
+    guilds.forEach((g) => {
+      const o = document.createElement("option");
+      o.value = g.name;
+      o.textContent = g.name;
+      sel.appendChild(o);
+    });
+    if (m.guild_name && ![...sel.options].some((o) => o.value === m.guild_name)) {
+      const o = document.createElement("option");
+      o.value = m.guild_name;
+      o.textContent = `${m.guild_name} (구 값)`;
+      sel.appendChild(o);
+    }
+    sel.value = m.guild_name || "";
+    sel.addEventListener("change", async () => {
+      const name = sel.value;
+      sel.disabled = true;
+      try {
+        await Api.updateMember(m.user_id, { guild_name: name });
+        m.guild_name = name || null; // 로컬 목록 즉시 반영 (재조회 없이)
+        toast(`✓ ${m.current_id || m.user_id} — 소속결사 ${name || "미지정"} 변경 완료`);
+      } catch (e) {
+        toast(e.message || "소속 변경 실패", true);
+      }
+      renderGuildChips();
+      render();
+    });
+    // 안 바꾸고 포커스가 떠나면 배지로 복귀
+    sel.addEventListener("blur", () => {
+      if (!sel.disabled) render();
+    });
+    cell.appendChild(sel);
+    sel.focus();
   }
 
   // ── 스샷 보기 모달 (열 때 해당 결사원의 요청한 종류 이미지만 서버에서 가져옴) ──

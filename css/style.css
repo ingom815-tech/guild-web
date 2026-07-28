@@ -178,6 +178,9 @@ tr.won td{background:var(--green-bg)}
 .mtable th{text-align:left;font-size:12px;font-weight:500;color:var(--txt3);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card);cursor:pointer;user-select:none}
 .mtable td{padding:8px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap}
 .mtable .num{text-align:right}
+/* 대시보드 결사원 표 — 페이지 넘김 대신 표 안 세로 스크롤 (약 30명 표시), 제목줄 고정 */
+.dash-scroll{max-height:1170px;overflow-y:auto}
+.dash-scroll th{position:sticky;top:0;z-index:2}
 /* 결사원 관리 — 장비/아퀴 정보 표 (가로 스크롤 + 첫 열 고정) */
 .mgmt-scroll{max-height:70vh}
 .mgmt-scroll th{position:sticky;top:0;z-index:2;cursor:default}
