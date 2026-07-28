@@ -314,13 +314,32 @@ const Profile = (() => {
     aqui: { thumbs: "pfAquiPending", bar: "pfAquiSaveBar", max: 10 },
   };
 
+  // 진단 로그 (실패 무시) — 폰 업로드 실패 원인 수집. 파일 내용은 보내지 않는다.
+  function diag(context, detail) {
+    try {
+      const u = Auth.getUser() || {};
+      Api.sendDiag(context, { user: u.user_id || "?", ...detail });
+    } catch (_) {
+      // 무시
+    }
+  }
+
   function addPending(kind, fileList) {
     if (data && data.locked) {
       toast("분배 기간 진행 중에는 수정할 수 없습니다.", true);
       return;
     }
-    const imgs = [...fileList].filter((f) => f.type.startsWith("image/"));
-    if (!imgs.length) return;
+    // 일부 안드로이드 선택기/인앱 브라우저는 file.type이 빈 값으로 온다 —
+    // MIME으로 거르지 않고 전부 받는다 (형식 검증은 업로드 시 이미지 디코드 단계가 담당).
+    const all = [...fileList];
+    const imgs = all.filter((f) => !f.type || f.type.startsWith("image/"));
+    if (!imgs.length) {
+      if (all.length) {
+        toast("이미지 파일이 아니에요 — 게임 스크린샷(PNG/JPG)을 선택해주세요.", true);
+        diag("profile_attach", { kind, error: "no image files", files: all.map((f) => ({ name: f.name, type: f.type, size: f.size })) });
+      }
+      return;
+    }
     const max = PENDING_UI[kind].max;
     pendingFiles[kind] = kind === "power" ? imgs.slice(0, 1) : [...pendingFiles.aqui, ...imgs].slice(0, max);
     renderPending(kind);
@@ -388,13 +407,28 @@ const Profile = (() => {
       toast("파일을 먼저 선택해주세요.", true);
       return;
     }
+    const btn = document.getElementById(kind === "power" ? "pfPowerUploadBtn" : "pfAquiUploadBtn");
+    const btnLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "업로드 중...";
     try {
       const images = await ImageUtil.filesToDataUrls(files, PENDING_UI[kind].max);
       const res = await Api.uploadProfileImages(kind, images);
       toast(`✓ 스샷 ${res.urls.length}장 업로드 완료 (기존 스샷 교체됨)`);
       await load();
     } catch (err) {
-      toast(err.message || "업로드 실패", true);
+      const heic = files.some((f) => /\.hei[cf]$/i.test(f.name || "") || /hei[cf]/i.test(f.type || ""));
+      const msg = (err.message || "업로드 실패") +
+        (heic ? " — 아이폰 HEIC 사진은 지원되지 않아요. 게임 스크린샷(PNG/JPG)을 올려주세요." : "");
+      toast(msg, true);
+      diag("profile_upload", {
+        kind,
+        error: err.message || String(err),
+        files: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
+      });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = btnLabel;
     }
   }
 
