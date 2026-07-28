@@ -117,6 +117,34 @@ const Profile = (() => {
   }
 
   // ── 기본정보 ──
+  let guildOptions = null; // 결사 목록 캐시 (무인증 GET — 가입 폼과 동일 출처)
+
+  // 소속결사 셀프 변경 허용 (규정 개정) — guilds 선택형, 매핑 전 구 값은 "(구 값)" 옵션으로 보존
+  async function fillGuildSelect(current) {
+    const sel = document.getElementById("pfGuild");
+    if (!guildOptions) {
+      try {
+        guildOptions = await Api.getPublicGuilds();
+      } catch (_) {
+        guildOptions = []; // 조회 실패 시에도 현재 값은 아래 보존 옵션으로 유지
+      }
+    }
+    sel.innerHTML = `<option value="">선택...</option>`;
+    (guildOptions || []).forEach((g) => {
+      const o = document.createElement("option");
+      o.value = g.name;
+      o.textContent = g.name;
+      sel.appendChild(o);
+    });
+    if (current && ![...sel.options].some((o) => o.value === current)) {
+      const o = document.createElement("option");
+      o.value = current;
+      o.textContent = `${current} (구 값)`;
+      sel.appendChild(o);
+    }
+    sel.value = current || "";
+  }
+
   function renderInfoPane() {
     const clsSel = document.getElementById("pfClass");
     if (!clsSel.options.length) {
@@ -125,7 +153,7 @@ const Profile = (() => {
         GameData.CLASS_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("");
     }
     document.getElementById("pfNick").value = data.info.current_id || "";
-    document.getElementById("pfGuild").value = data.info.guild_name || "";
+    fillGuildSelect(data.info.guild_name || "");
     document.getElementById("pfRank").value = data.info.subjugation_rank || "";
     clsSel.value = GameData.CLASS_OPTIONS.includes(data.info.class) ? data.info.class : "";
     document.getElementById("pfLevel").value = data.info.level ?? 0;
@@ -459,7 +487,7 @@ const Profile = (() => {
       e.preventDefault();
       const patch = {
         current_id: document.getElementById("pfNick").value.trim(),
-        // 소속결사는 본인 수정 불가 (합병 준비 — 운영진만 결사원 관리에서 변경)
+        guild_name: document.getElementById("pfGuild").value, // 셀프 변경 허용 (서버 PUT이 이미 수용)
         subjugation_rank: document.getElementById("pfRank").value.trim(),
         class: document.getElementById("pfClass").value.trim(),
         level: parseInt(document.getElementById("pfLevel").value, 10) || 0,
