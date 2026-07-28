@@ -71,7 +71,8 @@
 | ac2d932 | 가입 스샷 첨부 피드백("N장 첨부됨"/실패 사유를 첨부칸 아래 표시, HEIC·인앱 브라우저 안내) + 진단 로그(0017 `client_diag_logs`, register `action=diag` 무인증 — 합병 기간 임시) (v=55, register 함수 재배포) |
 | 52232b0 | 내정보 소속결사 셀프 변경 허용 — pfGuild input→guilds 드롭다운(구 값 보존), 저장 patch에 guild_name (profile 함수 재배포 불필요). 합병 소속 매핑을 셀프서비스로 대체 (v=56) |
 | 6986521 | 대시보드 결사원 표: # 순번 열 + 결사 배지(닉네임 앞 고정폭 56px 정렬) + 표 안 세로 스크롤 30명(`.dash-scroll`, th sticky) · 결사원 관리: 관리자 전용 결사 배지 클릭 즉시 변경(quickGuildEdit) (v=57) |
-| (최신) | 폰 스샷 업로드 수정: ImageUtil에 FileReader 폴백(카카오톡 인앱 웹뷰 objectURL 실패 — 진단 로그로 확인된 실제 사례 대응, 가입·내정보 공용) + 내정보 addPending type 빈 값 수용(안드로이드 선택기)·업로드 중 버튼 표시·HEIC 안내·진단 로그(profile_attach/profile_upload, user_id 포함) — **현재 배포 버전 (v=58)** |
+| 5bfa1bd | 폰 스샷 업로드 수정: ImageUtil FileReader 폴백(카카오톡 인앱 웹뷰 objectURL 실패 대응) + 내정보 type 빈 값 수용·업로드 중 버튼·HEIC 안내·진단 로그 (v=58) |
+| (최신) | Storage 한글 아이디 수정: profile·register `safeKey()` — 업로드 경로의 비ASCII를 UTF-8 hex로 치환("붐붐" 등 한글 user_id의 "Invalid key" 해결, ASCII 아이디 경로 불변). 두 함수 재배포됨 — **현재 배포 버전 (v=58, 프론트 변경 없음)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

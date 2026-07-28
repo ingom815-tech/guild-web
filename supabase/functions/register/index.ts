@@ -86,6 +86,14 @@ function validateStatusCheck(raw: string): string | null {
 const BUCKET = "screenshots";
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
+// Storage 키는 비ASCII를 허용하지 않음 ("붐붐" 같은 한글 아이디 → Invalid key).
+// 허용 외 문자를 UTF-8 hex로 치환 — ASCII 아이디는 그대로, 한글 아이디도 항상 같은 경로로 매핑.
+function safeKey(s: string): string {
+  return s.replace(/[^a-zA-Z0-9._-]/g, (ch) =>
+    Array.from(new TextEncoder().encode(ch)).map((b) => "x" + b.toString(16)).join(""),
+  );
+}
+
 async function ensureBucket(): Promise<void> {
   const { error } = await supabase.storage.createBucket(BUCKET, { public: true });
   if (error && !String(error.message || "").toLowerCase().includes("already")) {
@@ -220,8 +228,8 @@ Deno.serve(async (req: Request) => {
   let powerUrls: string[] = [];
   let aquiUrls: string[] = [];
   try {
-    if (powerImages.length) powerUrls = await uploadImages(`registrations/${user_id}/power`, powerImages);
-    if (aquiImages.length) aquiUrls = await uploadImages(`registrations/${user_id}/aqui`, aquiImages);
+    if (powerImages.length) powerUrls = await uploadImages(`registrations/${safeKey(user_id)}/power`, powerImages);
+    if (aquiImages.length) aquiUrls = await uploadImages(`registrations/${safeKey(user_id)}/aqui`, aquiImages);
   } catch (e) {
     return jsonResponse({ error: (e as Error).message }, 400);
   }

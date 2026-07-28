@@ -137,6 +137,14 @@ async function isProfileLocked(): Promise<boolean> {
 const BUCKET = "screenshots";
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 서버측 상한 (클라 1.5MB + 여유)
 
+// Storage 키는 비ASCII를 허용하지 않음 ("붐붐" 같은 한글 아이디 → Invalid key).
+// 허용 외 문자를 UTF-8 hex로 치환 — ASCII 아이디는 그대로, 한글 아이디도 항상 같은 경로로 매핑.
+function safeKey(s: string): string {
+  return s.replace(/[^a-zA-Z0-9._-]/g, (ch) =>
+    Array.from(new TextEncoder().encode(ch)).map((b) => "x" + b.toString(16)).join(""),
+  );
+}
+
 async function ensureBucket(): Promise<void> {
   const { error } = await supabase.storage.createBucket(BUCKET, { public: true });
   if (error && !String(error.message || "").toLowerCase().includes("already")) {
@@ -236,7 +244,7 @@ Deno.serve(async (req: Request) => {
 
     let urls: string[];
     try {
-      urls = await uploadImages(`${user.user_id}/${kind}`, images);
+      urls = await uploadImages(`${safeKey(user.user_id)}/${kind}`, images);
     } catch (e) {
       return jsonResponse({ error: (e as Error).message }, 400);
     }
