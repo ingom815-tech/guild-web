@@ -217,10 +217,6 @@ const Inventory = (() => {
         cartToast(result.isBlockFormat ? "전리품 섹션을 찾지 못했습니다." : "레이드 로그 형식도, '아이템명 수량' 형식도 인식되지 않습니다.", true);
         return;
       }
-      if (!result.matched.length) {
-        cartToast("아이템 목록과 매칭되는 전리품이 없습니다.", true);
-        return;
-      }
 
       for (const m of result.matched) {
         cart.push({
@@ -242,8 +238,11 @@ const Inventory = (() => {
 
       const exactCnt = result.matched.filter((m) => !m.fuzzy).length;
       const fuzzyCnt = result.matched.length - exactCnt;
-      let msg = `✓ 총 ${result.matched.length}건 장바구니에 추가됨 (정확 ${exactCnt}건 / 유사매칭 ${fuzzyCnt}건)`;
+      let msg = result.matched.length
+        ? `✓ 총 ${result.matched.length}건 장바구니에 추가됨 (정확 ${exactCnt}건 / 유사매칭 ${fuzzyCnt}건)`
+        : "장바구니에 바로 담긴 항목은 없습니다";
       if (result.isBlockFormat) msg += ` — ${result.blockCount}개 보스 블록`;
+      if (result.unmatched.length) msg += ` · 미매칭 ${result.unmatched.length}건 — 아래에서 유사 아이템을 골라 담아주세요`;
       cartToast(msg, false);
       document.getElementById("logText").value = "";
 
@@ -258,7 +257,32 @@ const Inventory = (() => {
     });
   }
 
-  // ── 미매칭 항목: 파싱 직후 사라지지 않도록 별도 카드에 계속 유지 ──
+  // ── 유사 후보 추천: 약식 표기("황색별심", "전승서계율" 등)를 item_master와 느슨하게 비교 ──
+  // 점수 = 질의 바이그램 포함율×0.7 + 질의 글자 포함율×0.3 (질의 기준 비대칭 — 축약어에 유리).
+  // 동점이면 이름이 짧은 쪽(더 구체적으로 겹치는 쪽) 우선.
+  function suggestItems(rawName, limit) {
+    const q = String(rawName || "").replace(/\s/g, "").toLowerCase();
+    if (q.length < 2) return [];
+    const bigrams = [];
+    for (let i = 0; i < q.length - 1; i++) bigrams.push(q.slice(i, i + 2));
+    const chars = [...new Set(q.split(""))];
+    const scored = [];
+    for (const it of itemMaster) {
+      const t = it.item_name.replace(/\s/g, "").toLowerCase();
+      let bg = 0;
+      for (const b of bigrams) if (t.includes(b)) bg++;
+      let ch = 0;
+      for (const c of chars) if (t.includes(c)) ch++;
+      const score = (bg / bigrams.length) * 0.7 + (ch / chars.length) * 0.3;
+      if (score > 0.05) scored.push({ item: it, score, len: t.length });
+    }
+    scored.sort((a, b) => b.score - a.score || a.len - b.len);
+    // 확실한 후보(≥15%) 우선, 하나도 없으면 그나마 가까운 3개라도 표시 ("유사 후보 없음"은 최후)
+    const strong = scored.filter((s) => s.score >= 0.15);
+    return (strong.length ? strong : scored.slice(0, 3)).slice(0, limit || 5);
+  }
+
+  // ── 미매칭 항목: 파싱 직후 사라지지 않도록 별도 카드에 계속 유지 + 유사 후보 선택 ──
   function renderUnmatched() {
     const card = document.getElementById("unmatchedCard");
     const listEl = document.getElementById("unmatchedList");
@@ -269,13 +293,62 @@ const Inventory = (() => {
     unmatchedList.forEach((u, idx) => {
       const row = document.createElement("div");
       row.className = "irow";
+      row.style.flexWrap = "wrap";
       row.innerHTML = `
         <span class="nm"></span>
         <span class="meta"></span>
+        <select class="sugg" style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:13px;max-width:260px;background:var(--card)"></select>
+        <button type="button" class="btn sm" data-act="pick">담기</button>
         <button type="button" class="btn ghost sm" data-act="fill">✎ 등록폼에 채우기</button>
         <button type="button" class="btn ghost sm" data-act="drop" style="color:#A32D2D">✖</button>`;
       row.querySelector(".nm").textContent = u.name;
       row.querySelector(".meta").textContent = `${u.qty}개${u.boss && u.boss !== "-" ? " · " + u.boss : ""}`;
+
+      // 유사 후보 드롭다운 (없으면 안내만)
+      const sel = row.querySelector(".sugg");
+      const pickBtn = row.querySelector('[data-act="pick"]');
+      const suggs = suggestItems(u.name, 5);
+      if (suggs.length) {
+        sel.innerHTML = `<option value="">유사 아이템 선택...</option>`;
+        suggs.forEach((s, si) => {
+          const o = document.createElement("option");
+          o.value = String(si);
+          o.textContent = `${s.item.item_name} (${s.item.grade || "-"}) · ${Math.round(s.score * 100)}%`;
+          sel.appendChild(o);
+        });
+        sel.value = "0"; // 최상위 후보 기본 선택 — "담기" 한 번으로 처리
+      } else {
+        sel.innerHTML = `<option value="">유사 후보 없음</option>`;
+        sel.disabled = true;
+        pickBtn.disabled = true;
+      }
+      pickBtn.addEventListener("click", () => {
+        const si = sel.value;
+        if (si === "") {
+          cartToast("후보를 먼저 선택해주세요.", true);
+          return;
+        }
+        const chosen = suggs[Number(si)].item;
+        cart.push({
+          _cid: Math.random().toString(36).slice(2, 10),
+          item_name: chosen.item_name,
+          grade: chosen.grade,
+          category: GameData.category5(chosen.item_name, chosen.category, chosen.grade),
+          quantity: u.qty || 1,
+          looter: document.getElementById("logDefaultLooter").value.trim() || "",
+          drop_date: null,
+          boss_name: u.boss && u.boss !== "-" ? u.boss : null,
+          raid_type: "결사",
+          fuzzy: true, // 사람이 골랐지만 원문과 다르므로 유사매칭 표시 유지
+          log_name: u.name,
+          selected: true, // 직접 선택했으므로 기본 체크
+        });
+        unmatchedList = unmatchedList.filter((_, i) => i !== idx);
+        cartToast(`✓ "${u.name}" → ${chosen.item_name} ${u.qty || 1}개 장바구니에 담김`);
+        renderUnmatched();
+        renderCart();
+      });
+
       row.querySelector('[data-act="fill"]').addEventListener("click", () => {
         const nameInput = document.getElementById("dropName");
         nameInput.value = u.name;

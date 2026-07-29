@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=59** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=60** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -74,7 +74,8 @@
 | 6986521 | 대시보드 결사원 표: # 순번 열 + 결사 배지(닉네임 앞 고정폭 56px 정렬) + 표 안 세로 스크롤 30명(`.dash-scroll`, th sticky) · 결사원 관리: 관리자 전용 결사 배지 클릭 즉시 변경(quickGuildEdit) (v=57) |
 | 5bfa1bd | 폰 스샷 업로드 수정: ImageUtil FileReader 폴백(카카오톡 인앱 웹뷰 objectURL 실패 대응) + 내정보 type 빈 값 수용·업로드 중 버튼·HEIC 안내·진단 로그 (v=58) |
 | f85f0de | Storage 한글 아이디 수정: profile·register `safeKey()` — 비ASCII를 UTF-8 hex로 치환("Invalid key" 해결) (v=58, 프론트 변경 없음) |
-| (최신) | !긴급→!쟁 개편: 점수 5종 분리·쟁 별도 지표(횟수/율/오전·오후·새벽, 0018 RPC), 조 선택 폐지(0019 드랍), 가입 승인 시 출석 소급 매칭, 대시보드 "일정참여율\|쟁참여율", 참여현황 쟁/쟁률 열 (participation·dashboard·profile·members 함수 재배포) — **현재 배포 버전 (v=59)** |
+| d857d1e | !긴급→!쟁 개편: 점수 5종 분리·쟁 별도 지표(0018 RPC), 조 선택 폐지(0019), 가입 승인 시 출석 소급 매칭, 대시보드 "일정참여율\|쟁참여율" (함수 4개 재배포) (v=59) |
+| (최신) | 드랍 텍스트 약식 등록: 붙은 수량 분리("별심조각5"→×5, logParser) + 미매칭 항목 유사 후보 드롭다운(글자·바이그램 포함율 점수, ≥15% 우선·없으면 최근접 3개 폴백)에서 "담기"로 장바구니 투입(inventory.js suggestItems) — **현재 배포 버전 (v=60)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

@@ -198,11 +198,23 @@ const LogParser = (() => {
       } else {
         found = true;
         const sname = line;
-        const mr = tryMatchItem(sname, ctx);
+        let mr = tryMatchItem(sname, ctx);
+        let qty = 1;
+        let outName = sname;
+        // 약식: 수량이 공백 없이 붙은 경우 ("별심조각5") — 전체 라인 매칭 실패 시 끝 숫자를 수량으로 분리 재시도.
+        // "특화5" 같은 로마자 등급 별칭은 위 tryMatchItem(numeralAlias)이 먼저 잡으므로 안전.
+        const tail = !mr ? line.match(/^(.+?)(\d+)개?$/) : null;
+        if (tail) {
+          const stem = tail[1].trim();
+          const mr2 = tryMatchItem(stem, ctx);
+          qty = parseInt(tail[2], 10) || 1;
+          outName = stem;
+          if (mr2) mr = mr2;
+        }
         if (mr) {
-          matched.push(toMatchedEntry(mr, 1, sname, defaultLooter, null, null, false));
+          matched.push(toMatchedEntry(mr, qty, outName, defaultLooter, null, null, false));
         } else {
-          unmatched.push({ name: sname, qty: 1, boss: "-" });
+          unmatched.push({ name: outName, qty, boss: "-" });
         }
       }
     }
