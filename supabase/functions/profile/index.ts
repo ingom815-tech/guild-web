@@ -202,17 +202,6 @@ function parseImgUrls(raw: string | null): string[] {
   return [s];
 }
 
-async function getEffectiveShift(userId: string, season: number): Promise<string | null> {
-  const { data } = await supabase
-    .from("member_shift_history")
-    .select("shift, effective_season")
-    .eq("user_id", userId)
-    .lte("effective_season", season)
-    .order("id", { ascending: false })
-    .limit(1);
-  return data && data.length ? data[0].shift : null;
-}
-
 Deno.serve(async (req: Request) => {
   const preflight = handlePreflight(req);
   if (preflight) return preflight;
@@ -262,55 +251,12 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const { data: me } = await supabase
       .from("members")
-      .select("user_id, current_id, guild_name, subjugation_rank, class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, preferred_shift, participation_score, contribution_score")
+      .select("user_id, current_id, guild_name, subjugation_rank, class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, participation_score, contribution_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
       .eq("user_id", user.user_id)
       .maybeSingle();
     if (!me) return jsonResponse({ error: "회원 정보를 찾을 수 없습니다." }, 404);
 
     const locked = await isProfileLocked();
-    const effective = await getEffectiveShift(user.user_id, season);
-
-    const { data: pendingRows } = await supabase
-      .from("member_shift_history")
-      .select("shift, effective_season")
-      .eq("user_id", user.user_id)
-      .gt("effective_season", season)
-      .order("id", { ascending: false })
-      .limit(1);
-    const pending = pendingRows && pendingRows.length ? pendingRows[0] : null;
-
-    // 긴급 지표 (기존 로직 유지)
-    let metrics: Record<string, unknown> | null = null;
-    if (effective) {
-      const { data: emLogs } = await supabase
-        .from("participation_logs")
-        .select("id, shift")
-        .eq("season", season)
-        .eq("activity_type", "긴급")
-        .not("shift", "is", null);
-      const myShiftLogIds = (emLogs || []).filter((l) => l.shift === effective).map((l) => l.id);
-      const otherShiftLogIds = (emLogs || []).filter((l) => l.shift !== effective).map((l) => l.id);
-      let attended = 0;
-      let otherSupport = 0;
-      const allIds = [...myShiftLogIds, ...otherShiftLogIds];
-      if (allIds.length) {
-        const { data: myRows } = await supabase
-          .from("participation_log_members")
-          .select("log_id")
-          .eq("user_id", user.user_id)
-          .in("log_id", allIds);
-        const attendedIds = new Set((myRows || []).map((r) => r.log_id));
-        attended = myShiftLogIds.filter((id) => attendedIds.has(id)).length;
-        otherSupport = otherShiftLogIds.filter((id) => attendedIds.has(id)).length;
-      }
-      metrics = {
-        shift: effective,
-        attended,
-        total: myShiftLogIds.length,
-        rate: myShiftLogIds.length ? Math.round((attended / myShiftLogIds.length) * 100) : null,
-        other_support: otherSupport,
-      };
-    }
 
     // 내 분배 이력 (최근 50)
     const { data: myHistory } = await supabase
@@ -339,10 +285,14 @@ Deno.serve(async (req: Request) => {
       status_check: me.status_check,
       power_imgs: parseImgUrls(me.power_img_url),
       aqui_imgs: parseImgUrls(me.status_check_img_url),
-      preferred_shift: me.preferred_shift || null,
-      effective_shift: effective,
-      pending_change: pending,
-      metrics,
+      // 쟁 지표 (참여점수와 별도 — 조 선택 기능은 폐지됨)
+      jaeng: {
+        count: me.jaeng_count ?? 0,
+        rate: me.jaeng_rate ?? null,
+        morning: me.jaeng_morning ?? 0,
+        evening: me.jaeng_evening ?? 0,
+        dawn: me.jaeng_dawn ?? 0,
+      },
       my_history: myHistory || [],
     });
   }
@@ -429,45 +379,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true });
   }
 
-  // ── 긴급 참여조 선택 (기존 로직 유지 — 잠금과 무관) ──
-  if (req.method === "POST") {
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
-    }
-    const shift = typeof body.shift === "string" ? body.shift : "";
-    if (!["day", "night"].includes(shift)) return jsonResponse({ error: "shift는 day 또는 night여야 합니다." }, 400);
-
-    const { data: me } = await supabase
-      .from("members")
-      .select("preferred_shift")
-      .eq("user_id", user.user_id)
-      .maybeSingle();
-    if (me?.preferred_shift === shift) {
-      return jsonResponse({ ok: true, unchanged: true, effective_season: null });
-    }
-
-    const { count: historyCount } = await supabase
-      .from("member_shift_history")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.user_id);
-    const effectiveSeason = (historyCount ?? 0) === 0 ? season : season + 1;
-
-    const { error: histErr } = await supabase
-      .from("member_shift_history")
-      .insert({ user_id: user.user_id, shift, effective_season: effectiveSeason });
-    if (histErr) return jsonResponse({ error: "조 변경 이력 저장에 실패했습니다." }, 500);
-
-    const { error: updErr } = await supabase
-      .from("members")
-      .update({ preferred_shift: shift })
-      .eq("user_id", user.user_id);
-    if (updErr) return jsonResponse({ error: "조 선택 저장에 실패했습니다." }, 500);
-
-    return jsonResponse({ ok: true, shift, effective_season: effectiveSeason, immediate: effectiveSeason === season });
-  }
+  // (긴급 참여조 선택 POST는 !쟁 개편으로 폐지 — action=images 외의 POST는 지원하지 않음)
 
   return jsonResponse({ error: "지원하지 않는 메서드입니다." }, 405);
 });

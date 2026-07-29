@@ -259,8 +259,9 @@ const Members = (() => {
       });
       row.querySelector('[data-act="approve"]').addEventListener("click", () => {
         openRegConfirm("가입 승인", `"${r.current_id || r.user_id}"님의 가입을 승인할까요? 즉시 로그인 가능해집니다.`, async () => {
-          await Api.approveRegistration(r.id);
-          toast(`✓ ${r.current_id || r.user_id} 가입 승인 완료`);
+          const res = await Api.approveRegistration(r.id);
+          const bf = res && res.backfilled ? ` · 지난 출석 ${res.backfilled}건 소급 반영` : "";
+          toast(`✓ ${r.current_id || r.user_id} 가입 승인 완료${bf}`);
           await load();
         });
       });
@@ -304,15 +305,18 @@ const Members = (() => {
       openRegConfirm("일괄 승인", `선택한 ${ids.length}명의 가입을 전부 승인할까요? 즉시 로그인 가능해집니다.`, async () => {
         let ok = 0;
         let fail = 0;
+        let bfSum = 0;
         for (const id of ids) {
           try {
-            await Api.approveRegistration(id);
+            const res = await Api.approveRegistration(id);
+            if (res && res.backfilled) bfSum += res.backfilled;
             ok++;
           } catch (e) {
             fail++;
           }
         }
-        toast(fail ? `⚠️ ${ok}명 승인, ${fail}명 실패` : `✓ ${ok}명 일괄 승인 완료`, !!fail);
+        const bfMsg = bfSum ? ` · 지난 출석 ${bfSum}건 소급 반영` : "";
+        toast(fail ? `⚠️ ${ok}명 승인, ${fail}명 실패${bfMsg}` : `✓ ${ok}명 일괄 승인 완료${bfMsg}`, !!fail);
         regChecked.clear();
         await load();
       });

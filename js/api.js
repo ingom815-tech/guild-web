@@ -116,7 +116,6 @@ const Api = (() => {
     deleteDistHistory: (history_id) =>
       call("distribution", { method: "POST", query: { action: "delete_history" }, body: { history_id } }),
     getProfile: () => call("profile", { method: "GET" }),
-    setProfileShift: (shift) => call("profile", { method: "POST", body: { shift } }),
     updateProfile: (patch) => call("profile", { method: "PUT", body: patch }),
     uploadProfileImages: (kind, images) =>
       call("profile", { method: "POST", query: { action: "images" }, body: { kind, images } }),

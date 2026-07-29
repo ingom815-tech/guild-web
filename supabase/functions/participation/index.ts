@@ -71,16 +71,10 @@ function isAdmin(user: SessionUser | null): boolean {
   return !!user && user.role === "관리자";
 }
 
-const ACTIVITY_TYPES = ["본토", "시틈", "유니", "결던", "별봉", "긴급"];
-
-// !긴급 로그만 저장 시간으로 데이/나이트 분류 (참여점수 계산과 무관한 참고 지표).
-// 데이 09:00:00~17:59:59 / 나이트 18:00:00~익일 08:59:59 (18:00 정각=night, 09:00 정각=day)
-function classifyShift(activity: string, logDatetime: string): string | null {
-  if (activity !== "긴급") return null;
-  const hour = parseInt(logDatetime.slice(11, 13), 10);
-  if (Number.isNaN(hour)) return null;
-  return hour >= 9 && hour < 18 ? "day" : "night";
-}
+// 쟁(구 긴급)은 참여점수 계산에서 제외되는 별도 지표 — RPC가 시간대(오전/오후/새벽)별로 집계한다.
+// '긴급'은 레거시 태그 호환용(파서가 쟁으로 매핑하지만 방어적으로 수용).
+const ACTIVITY_TYPES = ["본토", "시틈", "유니", "결던", "별봉", "쟁", "긴급"];
+const JAENG_TYPES = ["쟁", "긴급"];
 
 async function getCurrentSeason(): Promise<number> {
   const { data } = await supabase.from("app_settings").select("value").eq("key", "current_season").maybeSingle();
@@ -236,7 +230,7 @@ Deno.serve(async (req: Request) => {
     if (view === "logs") {
       const { data: logs, error } = await supabase
         .from("participation_logs")
-        .select("id, activity_type, log_datetime, log_date, location, total_participants, commander, recorded_by, shift")
+        .select("id, activity_type, log_datetime, log_date, location, total_participants, commander, recorded_by")
         .eq("season", season)
         .order("log_datetime", { ascending: false })
         .limit(200);
@@ -272,7 +266,7 @@ Deno.serve(async (req: Request) => {
       const seasons = [...new Set((seasonRows || []).map((r) => r.season))].sort((a, b) => b - a);
       const { data: rows, error } = await supabase
         .from("season_participation")
-        .select("user_id, participation_score, participation_rate, bontu_score, siteum_score, uni_score, gyeoldun_score, byeolbong_score, saebyeok_score")
+        .select("user_id, participation_score, participation_rate, bontu_score, siteum_score, uni_score, gyeoldun_score, byeolbong_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
         .eq("season", target)
         .order("participation_score", { ascending: false });
       if (error) return jsonResponse({ error: "시즌 기록 조회에 실패했습니다." }, 500);
@@ -305,38 +299,41 @@ Deno.serve(async (req: Request) => {
     }
 
     // view === "status"
-    const { data: closedFlag } = await supabase
-      .from("app_settings").select("value").eq("key", `season_${season}_closed`).maybeSingle();
-    const { count: totalSessions } = await supabase
-      .from("participation_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("season", season);
-
-    const { data: members, error: memErr } = await supabase
-      .from("members")
-      .select("user_id, current_id, class, role, power, participation_score, contribution_score, bontu_score, siteum_score, uni_score, gyeoldun_score, byeolbong_score, saebyeok_score")
-      .neq("role", "관리자")
-      .order("current_id", { ascending: true });
+    // 세션 수는 점수용(쟁 제외)과 쟁을 구분해 반환 (쟁 참여율 분모 = total_jaeng)
+    const [closedRes, scoreCntRes, jaengCntRes, memRes, ratesRes, nickRes] = await Promise.all([
+      supabase.from("app_settings").select("value").eq("key", `season_${season}_closed`).maybeSingle(),
+      supabase
+        .from("participation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("season", season)
+        .not("activity_type", "in", `("${JAENG_TYPES.join('","')}")`),
+      supabase
+        .from("participation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("season", season)
+        .in("activity_type", JAENG_TYPES),
+      supabase
+        .from("members")
+        .select("user_id, current_id, class, role, power, participation_score, contribution_score, bontu_score, siteum_score, uni_score, gyeoldun_score, byeolbong_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
+        .neq("role", "관리자")
+        .order("current_id", { ascending: true }),
+      supabase.from("season_participation").select("user_id, participation_rate").eq("season", season),
+      // 매칭 사전: 닉네임 이력 → current_id → user_id (원본 _member_map 우선순위)
+      supabase.from("member_nick_history").select("user_id, nickname"),
+    ]);
+    const closedFlag = closedRes.data;
+    const { data: members, error: memErr } = memRes;
     if (memErr) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
-
-    const { data: rates } = await supabase
-      .from("season_participation")
-      .select("user_id, participation_rate")
-      .eq("season", season);
     const rateMap = new Map<string, number | null>();
-    for (const r of rates || []) rateMap.set(r.user_id, r.participation_rate);
-
-    // 매칭 사전: 닉네임 이력 → current_id → user_id (원본 _member_map 우선순위)
-    const { data: nickHistory } = await supabase
-      .from("member_nick_history")
-      .select("user_id, nickname");
+    for (const r of ratesRes.data || []) rateMap.set(r.user_id, r.participation_rate);
 
     return jsonResponse({
       season,
       closed: !!(closedFlag && closedFlag.value === "true"),
-      total_sessions: totalSessions ?? 0,
+      total_sessions: scoreCntRes.count ?? 0,
+      total_jaeng: jaengCntRes.count ?? 0,
       members: (members || []).map((m) => ({ ...m, participation_rate: rateMap.get(m.user_id) ?? null })),
-      nick_history: nickHistory || [],
+      nick_history: nickRes.data || [],
     });
   }
 
@@ -388,7 +385,6 @@ Deno.serve(async (req: Request) => {
           total_participants: Number(raw.total_participants) || 0,
           commander: typeof raw.commander === "string" ? raw.commander : null,
           recorded_by: user.current_id || user.user_id,
-          shift: classifyShift(activity, logDatetime),
         })
         .select("id")
         .single();

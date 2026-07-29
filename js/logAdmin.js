@@ -29,8 +29,7 @@ const LogAdmin = (() => {
   }
 
   // ── 참여 로그 ──
-  const ACT_BADGE = { 긴급: "b-hero", 본토: "b-rare", 시틈: "b-rare", 유니: "b-rare", 결던: "b-rare", 별봉: "b-rare" };
-  const SHIFT_LABEL = { day: "데이", night: "나이트" };
+  const ACT_BADGE = { 쟁: "b-hero", 긴급: "b-hero", 본토: "b-rare", 시틈: "b-rare", 유니: "b-rare", 결던: "b-rare", 별봉: "b-rare" };
 
   async function loadPart() {
     let logs = [];
@@ -51,7 +50,7 @@ const LogAdmin = (() => {
       row.dataset.id = l.id;
       row.style.cursor = "pointer";
       const when = l.log_datetime ? String(l.log_datetime).slice(5, 16).replace("T", " ") : l.log_date || "";
-      const shift = l.activity_type === "긴급" && l.shift ? ` · ${SHIFT_LABEL[l.shift] || l.shift}조` : "";
+      const shift = ""; // 데이/나이트 조 표기는 !쟁 개편으로 폐지
       row.innerHTML = `
         <div class="r1">
           <span style="width:56px"><span class="badge ${ACT_BADGE[l.activity_type] || "b-gray"}"></span></span>

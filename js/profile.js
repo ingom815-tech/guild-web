@@ -1,4 +1,5 @@
-// 내 정보 화면 (전 회원): 기본정보/장비/아퀴/인증샷/내 분배이력 셀프 관리 + 쟁지원조(데이/나이트).
+// 내 정보 화면 (전 회원): 기본정보/장비/아퀴/인증샷/내 분배이력 셀프 관리.
+// (쟁지원조 데이/나이트 선택은 !쟁 개편으로 폐지 — 쟁 지표는 요약 배지로 표시)
 // UI는 내정보탭_개선시안_v3.html 명세를 따른다 — 아퀴 3단 순환 칩, 장비 등급색 셀렉트+라이브 미리보기, 인증샷 드롭존.
 // 저장 로직(Edge Function 호출/DB 값 체계)은 원본 그대로 — 분배 기간 진행 중에는 수정 잠금.
 const Profile = (() => {
@@ -8,7 +9,6 @@ const Profile = (() => {
   let aquiOrig = {}; // 로드 시점 상태 (변경사항 건수 계산용)
   let pendingFiles = { power: [], aqui: [] }; // 드롭존에서 고른 업로드 대기 파일
 
-  const SHIFT_LABEL = { day: "데이조", night: "나이트조" };
   const PANES = { info: "profilePaneInfo", equip: "profilePaneEquip", aqui: "profilePaneAqui", imgs: "profilePaneImgs", history: "profilePaneHistory" };
   const GRADE_CLS = { 절대자: "abs", 신화: "myth", 전설: "leg", 영웅: "hero" }; // 희귀 = 기본
   const SECT = { A: { key: "pvp", label: "PVP" }, B: { key: "sup", label: "지원" }, C: { key: "pve", label: "PVE" } };
@@ -42,16 +42,6 @@ const Profile = (() => {
     }
   }
 
-  // 요약 카드의 참여조 배지 → 기본정보 탭의 참여조 카드로 이동
-  function goShift() {
-    setTab(document.querySelector('.stab[data-pi="info"]'));
-    const card = document.getElementById("shiftCard");
-    card.scrollIntoView({ behavior: "smooth", block: "center" });
-    card.style.transition = "box-shadow .3s";
-    card.style.boxShadow = "0 0 0 3px rgba(29,158,117,.35)";
-    setTimeout(() => (card.style.boxShadow = ""), 1600);
-  }
-
   function render() {
     renderSummary();
     document.getElementById("profileLockBanner").classList.toggle("hidden", !data.locked);
@@ -61,7 +51,6 @@ const Profile = (() => {
     renderAquiPane();
     renderImgsPane();
     renderHistoryPane();
-    renderShift();
     applyLock();
   }
 
@@ -85,10 +74,12 @@ const Profile = (() => {
     const roleEl = document.getElementById("pfSumRole");
     roleEl.className = "role-badge " + data.user.role;
     roleEl.textContent = data.user.role;
+    // 쟁 지표 배지 (조 선택 폐지 — 시즌 쟁 참여횟수/참여율 표시)
     const shiftEl = document.getElementById("pfSumShift");
-    shiftEl.textContent = data.preferred_shift ? SHIFT_LABEL[data.preferred_shift] : "쟁지원조 미선택";
-    shiftEl.classList.toggle("none", !data.preferred_shift);
-    shiftEl.title = "클릭하면 쟁지원조 변경으로 이동합니다";
+    const j = data.jaeng || {};
+    shiftEl.textContent = `⚔️ 쟁 ${j.count || 0}회${j.rate != null ? ` · ${j.rate}%` : ""}`;
+    shiftEl.classList.toggle("none", !(j.count > 0));
+    shiftEl.title = `시간대별: 오전 ${j.morning || 0} · 오후 ${j.evening || 0} · 새벽 ${j.dawn || 0}`;
     document.getElementById("pfSumSub").textContent = `${cls || "직업 미선택"} · ${data.user.user_id} · 시즌 ${data.season}`;
     document.getElementById("pfStatContrib").textContent = (data.info.contribution_score || 0).toLocaleString();
     document.getElementById("pfStatPart").textContent = (data.info.participation_score || 0).toLocaleString();
@@ -459,62 +450,6 @@ const Profile = (() => {
     });
   }
 
-  // ── 쟁지원조 (기존 기능 유지 — 출석 집계는 여전히 !긴급 로그 기준) ──
-  function renderShift() {
-    document.querySelectorAll("#shiftToggle span").forEach((s) => {
-      s.classList.toggle("on", s.dataset.sh === data.preferred_shift);
-    });
-    const pendingNote = document.getElementById("shiftPendingNote");
-    if (data.pending_change) {
-      pendingNote.textContent = `⏳ ${SHIFT_LABEL[data.pending_change.shift]} 변경은 시즌 ${data.pending_change.effective_season}부터 반영됩니다. (이번 시즌 계산: ${data.effective_shift ? SHIFT_LABEL[data.effective_shift] : "미선택"})`;
-    } else {
-      pendingNote.textContent = "";
-    }
-    const box = document.getElementById("shiftMetricBox");
-    if (!data.effective_shift) {
-      box.innerHTML = `<span class="meta">쟁지원조를 선택하면 내 조 쟁지원 참여율이 표시됩니다.</span>`;
-      return;
-    }
-    const m = data.metrics;
-    if (!m || m.rate === null) {
-      box.innerHTML = "";
-      const label = document.createElement("b");
-      label.style.fontSize = "14px";
-      label.textContent = `${SHIFT_LABEL[m ? m.shift : data.effective_shift]}`;
-      const note = document.createElement("span");
-      note.className = "meta";
-      note.textContent = " · 이번 시즌 우리 조 쟁지원 소집이 아직 없습니다.";
-      box.appendChild(label);
-      box.appendChild(note);
-      return;
-    }
-    box.innerHTML = `
-      <b style="font-size:14px" class="sh-label"></b>
-      <span style="margin-left:8px">내 조 쟁지원 참여율 <b class="rate-v" style="font-size:16px"></b> <span class="meta frac"></span></span>
-      <span class="meta" style="margin-left:10px">· 타조 지원 <b class="sup-v"></b>회</span>`;
-    box.querySelector(".sh-label").textContent = SHIFT_LABEL[m.shift];
-    box.querySelector(".rate-v").textContent = `${m.rate}%`;
-    box.querySelector(".frac").textContent = `(${m.attended}/${m.total})`;
-    box.querySelector(".sup-v").textContent = m.other_support;
-  }
-
-  async function selectShift(el) {
-    const shift = el.dataset.sh;
-    if (data && data.preferred_shift === shift) return;
-    try {
-      const res = await Api.setProfileShift(shift);
-      if (res.unchanged) return;
-      if (res.immediate) {
-        toast(`✓ ${SHIFT_LABEL[shift]} 선택 완료 — 이번 시즌부터 바로 반영됩니다.`);
-      } else {
-        toast(`✓ ${SHIFT_LABEL[shift]}(으)로 변경 — 시즌 ${res.effective_season}부터 계산에 반영됩니다.`);
-      }
-      await load();
-    } catch (err) {
-      toast(err.message || "조 선택 실패", true);
-    }
-  }
-
   // ── 저장 핸들러 (API 호출은 원본 그대로) ──
   function init() {
     document.getElementById("profileInfoForm").addEventListener("submit", async (e) => {
@@ -578,5 +513,5 @@ const Profile = (() => {
     document.getElementById("pfAquiUploadBtn").addEventListener("click", () => uploadImgs("aqui"));
   }
 
-  return { init, load, selectShift, setTab, goShift };
+  return { init, load, setTab };
 })();

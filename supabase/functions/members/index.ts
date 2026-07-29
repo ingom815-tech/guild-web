@@ -313,7 +313,33 @@ Deno.serve(async (req: Request) => {
       .eq("id", reqId);
     if (stErr) return jsonResponse({ error: "신청 상태 갱신에 실패했습니다." }, 500);
 
-    return jsonResponse({ ok: true, user_id: reg.user_id });
+    // ── 출석 소급 매칭(백필): 가입 전에 저장된 로그의 미매칭 참석 기록 중
+    //    닉네임이 일치하는 행을 새 회원에 연결하고 점수·쟁 지표를 재계산한다.
+    //    현재 시즌 로그만 대상 (지난 시즌은 마감 스냅샷 보존 원칙 — 건드리지 않음).
+    let backfilled = 0;
+    try {
+      const { data: cs } = await supabase.from("app_settings").select("value").eq("key", "current_season").maybeSingle();
+      const season = cs && cs.value != null && !Number.isNaN(parseInt(cs.value, 10)) ? parseInt(cs.value, 10) : 1;
+      const { data: seasonLogs } = await supabase.from("participation_logs").select("id").eq("season", season);
+      const logIds = (seasonLogs || []).map((l) => l.id);
+      if (logIds.length && reg.current_id) {
+        const { data: rows } = await supabase
+          .from("participation_log_members")
+          .update({ user_id: reg.user_id, matched: true })
+          .is("user_id", null)
+          .eq("member_name", reg.current_id)
+          .in("log_id", logIds)
+          .select("id");
+        backfilled = (rows || []).length;
+        if (backfilled > 0) {
+          await supabase.rpc("recalc_participation_scores", { p_season: season });
+        }
+      }
+    } catch {
+      // 백필 실패는 승인 자체를 막지 않음 (미매칭 상태로 남을 뿐 — 관리자 보정 가능)
+    }
+
+    return jsonResponse({ ok: true, user_id: reg.user_id, backfilled });
   }
 
   if (req.method === "GET") {

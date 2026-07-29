@@ -1,21 +1,26 @@
 // 참여율 관리 화면: 시즌 설정/마감 + 출석 로그 파싱·매칭·저장 + 참여 현황 + 입력 이력
 const Participation = (() => {
-  const ACTIVITIES = ["본토", "시틈", "유니", "결던", "별봉", "긴급"];
-  const ACTIVITY_COLS = { 본토: "bontu_score", 시틈: "siteum_score", 유니: "uni_score", 결던: "gyeoldun_score", 별봉: "byeolbong_score", 긴급: "saebyeok_score" };
+  // 점수 활동 5종 — 쟁(구 긴급)은 점수·참여율과 분리된 별도 지표 (jaeng_* 컬럼)
+  const ACTIVITIES = ["본토", "시틈", "유니", "결던", "별봉"];
+  const ACTIVITY_COLS = { 본토: "bontu_score", 시틈: "siteum_score", 유니: "uni_score", 결던: "gyeoldun_score", 별봉: "byeolbong_score" };
+  const isJaeng = (a) => a === "쟁" || a === "긴급"; // 긴급 = 레거시 표기 호환
+
+  // 쟁 로그 시간대 분류 (표시용 — 저장 집계는 서버 RPC가 동일 규칙으로 수행)
+  // 오전 09:00~17:00 / 오후 17:01~23:00 / 새벽 23:01~08:59
+  function jaengSlot(logDatetime) {
+    const h = parseInt(String(logDatetime).slice(11, 13), 10);
+    const mi = parseInt(String(logDatetime).slice(14, 16), 10);
+    if (Number.isNaN(h) || Number.isNaN(mi)) return null;
+    const t = h * 100 + mi;
+    if (t >= 900 && t <= 1700) return "오전";
+    if (t >= 1701 && t <= 2300) return "오후";
+    return "새벽";
+  }
 
   let status = null; // GET view=status 응답
   let logs = [];
   let parsedSessions = []; // 분석 결과 (매칭 포함)
   let confirmAction = null; // 확인 모달에서 실행할 콜백
-
-  // !긴급 로그만 저장 시간으로 데이/나이트 분류 (표시용 — 실제 저장값은 서버가 동일 규칙으로 판정)
-  function classifyShift(activity, logDatetime) {
-    if (activity !== "긴급" || !logDatetime) return null;
-    const hour = parseInt(String(logDatetime).slice(11, 13), 10);
-    if (Number.isNaN(hour)) return null;
-    return hour >= 9 && hour < 18 ? "day" : "night";
-  }
-  const SHIFT_BADGE = { day: "☀️ 데이", night: "🌙 나이트" };
 
   function toast(msg, isErr) {
     const t = document.getElementById("partToast");
@@ -65,15 +70,18 @@ const Participation = (() => {
     const rows = data.rows || [];
     document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
     const table = document.getElementById("partSeasonTable");
-    let html = `<tr><th>닉네임</th><th>직업</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">참여점수</th><th class="num">참여율</th></tr>`;
+    let html = `<tr><th>닉네임</th><th>직업</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th></tr>`;
     html += rows
       .map((r) => {
         const rate = r.participation_rate != null ? `${r.participation_rate}%` : "—";
         const rateHtml = r.participation_rate != null && r.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        const jaengTitle = `오전 ${r.jaeng_morning || 0} · 오후 ${r.jaeng_evening || 0} · 새벽 ${r.jaeng_dawn || 0}`;
         return `<tr>
           <td><b class="nm"></b></td>
           <td class="gtext cls"></td>
           ${ACTIVITIES.map((a) => `<td class="num gtext">${r[ACTIVITY_COLS[a]] || 0}</td>`).join("")}
+          <td class="num" title="${jaengTitle}"><b>${r.jaeng_count || 0}</b></td>
+          <td class="num gtext" title="${jaengTitle}">${r.jaeng_rate != null ? `${r.jaeng_rate}%` : "—"}</td>
           <td class="num"><b>${(r.participation_score || 0).toLocaleString()}</b></td>
           <td class="num">${rateHtml}</td>
         </tr>`;
@@ -91,7 +99,7 @@ const Participation = (() => {
     document.getElementById("partSeasonLabel").textContent =
       `시즌 ${status.season} ${status.closed ? "🔒 (마감됨)" : "🟢 (진행중)"}`;
     document.getElementById("partSeasonInfo").textContent =
-      `이번 시즌 세션 ${status.total_sessions}회 입력됨 · 1회 참여 = 100점 · 참여율 = 참석 세션/전체 세션`;
+      `이번 시즌 세션 ${status.total_sessions}회 · 쟁 ${status.total_jaeng || 0}회 입력됨 · 1회 참여 = 100점 (쟁 제외) · 참여율 = 참석 세션/전체 세션(쟁 제외)`;
     document.getElementById("partSeasonInput").value = status.season;
     document.getElementById("partResetBtn").classList.toggle("hidden", (Auth.getUser() || {}).role !== "관리자");
   }
@@ -206,11 +214,11 @@ const Participation = (() => {
       } else {
         savable++;
       }
-      const shift = classifyShift(s.activity_type, s.log_datetime);
+      const slot = isJaeng(s.activity_type) ? jaengSlot(s.log_datetime) : null;
       box.innerHTML = `
         <div class="row" style="gap:8px;flex-wrap:wrap">
           <span class="badge b-green">!${s.activity_type}</span>
-          ${shift ? `<span class="badge ${shift === "day" ? "b-myth" : "b-legend"}">${SHIFT_BADGE[shift]}</span>` : ""}
+          ${slot ? `<span class="badge b-legend">⚔️ ${slot}</span>` : ""}
           <b class="dtv"></b>
           <span class="meta locv"></span>
           <span class="meta">참여 ${s.members.length}명 (매칭 ${matched.length} / 미매칭 ${unmatched.length})</span>
@@ -286,14 +294,17 @@ const Participation = (() => {
       .sort((a, b) => (b.participation_score || 0) - (a.participation_score || 0));
 
     const table = document.getElementById("partStatusTable");
-    let html = `<tr><th>닉네임</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
+    let html = `<tr><th>닉네임</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
     html += rows
       .map((m) => {
         const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
         const rateHtml = m.participation_rate != null && m.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        const jaengTitle = `오전 ${m.jaeng_morning || 0} · 오후 ${m.jaeng_evening || 0} · 새벽 ${m.jaeng_dawn || 0}`;
         return `<tr>
           <td><b class="nm"></b></td>
           ${ACTIVITIES.map((a) => `<td class="num gtext">${m[ACTIVITY_COLS[a]] || 0}</td>`).join("")}
+          <td class="num" title="${jaengTitle}"><b>${m.jaeng_count || 0}</b></td>
+          <td class="num gtext" title="${jaengTitle}">${m.jaeng_rate != null ? `${m.jaeng_rate}%` : "—"}</td>
           <td class="num"><b>${(m.participation_score || 0).toLocaleString()}</b></td>
           <td class="num">${rateHtml}</td>
           <td class="num">${(m.contribution_score || 0).toLocaleString()}</td>
@@ -315,9 +326,10 @@ const Participation = (() => {
       const row = document.createElement("div");
       row.className = "irow";
       row.dataset.id = l.id;
+      const lslot = isJaeng(l.activity_type) ? jaengSlot(String(l.log_datetime).replace("T", " ")) : null;
       row.innerHTML = `
         <span class="badge b-green">!${l.activity_type}</span>
-        ${l.shift ? `<span class="badge ${l.shift === "day" ? "b-myth" : "b-legend"}">${SHIFT_BADGE[l.shift]}</span>` : ""}
+        ${lslot ? `<span class="badge b-legend">⚔️ ${lslot}</span>` : ""}
         <b class="dt" style="font-size:13px"></b>
         <span class="meta loc"></span>
         <span class="meta">매칭 ${l.matched_count}명${l.unmatched_count ? ` · 미매칭 ${l.unmatched_count}` : ""}</span>

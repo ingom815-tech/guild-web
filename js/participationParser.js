@@ -9,7 +9,8 @@ const ParticipationParser = (() => {
     "!유니": "유니",
     "!결던": "결던",
     "!별봉": "별봉",
-    "!긴급": "긴급",
+    "!쟁": "쟁",
+    "!긴급": "쟁", // 레거시 태그 — 개편 후에도 입력되면 쟁으로 저장
   };
 
   // 게임 로그 날짜/시간: 2026.03.23-17.57.33
@@ -18,7 +19,7 @@ const ParticipationParser = (() => {
   const COMMANDER_RE = /결사\s*부대장[\t ]+(\S+)/;
   // 분대 멤버 라인: "1\t홍길동" 또는 "1   홍길동" (탭/공백만 — \s는 \n 포함이라 제외)
   const MEMBER_LINE_RE = /^(\d+)[\t ]+(\S+)[\t ]*$/;
-  const TAG_RE = /!(본토|시틈|유니|결던|별봉|긴급)/g;
+  const TAG_RE = /!(본토|시틈|유니|결던|별봉|쟁|긴급)/g;
   // 카카오톡 메시지 라인: "2026년 3월 23일 오후 5:57, 닉네임 : 내용"
   const KAKAO_MSG_RE = /^(\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s+(?:오전|오후)\s+\d{1,2}:\d{2}),\s*.+?\s*:\s*(.+)$/;
   const BLOCK_START_RE = /저장\s*시간[\t ]+장소[\t ]+총\s*참여\s*인원/;
@@ -115,7 +116,7 @@ const ParticipationParser = (() => {
     if (!activity) {
       return {
         ok: false,
-        error: `활동 태그 없음 — !본토 / !시틈 / !유니 / !결던 / !별봉 / !긴급 중 하나를 메시지 끝에 추가하세요. (장소: ${location || "?"}, 시각: ${display || "?"})`,
+        error: `활동 태그 없음 — !본토 / !시틈 / !유니 / !결던 / !별봉 / !쟁 중 하나를 메시지 끝에 추가하세요. (장소: ${location || "?"}, 시각: ${display || "?"})`,
         location, log_datetime: dt, log_date: date, total_participants: total, commander, members,
       };
     }

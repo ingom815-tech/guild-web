@@ -68,34 +68,10 @@ const Dashboard = (() => {
     if (staff && k.avg_power != null) {
       html += `<div class="kpi"><div class="lb">평균 전투력</div><div class="v">${(k.avg_power || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     }
-    // 데이/나이트 = 조 선택자들의 자기 조 긴급 참여율 평균 (선택자 0명 또는 로그 0건이면 "—")
-    const sm = data.shift_metrics || {};
-    const dayRate = sm.kpi_day_rate != null ? `${sm.kpi_day_rate}%` : "—";
-    const nightRate = sm.kpi_night_rate != null ? `${sm.kpi_night_rate}%` : "—";
-    html += `<div class="kpi"><div class="lb">평균 참여율</div>
-      <div class="p3">
-        <div class="seg"><div class="sv">${rate}</div><div class="slb">전체</div></div>
-        <div class="seg"><div class="sv">${dayRate}</div><div class="slb">데이</div></div>
-        <div class="seg"><div class="sv">${nightRate}</div><div class="slb">나이트</div></div>
-      </div></div>`;
+    // 데이/나이트 조 지표는 !쟁 개편으로 폐지 — 평균 참여율은 전체 값만
+    html += `<div class="kpi"><div class="lb">평균 참여율</div><div class="v">${rate}</div><div class="sub">쟁 제외 기준</div></div>`;
     html += `<div class="kpi"><div class="lb">평균 기여점수</div><div class="v">${(k.avg_contribution || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     grid.innerHTML = html;
-    renderShiftWidget();
-  }
-
-  // 운영진 전용 한 줄 위젯: 조별 인원 + 이번 회차 긴급 현황 (색 절제, 진회색 숫자)
-  function renderShiftWidget() {
-    const el = document.getElementById("shiftWidget");
-    const sm = data.shift_metrics || {};
-    if (!Auth.isStaff() || sm.day_members === undefined) {
-      el.innerHTML = "";
-      return;
-    }
-    const coh = (v) => (v != null ? `${v}%` : "—");
-    el.innerHTML = `<div class="panel" style="padding:10px 18px;margin-bottom:16px;font-size:13px;display:flex;gap:18px;flex-wrap:wrap;color:var(--txt2)">
-      <span>🚨 데이조 <b style="color:var(--txt)">${sm.day_members}</b>명 · 나이트조 <b style="color:var(--txt)">${sm.night_members}</b>명 · 미선택 <b style="color:var(--txt)">${sm.unselected}</b>명</span>
-      <span>이번 회차: 데이 쟁지원 <b style="color:var(--txt)">${sm.day_logs}</b>회 (평균 응집률 <b style="color:var(--txt)">${coh(sm.day_cohesion)}</b>) · 나이트 쟁지원 <b style="color:var(--txt)">${sm.night_logs}</b>회 (평균 응집률 <b style="color:var(--txt)">${coh(sm.night_cohesion)}</b>)</span>
-    </div>`;
   }
 
   // ── 직업 분포 (단색 초록, 최다 직업 = 100%) ──
@@ -299,8 +275,8 @@ const Dashboard = (() => {
     header += th("직업", "class");
     header += th("Lv", "level", true);
     if (staff) header += th("전투력", "power", true);
-    header += th("참여율", "participation_rate", true);
-    header += `<th class="num">데이</th><th class="num">나이트</th>`;
+    header += th("일정참여율", "participation_rate", true);
+    header += th("쟁참여율", "jaeng_rate", true);
     header += th("기여점수", "contribution_score", true);
     header += "</tr>";
 
@@ -309,6 +285,7 @@ const Dashboard = (() => {
         const isStaffRole = m.role === "운영진" || m.role === "관리자";
         const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
         const rateHtml = m.participation_rate != null && m.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        const jaengTitle = `쟁 ${m.jaeng_count || 0}회 — 오전 ${m.jaeng_morning || 0} · 오후 ${m.jaeng_evening || 0} · 새벽 ${m.jaeng_dawn || 0}`;
         return `<tr>
           <td class="num gtext" style="padding-right:22px">${i + 1}</td>
           <td><span class="badge b-gray gld" style="display:inline-block;min-width:56px;text-align:center;margin-right:9px"></span><b class="nm"></b></td>
@@ -317,8 +294,7 @@ const Dashboard = (() => {
           <td class="num">${m.level ?? 0}</td>
           ${staff ? `<td class="num"><b>${m.power != null ? m.power.toLocaleString() : "—"}</b></td>` : ""}
           <td class="num">${rateHtml}</td>
-          <td class="num gtext">—</td>
-          <td class="num gtext">—</td>
+          <td class="num" title="${jaengTitle}">${m.jaeng_rate != null ? `${m.jaeng_rate}%` : "—"}</td>
           <td class="num">${(m.contribution_score ?? 0).toLocaleString()}</td>
         </tr>`;
       })

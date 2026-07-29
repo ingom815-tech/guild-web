@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=58">
-<link rel="stylesheet" href="css/style.css?v=58">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=59">
+<link rel="stylesheet" href="css/style.css?v=59">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=58" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=59" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -97,7 +97,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=58" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=59" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -133,7 +133,6 @@
   <section class="screen on" id="s-dashboard">
     <div class="toast" id="dashToast"></div>
     <div class="kpis" id="kpiGrid"></div>
-    <div id="shiftWidget"></div>
 
     <div class="cols">
       <div class="panel">
@@ -461,7 +460,7 @@
     <div class="pf-profile">
       <div class="avatar" id="pfAvatar">?</div>
       <div class="pmain">
-        <div class="nm"><span id="pfSumName"></span><span class="role-badge" id="pfSumRole"></span><span class="shift-badge" id="pfSumShift" onclick="Profile.goShift()"></span></div>
+        <div class="nm"><span id="pfSumName"></span><span class="role-badge" id="pfSumRole"></span><span class="shift-badge" id="pfSumShift" style="cursor:default"></span></div>
         <div class="sub" id="pfSumSub"></div>
       </div>
       <div class="pf-stats">
@@ -500,19 +499,6 @@
         </form>
       </div>
 
-      <div class="panel" id="shiftCard">
-        <h3>쟁지원조</h3>
-        <div class="meta" style="margin:0 0 10px">쟁 지원(긴급 소집)이 주로 가능한 시간대를 선택하세요. 데이 09:00~17:59 / 나이트 18:00~08:59</div>
-        <div class="row" style="gap:8px;flex-wrap:wrap">
-          <div class="vtoggle" id="shiftToggle">
-            <span data-sh="day" onclick="Profile.selectShift(this)">☀️ 데이조</span>
-            <span data-sh="night" onclick="Profile.selectShift(this)">🌙 나이트조</span>
-          </div>
-          <span class="meta" id="shiftPendingNote"></span>
-        </div>
-        <div class="meta" style="margin-top:8px;color:var(--txt3)">※ 조 변경은 다음 정산 회차(시즌)부터 참여율 계산에 반영됩니다.</div>
-        <div id="shiftMetricBox" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"></div>
-      </div>
     </div>
 
     <!-- 장비: 등급색 셀렉트 + 라이브 미리보기 -->
@@ -686,7 +672,7 @@
 
     <div class="card">
       <b style="font-size:15px">➕ 출석 입력</b>
-      <div class="meta" style="margin:6px 0 8px">게임 출석 로그(또는 카카오톡 내보내기 텍스트)를 붙여넣으세요. 활동 태그(!본토/!시틈/!유니/!결던/!별봉/!긴급)가 각 로그 끝에 있어야 합니다.</div>
+      <div class="meta" style="margin:6px 0 8px">게임 출석 로그(또는 카카오톡 내보내기 텍스트)를 붙여넣으세요. 활동 태그(!본토/!시틈/!유니/!결던/!별봉/!쟁)가 각 로그 끝에 있어야 합니다. !쟁은 점수와 별도로 참여횟수·참여율만 기록됩니다.</div>
       <textarea id="partLogText" rows="8" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;background:var(--bg);font-family:monospace"></textarea>
       <div class="row" style="margin-top:8px;gap:8px">
         <button type="button" class="btn" id="partParseBtn">🔍 분석</button>
@@ -1092,24 +1078,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=58"></script>
-<script src="js/api.js?v=58"></script>
-<script src="js/auth.js?v=58"></script>
-<script src="js/logParser.js?v=58"></script>
-<script src="js/gamedata.js?v=58"></script>
-<script src="js/imageUtil.js?v=58"></script>
-<script src="js/inventory.js?v=58"></script>
-<script src="js/members.js?v=58"></script>
-<script src="js/treasury.js?v=58"></script>
-<script src="js/dashboard.js?v=58"></script>
-<script src="js/distribution.js?v=58"></script>
-<script src="js/warehouse.js?v=58"></script>
-<script src="js/distManage.js?v=58"></script>
-<script src="js/participationParser.js?v=58"></script>
-<script src="js/participation.js?v=58"></script>
-<script src="js/profile.js?v=58"></script>
-<script src="js/register.js?v=58"></script>
-<script src="js/logAdmin.js?v=58"></script>
-<script src="js/app.js?v=58"></script>
+<script src="js/config.js?v=59"></script>
+<script src="js/api.js?v=59"></script>
+<script src="js/auth.js?v=59"></script>
+<script src="js/logParser.js?v=59"></script>
+<script src="js/gamedata.js?v=59"></script>
+<script src="js/imageUtil.js?v=59"></script>
+<script src="js/inventory.js?v=59"></script>
+<script src="js/members.js?v=59"></script>
+<script src="js/treasury.js?v=59"></script>
+<script src="js/dashboard.js?v=59"></script>
+<script src="js/distribution.js?v=59"></script>
+<script src="js/warehouse.js?v=59"></script>
+<script src="js/distManage.js?v=59"></script>
+<script src="js/participationParser.js?v=59"></script>
+<script src="js/participation.js?v=59"></script>
+<script src="js/profile.js?v=59"></script>
+<script src="js/register.js?v=59"></script>
+<script src="js/logAdmin.js?v=59"></script>
+<script src="js/app.js?v=59"></script>
 </body>
 </html>
