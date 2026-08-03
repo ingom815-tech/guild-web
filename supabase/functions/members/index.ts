@@ -276,7 +276,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 전력 분석 (쟁 오더 작전판 — war_roles, 즉시 저장) ──
-  const WAR_ROLES = ["tank", "bruiser", "healer", "dealer", "support"];
+  const WAR_ROLES = ["tank", "bruiser", "mdealer", "pdealer", "healer", "support"];
 
   // 저장(공개): 현재 배치/짝지를 결사별 스냅샷으로 발행 — 전력 현황 탭이 이 시점 화면을 그대로 봄.
   // body.guild = 특정 결사만 갱신 (없으면 전체 결사 갱신). 결사별로 published_at 별도 관리.

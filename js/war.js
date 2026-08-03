@@ -5,13 +5,20 @@ const War = (() => {
   const ROLES = [
     { id: "tank", name: "탱커" },
     { id: "bruiser", name: "브루저" },
-    { id: "healer", name: "힐러" },
-    { id: "dealer", name: "딜러" },
+    { id: "mdealer", name: "마딜러" },
+    { id: "pdealer", name: "물딜러" },
     { id: "support", name: "서포터" },
+    { id: "healer", name: "힐러" },
   ];
-  const RNAME = { tank: "탱커", bruiser: "브루저", healer: "힐러", dealer: "딜러", support: "서포터" };
-  const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", healer: "#1D9E75", dealer: "#9B59D0", support: "#E8A13C" };
+  const RNAME = { tank: "탱커", bruiser: "브루저", mdealer: "마딜러", pdealer: "물딜러", support: "서포터", healer: "힐러" };
+  const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", mdealer: "#9B59D0", pdealer: "#2E9CB8", support: "#E8A13C", healer: "#1D9E75" };
   const PAIRC = ["#1D9E75", "#5B8DD9", "#D06060", "#9B59D0", "#E8A13C", "#854F0B"];
+  // 레거시 'dealer'(6종 개편 전) 정규화 — 마법 계열 클래스는 마딜러, 그 외 물딜러 (0023 이관 기준과 동일)
+  const MAGIC_CLASSES = ["태양감시자", "주문각인사"];
+  function normRole(role, cls) {
+    if (role === "dealer") return MAGIC_CLASSES.includes(cls) ? "mdealer" : "pdealer";
+    return role;
+  }
 
   let members = []; // {user_id, nick, guild, cls, cp, sch, war, myth, role, pair}
   let guilds = [];
@@ -44,7 +51,7 @@ const War = (() => {
         sch: m.sch_rate, // 일정참여율 (null 가능)
         war: m.war_rate, // 쟁참여율 (null 가능)
         myth: !!m.myth,
-        role: m.role || null,
+        role: m.role ? normRole(m.role, m.class || "-") : null,
         pair: m.pair_no != null ? m.pair_no : null,
         main: Number(m.main) || 0, // 별 0~3
       }));
@@ -153,12 +160,14 @@ const War = (() => {
       if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
       list.forEach((m) => {
         const chip = document.createElement("div");
-        chip.className = "chip" + (m.myth ? " myth" : "") + (m.main > 0 ? " main" : "");
-        chip.innerHTML = `<span class="nk"></span> <small class="cl"></small>` +
-          (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "") +
-          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "");
-        chip.querySelector(".nk").textContent = m.nick;
+        chip.className = "chip wchip" + (m.myth ? " myth" : "");
+        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
+          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
+          `</div>` +
+          (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "");
+        chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
         chip.querySelector(".cl").textContent = m.cls;
+        chip.title = m.nick;
         chip.addEventListener("click", (e) => chipClick(e, m.user_id));
         bodyEl.appendChild(chip);
       });

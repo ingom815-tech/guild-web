@@ -179,7 +179,7 @@ tr.won td{background:var(--green-bg)}
 .mtable td{padding:8px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap}
 .mtable .num{text-align:right}
 /* ═══ 전력 분석 (운영진 — 전력분석탭_시안_v3 그대로, 전부 .warscope 스코프) ═══ */
-.warscope{--w-tank:#5B8DD9;--w-bruiser:#D06060;--w-healer:#1D9E75;--w-dealer:#9B59D0;--w-support:#E8A13C}
+.warscope{--w-tank:#5B8DD9;--w-bruiser:#D06060;--w-healer:#1D9E75;--w-mdealer:#9B59D0;--w-pdealer:#2E9CB8;--w-support:#E8A13C}
 .warscope .warbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .warscope .mc{font-size:12.5px;padding:6px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--txt2);cursor:pointer;font-weight:600;user-select:none}
 .warscope .mc.on{background:var(--green);color:#fff;border-color:var(--green)}
@@ -187,8 +187,9 @@ tr.won td{background:var(--green-bg)}
 .warscope .stat b{font-weight:800}
 .warscope .stat .left{color:#A32D2D;font-weight:800}
 .warscope .pairing-banner{display:none;background:var(--green-bg);border:1px solid #9FE1CB;color:var(--green-dk);border-radius:10px;padding:9px 14px;font-size:12.5px;margin-bottom:10px;font-weight:600}
-.warscope .warcols{display:grid;grid-template-columns:300px 1fr;gap:12px}
-@media(max-width:900px){.warscope .warcols{grid-template-columns:1fr}}
+.warscope .warcols{display:grid;grid-template-columns:240px minmax(0,1fr) 232px;gap:12px;align-items:start}
+.warscope .wscols{display:grid;grid-template-columns:minmax(0,1fr) 232px;gap:12px;align-items:start}
+@media(max-width:900px){.warscope .warcols,.warscope .wscols{grid-template-columns:1fr}}
 .warscope .warpanel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
 .warscope .warpanel h3,.warscope .warpairs h3{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .warscope .wmeta{font-size:11.5px;color:var(--txt3);font-weight:500}
@@ -207,22 +208,25 @@ tr.won td{background:var(--green-bg)}
 .warscope .pcard .s{display:flex;gap:10px;font-size:11.5px;color:var(--txt2);margin-top:3px}
 .warscope .pcard .s b{font-weight:700}
 .warscope .mythdot{font-size:9px;font-weight:800;background:var(--gold-bg);color:var(--gold-tx);border-radius:5px;padding:1px 6px}
-.warscope .warboard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-@media(max-width:1050px){.warscope .warboard{grid-template-columns:repeat(2,1fr)}}
-.warscope .role{border-radius:12px;border:1px solid var(--line);overflow:hidden;min-height:160px;display:flex;flex-direction:column}
-.warscope .role .rh{padding:8px 11px;font-size:12.5px;font-weight:800;color:#fff;display:flex;justify-content:space-between}
+/* 역할 = 가로 행 (세로 스택) — 칩이 행 안에서 가로로 흐름 */
+.warscope .warboard{display:flex;flex-direction:column;gap:8px}
+/* 역할 행 — 소제목(역할명·인원)을 왼쪽 세로 밴드로 */
+.warscope .role{border-radius:12px;border:1px solid var(--line);overflow:visible;display:flex;flex-direction:row;align-items:stretch}
+.warscope .role .rh{width:62px;flex:none;padding:8px 6px;font-size:12.5px;font-weight:800;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;border-radius:11px 0 0 11px}
 .warscope .role .rh .c{font-weight:600;opacity:.85}
-.warscope .r-tank .rh{background:var(--w-tank)}
-.warscope .r-bruiser .rh{background:var(--w-bruiser)}
-.warscope .r-healer .rh{background:var(--w-healer)}
-.warscope .r-dealer .rh{background:var(--w-dealer)}
-.warscope .r-support .rh{background:var(--w-support)}
-.warscope .rbody{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;background:#fbfcfd}
+/* 역할 밴드 — 옅은 파스텔 배경 + 역할색 글씨 (원색 밴드는 시각적으로 피로해 완화) */
+.warscope .r-tank .rh{background:#EAF1FB;color:#3D6DB5}
+.warscope .r-bruiser .rh{background:#FBEBEB;color:#B04A4A}
+.warscope .r-healer .rh{background:#E7F5EF;color:#157A5B}
+.warscope .r-mdealer .rh{background:#F4EBFB;color:#7E3FB0}
+.warscope .r-pdealer .rh{background:#E7F4F8;color:#22758A}
+.warscope .r-support .rh{background:#FCF3E3;color:#B57A1F}
+.warscope .rbody{padding:8px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-content:start;flex:1;background:#fbfcfd;border-radius:0 11px 11px 0;min-height:56px}
+.warscope .rbody .empty-hint{grid-column:1/-1}
 .warscope .chip{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;position:relative;transition:border-color .12s}
 .warscope .chip:hover{border-color:var(--txt3)}
 .warscope .chip.myth{border-color:var(--myth-bd)}
-/* 메인 지정 — 진한 칩(남색 배경 + 흰 글씨) + 우측 상단 흰 박스 배지 안에 금색 별 1~3개. 신화 보유 시 금테 유지 */
-.warscope .chip.main{background:#3D4654;border-color:#3D4654;color:#fff}
+/* 메인 지정 — 우측 상단 흰 박스 배지 안에 금색 별 1~3개 (칩은 흰색 유지, 신화 금테와 공존) */
 .warscope .chip .mainstars{position:absolute;top:-6px;right:-4px;font-size:8px;line-height:1;color:#F0B03F;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.5px 2.5px 1.5px 3px;letter-spacing:.5px;box-shadow:0 1px 2px rgba(0,0,0,.1);pointer-events:none}
 /* 팝오버 메인 등급 선택 줄: 메인 ★|★★|★★★|해제 */
 .warscope .warpop .mainrow{display:flex;gap:5px;align-items:center;font-size:11.5px;color:var(--txt2);font-weight:700;padding:6px 0 2px}
@@ -230,12 +234,33 @@ tr.won td{background:var(--green-bg)}
 .warscope .warpop .mainrow .ms.off{color:var(--txt3);letter-spacing:0}
 .warscope .warpop .mainrow .ms.on{background:#3D4654;border-color:#3D4654;color:#F5C451}
 .warscope .warpop .mainrow .ms.off.on{color:#fff}
-.warscope .chip.main small{color:#B8C0CC}
-.warscope .chip.main:hover{border-color:#5A6478}
-.warscope .chip.main.myth{border-color:#F0B03F}
 .warscope .chip small{font-size:10px;color:var(--txt3);font-weight:600}
+/* ── 2단 칩 (분석·현황 공용, 시안) — 직업 위 작은 글씨 / 닉네임 아래 굵게 + 짝지 원은 닉 줄 오른쪽 ── */
+.warscope .chip.wchip{flex-direction:column;align-items:stretch;gap:1px;padding:5px 8px 6px}
+.warscope .chip.wchip .cl{font-size:9px;line-height:1.2}
+.warscope .chip.wchip .nkrow{display:flex;align-items:center;gap:4px;min-width:0}
+.warscope .chip.wchip .nk{font-size:12px;line-height:1.25;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 칩 안 짝지 번호 — 우측 하단에 딱 붙는 초소형 배지 (레이아웃 공간 미사용) */
+.warscope .chip.wchip .nkrow .pairb{position:absolute;right:2px;bottom:2px;width:12px;height:12px;font-size:7.5px;margin-left:0}
+/* ── 전력 현황(결사원) 전용 — 흰 소제목(역할명·인원·신화 수)을 왼쪽 세로 밴드로 ── */
+#s-warstatus .role{background:#fff}
+#s-warstatus .rh2{width:74px;flex:none;padding:8px 6px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+#s-warstatus .rh2 .rn{font-size:13px;font-weight:800}
+#s-warstatus .rh2 .cnt{font-size:11.5px;font-weight:700;color:var(--txt3)}
+#s-warstatus .rh2 .rs{font-size:10.5px;font-weight:600;color:var(--txt3)}
+#s-warstatus .rbody{background:#fff;border-radius:0 11px 11px 0}
 .warscope .pairb{width:16px;height:16px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-left:auto;flex:none}
 .warscope .warpairs{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+/* 짝지 편성 — 보드 오른쪽 세로 패널. 닉네임 칸 고정폭(말줄임)으로 셀 폭 통일, 패널 안에 딱 맞게 축소 */
+.warscope .warpairs.vert{margin-top:0;padding:12px}
+.warscope .warpairs.vert .prow{flex-direction:column;align-items:stretch}
+.warscope .warpairs.vert .pcell{justify-content:flex-start;gap:4px;padding:5px 8px;min-width:0}
+.warscope .warpairs.vert .pm{width:54px;flex:none;align-items:center}
+.warscope .warpairs.vert .pm b{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.warscope .warpairs.vert .pm .pr{font-size:9px}
+.warscope .warpairs.vert .arrow{flex:none;font-size:11px}
+.warscope .warpairs.vert .pairb{flex:none}
+.warscope .warpairs.vert .x{margin-left:auto;flex:none}
 .warscope .prow{display:flex;gap:8px;flex-wrap:wrap}
 .warscope .pcell{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:#fbfcfd;border:1px solid var(--line);border-radius:999px;padding:6px 13px}
 .warscope .pcell .pairb{margin-left:0}
@@ -252,7 +277,8 @@ tr.won td{background:var(--green-bg)}
 .warscope .rb.tank{background:var(--w-tank);border-color:var(--w-tank)}
 .warscope .rb.bruiser{background:var(--w-bruiser);border-color:var(--w-bruiser)}
 .warscope .rb.healer{background:var(--w-healer);border-color:var(--w-healer)}
-.warscope .rb.dealer{background:var(--w-dealer);border-color:var(--w-dealer)}
+.warscope .rb.mdealer{background:var(--w-mdealer);border-color:var(--w-mdealer)}
+.warscope .rb.pdealer{background:var(--w-pdealer);border-color:var(--w-pdealer)}
 .warscope .rb.support{background:var(--w-support);border-color:var(--w-support)}
 .warscope .warpop .sep{height:1px;background:#f1f2f4;margin:9px 0}
 .warscope .warpop .act{font-size:12px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--txt2);font-weight:600}

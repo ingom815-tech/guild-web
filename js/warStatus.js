@@ -4,13 +4,20 @@ const WarStatus = (() => {
   const ROLES = [
     { id: "tank", name: "탱커" },
     { id: "bruiser", name: "브루저" },
-    { id: "healer", name: "힐러" },
-    { id: "dealer", name: "딜러" },
+    { id: "mdealer", name: "마딜러" },
+    { id: "pdealer", name: "물딜러" },
     { id: "support", name: "서포터" },
+    { id: "healer", name: "힐러" },
   ];
-  const RNAME = { tank: "탱커", bruiser: "브루저", healer: "힐러", dealer: "딜러", support: "서포터" };
-  const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", healer: "#1D9E75", dealer: "#9B59D0", support: "#E8A13C" };
+  const RNAME = { tank: "탱커", bruiser: "브루저", mdealer: "마딜러", pdealer: "물딜러", support: "서포터", healer: "힐러" };
+  const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", mdealer: "#9B59D0", pdealer: "#2E9CB8", support: "#E8A13C", healer: "#1D9E75" };
   const PAIRC = ["#1D9E75", "#5B8DD9", "#D06060", "#9B59D0", "#E8A13C", "#854F0B"];
+  // 저장 시점이 6종 개편 이전인 스냅샷의 'dealer' 정규화 (0023 이관 기준과 동일)
+  const MAGIC_CLASSES = ["태양감시자", "주문각인사"];
+  function normRole(role, cls) {
+    if (role === "dealer") return MAGIC_CLASSES.includes(cls) ? "mdealer" : "pdealer";
+    return role;
+  }
 
   // { guilds: { 결사명: { published_at, members: [{nick, class, guild, role, pair, main, myth}] } } }
   let snapshot = null;
@@ -51,7 +58,8 @@ const WarStatus = (() => {
     // 결사별 스냅샷 병합 (각 결사는 운영진이 "저장"한 시점의 편성)
     const guildMap = (snapshot && snapshot.guilds) || {};
     const guildNames = Object.keys(guildMap).filter((g) => (guildMap[g].members || []).length);
-    const mem = guildNames.flatMap((g) => guildMap[g].members || []);
+    const mem = guildNames.flatMap((g) => guildMap[g].members || [])
+      .map((m) => ({ ...m, role: normRole(m.role, m.class || "-") }));
 
     if (!mem.length) {
       empty.style.display = "";
@@ -77,27 +85,32 @@ const WarStatus = (() => {
       bar.insertBefore(chip, stat);
     });
 
-    // 역할 보드 (읽기 전용)
+    // 역할 보드 (읽기 전용 — 시안: 흰 헤더에 역할명·인원·신화 수, 2단 칩(직업 위/닉 아래))
     const board = document.getElementById("wsBoard");
     board.innerHTML = "";
     const frag = document.createDocumentFragment();
     ROLES.forEach((r) => {
       const list = mem.filter((m) => m.role === r.id && visible(m));
+      const mythCnt = list.filter((m) => m.myth).length;
       const col = document.createElement("div");
       col.className = `role r-${r.id}`;
-      col.innerHTML = `<div class="rh">${r.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;
+      col.innerHTML =
+        `<div class="rh2"><span class="rn" style="color:${RCOLOR[r.id]}">${r.name}</span><span class="cnt">${list.length}명</span>` +
+        `<div class="rs">신화 ${mythCnt}</div></div><div class="rbody"></div>`;
       const bodyEl = col.querySelector(".rbody");
       if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
       list.forEach((m) => {
         const lv = Number(m.main) || 0;
         const chip = document.createElement("div");
-        chip.className = "chip" + (m.myth ? " myth" : "") + (lv > 0 ? " main" : "");
+        chip.className = "chip wchip" + (m.myth ? " myth" : "");
         chip.style.cursor = "default";
-        chip.innerHTML = `<span class="nk"></span> <small class="cl"></small>` +
-          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "") +
-          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "");
-        chip.querySelector(".nk").textContent = m.nick;
+        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
+          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
+          `</div>` +
+          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "");
+        chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
         chip.querySelector(".cl").textContent = m.class || "-";
+        chip.title = m.nick;
         bodyEl.appendChild(chip);
       });
       frag.appendChild(col);
