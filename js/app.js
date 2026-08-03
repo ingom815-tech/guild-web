@@ -34,6 +34,8 @@ const Tabs = (() => {
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();
     if (id === "part") Participation.load();
+    if (id === "war") War.load();
+    if (id === "warstatus") WarStatus.load();
     if (id === "profile") Profile.load();
     if (id === "logs") LogAdmin.load();
   }
@@ -131,6 +133,7 @@ const App = (() => {
     Warehouse.init();
     DistManage.init();
     Participation.init();
+    War.init();
     Profile.init();
     Register.init();
     LogAdmin.init();

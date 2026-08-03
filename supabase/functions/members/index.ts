@@ -75,6 +75,25 @@ function isAdmin(user: SessionUser | null): boolean {
 // 예전에 남은 값이라 실제로는 쓰이지 않음. 새 회원은 항상 아래 한글 값 중 하나로 명시적으로 저장한다.
 const ROLES = ["결사원", "운영진", "관리자"];
 
+// 신화 아퀴 보유 판정: status_check 우측 토큰에 ":m" 등급 또는 레거시 "M숫자" 토큰이 하나라도 있으면.
+// (전력 분석 view=war / 공개 스냅샷 war_publish 공용)
+function hasMythAqui(sc: string | null): boolean {
+  if (!sc || !sc.includes("|")) return false;
+  const right = sc.split("|").slice(1).join("|");
+  for (const t of right.split(",").map((x) => x.trim()).filter(Boolean)) {
+    if (t.includes(":")) {
+      if (t.split(":")[1] === "m") return true;
+    } else if (/^M\d/.test(t)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function kstNowString(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16);
+}
+
 // 장비/아퀴 필드 검증용 상수 (원본 app.py:703-774와 동일 목록 — 값 자체는 클라이언트가 만들지만
 // 형식이 깨진 문자열이 저장되면 분배 자격 판정이 오작동하므로 서버에서 형식을 강제한다).
 const EQUIPMENT_SLOTS = [
@@ -256,6 +275,156 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true });
   }
 
+  // ── 전력 분석 (쟁 오더 작전판 — war_roles, 즉시 저장) ──
+  const WAR_ROLES = ["tank", "bruiser", "healer", "dealer", "support"];
+
+  // 저장(공개): 현재 배치/짝지를 결사별 스냅샷으로 발행 — 전력 현황 탭이 이 시점 화면을 그대로 봄.
+  // body.guild = 특정 결사만 갱신 (없으면 전체 결사 갱신). 결사별로 published_at 별도 관리.
+  if (action === "war_publish" && req.method === "POST") {
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      // 본문 없이 호출 = 전체 저장
+    }
+    const targetGuild = typeof body.guild === "string" && body.guild ? body.guild : null;
+
+    const [rolesRes, memRes, curRes] = await Promise.all([
+      supabase.from("war_roles").select("member_id, role, pair_no, main_level"),
+      supabase.from("members").select("user_id, current_id, guild_name, class, status_check"),
+      supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
+    ]);
+    const memMap = new Map((memRes.data || []).map((m) => [m.user_id, m]));
+
+    // 배치 인원을 결사별로 그룹핑
+    const perGuild = new Map<string, Record<string, unknown>[]>();
+    for (const r of rolesRes.data || []) {
+      const m = memMap.get(r.member_id);
+      if (!m) continue;
+      const g = m.guild_name || "(미지정)";
+      const entry = {
+        nick: m.current_id || m.user_id,
+        class: m.class,
+        guild: m.guild_name,
+        role: r.role,
+        pair: r.pair_no,
+        main: r.main_level || 0, // 별 0~3
+        myth: hasMythAqui(m.status_check),
+      };
+      const arr = perGuild.get(g);
+      if (arr) arr.push(entry);
+      else perGuild.set(g, [entry]);
+    }
+
+    // 기존 발행본 위에 대상 결사만 교체 (전체 저장이면 통째 교체)
+    let stored: { guilds: Record<string, unknown> } = { guilds: {} };
+    try {
+      if (curRes.data && curRes.data.value) {
+        const parsed = JSON.parse(curRes.data.value);
+        if (parsed && typeof parsed === "object" && parsed.guilds) stored = parsed;
+      }
+    } catch {
+      // 폴백 — 새로 시작
+    }
+    const now = kstNowString();
+    let count = 0;
+    if (targetGuild) {
+      const list = perGuild.get(targetGuild) || [];
+      stored.guilds[targetGuild] = { published_at: now, members: list };
+      count = list.length;
+    } else {
+      stored.guilds = {};
+      for (const [g, list] of perGuild) {
+        stored.guilds[g] = { published_at: now, members: list };
+        count += list.length;
+      }
+    }
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert({ key: "war_published", value: JSON.stringify(stored) }, { onConflict: "key" });
+    if (error) return jsonResponse({ error: "저장에 실패했습니다." }, 500);
+    return jsonResponse({ ok: true, published_at: now, guild: targetGuild, count });
+  }
+
+  // 메인 지정 (별 0~3개 — 0 = 해제, 칩 남색 강조 + 우측 상단 별 표시)
+  if (action === "war_main" && req.method === "POST") {
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+    const uid = typeof body.user_id === "string" ? body.user_id : "";
+    if (!uid) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+    const level = Number(body.level);
+    if (!Number.isInteger(level) || level < 0 || level > 3) {
+      return jsonResponse({ error: "메인 등급은 0~3이어야 합니다." }, 400);
+    }
+    const { error } = await supabase.from("war_roles").update({ main_level: level }).eq("member_id", uid);
+    if (error) return jsonResponse({ error: "메인 지정 저장에 실패했습니다." }, 500);
+    return jsonResponse({ ok: true });
+  }
+
+  if (action === "war_role" || action === "war_pair" || action === "war_unpair") {
+    if (req.method !== "POST") return jsonResponse({ error: "지원하지 않는 메서드입니다." }, 405);
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+
+    // 역할 배치/변경/해제 (role 비우면 배치 해제 — 짝지 동반 해제)
+    if (action === "war_role") {
+      const uid = typeof body.user_id === "string" ? body.user_id : "";
+      if (!uid) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+      const role = typeof body.role === "string" && body.role ? body.role : null;
+      if (role === null) {
+        const { data: row } = await supabase.from("war_roles").select("pair_no").eq("member_id", uid).maybeSingle();
+        if (row && row.pair_no != null) {
+          await supabase.from("war_roles").update({ pair_no: null }).eq("pair_no", row.pair_no);
+        }
+        const { error } = await supabase.from("war_roles").delete().eq("member_id", uid);
+        if (error) return jsonResponse({ error: "배치 해제에 실패했습니다." }, 500);
+        return jsonResponse({ ok: true });
+      }
+      if (!WAR_ROLES.includes(role)) return jsonResponse({ error: "알 수 없는 역할입니다." }, 400);
+      // upsert가 role만 갱신 — 기존 pair_no는 유지 (역할 변경해도 짝 유지)
+      const { error } = await supabase.from("war_roles").upsert({ member_id: uid, role }, { onConflict: "member_id" });
+      if (error) return jsonResponse({ error: "역할 저장에 실패했습니다." }, 500);
+      return jsonResponse({ ok: true });
+    }
+
+    // 짝지 지정 (자유 2인 — 양쪽의 기존 짝 자동 해제 후 새 번호 부여)
+    if (action === "war_pair") {
+      const a = typeof body.a === "string" ? body.a : "";
+      const b = typeof body.b === "string" ? body.b : "";
+      if (!a || !b || a === b) return jsonResponse({ error: "서로 다른 두 결사원이 필요합니다." }, 400);
+      const { data: rows } = await supabase.from("war_roles").select("member_id, pair_no").in("member_id", [a, b]);
+      if (!rows || rows.length !== 2) return jsonResponse({ error: "배치된 결사원끼리만 짝지를 지정할 수 있습니다." }, 400);
+      for (const oldNo of [...new Set(rows.map((r) => r.pair_no).filter((n) => n != null))]) {
+        await supabase.from("war_roles").update({ pair_no: null }).eq("pair_no", oldNo);
+      }
+      const { data: maxRow } = await supabase
+        .from("war_roles").select("pair_no").not("pair_no", "is", null)
+        .order("pair_no", { ascending: false }).limit(1);
+      const nextNo = ((maxRow && maxRow[0] && maxRow[0].pair_no) || 0) + 1;
+      const { error } = await supabase.from("war_roles").update({ pair_no: nextNo }).in("member_id", [a, b]);
+      if (error) return jsonResponse({ error: "짝지 저장에 실패했습니다." }, 500);
+      return jsonResponse({ ok: true, pair_no: nextNo });
+    }
+
+    // 짝지 해제 (해당 번호 양쪽 모두)
+    const uid = typeof body.user_id === "string" ? body.user_id : "";
+    if (!uid) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+    const { data: row } = await supabase.from("war_roles").select("pair_no").eq("member_id", uid).maybeSingle();
+    if (row && row.pair_no != null) {
+      const { error } = await supabase.from("war_roles").update({ pair_no: null }).eq("pair_no", row.pair_no);
+      if (error) return jsonResponse({ error: "짝지 해제에 실패했습니다." }, 500);
+    }
+    return jsonResponse({ ok: true });
+  }
+
   // ── 가입 신청 승인/거절 (원본 approve_registration/reject_registration, database.py:3300) ──
   if ((action === "approve" || action === "reject") && req.method === "POST") {
     let body: Record<string, unknown> = {};
@@ -353,6 +522,57 @@ Deno.serve(async (req: Request) => {
         .order("sort_order", { ascending: true });
       if (error) return jsonResponse({ error: "결사 목록 조회에 실패했습니다." }, 500);
       return jsonResponse(data || []);
+    }
+
+    // 전력 분석 보드 데이터 (표시 값은 전부 기존 소스에서 파생 — war_roles는 배치/짝만)
+    if (view === "war") {
+      const { data: cs } = await supabase.from("app_settings").select("value").eq("key", "current_season").maybeSingle();
+      const season = cs && cs.value != null && !Number.isNaN(parseInt(cs.value, 10)) ? parseInt(cs.value, 10) : 1;
+      const [memRes, spRes, rolesRes, pubRes] = await Promise.all([
+        supabase
+          .from("members")
+          .select("user_id, current_id, guild_name, class, power, status_check, jaeng_rate")
+          .neq("role", "관리자")
+          .order("current_id", { ascending: true }),
+        supabase.from("season_participation").select("user_id, participation_rate").eq("season", season),
+        supabase.from("war_roles").select("member_id, role, pair_no, main_level"),
+        supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
+      ]);
+      if (memRes.error) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
+      const rateMap = new Map((spRes.data || []).map((r) => [r.user_id, r.participation_rate]));
+      const roleMap = new Map((rolesRes.data || []).map((r) => [r.member_id, r]));
+      // 결사별 저장(공개) 시각 요약 {결사명: 시각}
+      const published: Record<string, string> = {};
+      try {
+        if (pubRes.data && pubRes.data.value) {
+          const parsed = JSON.parse(pubRes.data.value);
+          for (const [g, v] of Object.entries(parsed.guilds || {})) {
+            published[g] = (v as { published_at?: string }).published_at || "";
+          }
+        }
+      } catch {
+        // 무시
+      }
+      return jsonResponse({
+        season,
+        published,
+        members: (memRes.data || []).map((m) => {
+          const wr = roleMap.get(m.user_id);
+          return {
+            user_id: m.user_id,
+            nick: m.current_id || m.user_id,
+            guild: m.guild_name,
+            class: m.class,
+            power: m.power,
+            sch_rate: rateMap.get(m.user_id) ?? null, // 일정참여율 (현재 시즌)
+            war_rate: m.jaeng_rate ?? null,           // 쟁참여율
+            myth: hasMythAqui(m.status_check),
+            role: wr ? wr.role : null,
+            pair_no: wr ? wr.pair_no : null,
+            main: wr ? wr.main_level || 0 : 0, // 별 0~3
+          };
+        }),
+      });
     }
 
     // 가입 신청 목록 (대기 중)

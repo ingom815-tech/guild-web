@@ -114,6 +114,17 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "GET") return jsonResponse({ error: "GET만 지원합니다." }, 405);
 
+  // ── 결사원 공개용 전력 현황 (운영진이 전력 분석에서 "공개"한 시점의 스냅샷) ──
+  if (new URL(req.url).searchParams.get("view") === "war_status") {
+    const { data } = await supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle();
+    if (!data || !data.value) return jsonResponse({ published: false });
+    try {
+      return jsonResponse({ published: true, ...JSON.parse(data.value) });
+    } catch {
+      return jsonResponse({ published: false });
+    }
+  }
+
   const staff = isStaff(user);
 
   // 현재 시즌 (app_settings 키-값, 없으면 1 — 원본 get_members_dashboard와 동일 폴백)
@@ -180,7 +191,7 @@ Deno.serve(async (req: Request) => {
       .map((m) => m.current_id || m.user_id),
   }));
 
-  // ── 회원 목록 (역할별 필드 스트립 — 전투력은 운영진 이상 응답에만 포함) ──
+  // ── 회원 목록 (전투력 포함 — 사용자 결정으로 전원 공개, 2026-07-30) ──
   const memberRows = members.map((m) => {
     const row: Record<string, unknown> = {
       user_id: m.user_id,
@@ -202,8 +213,8 @@ Deno.serve(async (req: Request) => {
       jaeng_morning: m.jaeng_morning,
       jaeng_evening: m.jaeng_evening,
       jaeng_dawn: m.jaeng_dawn,
+      power: m.power, // 전원 공개
     };
-    if (staff) row.power = m.power;
     return row;
   });
 
@@ -212,9 +223,9 @@ Deno.serve(async (req: Request) => {
     guild_count: guildCount,
     avg_participation_rate: avgRate,
     avg_contribution: avgContribution,
+    avg_power: avgPower, // 전원 공개
   };
   if (staff) {
-    kpi.avg_power = avgPower;
     kpi.pending_requests = pendingRequests;
   }
 

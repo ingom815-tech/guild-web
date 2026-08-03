@@ -8,14 +8,14 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=60** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=61** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
 - **인증**: Supabase Auth 미사용. 자체 세션 토큰(`user_sessions`, `X-Session-Token` 헤더). 비밀번호 레거시 SHA256 → 로그인 시 bcrypt 점진 업그레이드.
 - **보안**: 전 테이블 RLS + 정책 0개(완전 차단). 읽기·쓰기 전부 Edge Function(service_role) 경유. anon 키는 공개 전제 설계. 역할 노출: `body.staff`(운영진+) / `body.admin`(관리자) 클래스 + `.staff-only`/`.admin-only` CSS. 단 **서버 권한은 화면 노출과 별개** — 삭제류 API는 운영진도 호출 가능(참석 보정만 서버에서 관리자 전용).
 - **Edge Function**: 로컬 Deno 없음 → 로컬 파일(source of truth) 수정 → **전체 코드를 채팅으로 출력**(사용자 선호 — 파일 복사 안내 아님) → 사용자가 Dashboard "Via Editor"에 붙여넣어 Deploy. 함수마다 자체완결 단일 파일. "Verify JWT" OFF.
-- **원자성 쓰기**: SECURITY DEFINER RPC(`supabase/migrations/`) — 사용자가 SQL Editor에서 실행. 0001~0008, 0010 적용됨(0009 결번).
+- **원자성 쓰기**: SECURITY DEFINER RPC(`supabase/migrations/`) — 사용자가 SQL Editor에서 실행. 0001~0008, 0010~0022 적용됨(0009 결번).
 - **캐시버스팅**: 정적 파일 수정 시 `index.html`의 `?v=N` 전체 +1 (bash sed `s/?v=N/?v=N+1/g`).
 - **⚠️ 한글 파일 인코딩**: 저장소 파일은 BOM 없는 UTF-8. **PowerShell로 파일 내용을 읽어 재저장하는 작업 절대 금지** (PS 5.1이 CP949로 오독 → 이중 인코딩 손상, 커밋 50337cb 실서비스 흰 화면 사고 → f440f17로 복구). 텍스트 치환은 반드시 Bash 도구 `sed` 사용. 손상 시 `git checkout <정상 커밋> -- <파일>` 후 재적용.
 - **로컬 미리보기**: `_devserver.ps1` → http://localhost:8899 (mime 맵에 svg/png/jpg 포함 — SVG는 content-type 없으면 이미지 디코드 실패). 검증은 목 API(`Api.xxx = () => Promise.resolve(...)`) 오버라이드 + 브라우저 콘솔. 이 세션 스크린샷 캡처가 타임아웃일 땐 DOM/computed style 검사로 검증.
@@ -75,7 +75,8 @@
 | 5bfa1bd | 폰 스샷 업로드 수정: ImageUtil FileReader 폴백(카카오톡 인앱 웹뷰 objectURL 실패 대응) + 내정보 type 빈 값 수용·업로드 중 버튼·HEIC 안내·진단 로그 (v=58) |
 | f85f0de | Storage 한글 아이디 수정: profile·register `safeKey()` — 비ASCII를 UTF-8 hex로 치환("Invalid key" 해결) (v=58, 프론트 변경 없음) |
 | d857d1e | !긴급→!쟁 개편: 점수 5종 분리·쟁 별도 지표(0018 RPC), 조 선택 폐지(0019), 가입 승인 시 출석 소급 매칭, 대시보드 "일정참여율\|쟁참여율" (함수 4개 재배포) (v=59) |
-| (최신) | 드랍 텍스트 약식 등록: 붙은 수량 분리("별심조각5"→×5, logParser) + 미매칭 항목 유사 후보 드롭다운(글자·바이그램 포함율 점수, ≥15% 우선·없으면 최근접 3개 폴백)에서 "담기"로 장바구니 투입(inventory.js suggestItems) — **현재 배포 버전 (v=60)** |
+| e687dd8 | 드랍 텍스트 약식 등록: 붙은 수량 분리("별심조각5"→×5, logParser) + 미매칭 항목 유사 후보 드롭다운(글자·바이그램 포함율 점수, ≥15% 우선·없으면 최근접 3개 폴백)에서 "담기"로 장바구니 투입(inventory.js suggestItems) (v=60) |
+| (최신) | 전력 분석 탭(운영진 — 역할 5종 보드/짝지/미배치 풀, 전력분석탭_시안_v3, war_roles 0020~0022, 낙관적 즉시 저장, 메인 지정 = 별 1~3 등급 흰 배지) + 전력 현황 탭(결사원 공개 — "저장" 시 결사별 스냅샷 `app_settings.war_published`, dashboard `view=war_status`) + 대시보드 전투력 전원 공개 (members·dashboard 함수 재배포) — **현재 배포 버전 (v=61)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

@@ -47,7 +47,7 @@ const Dashboard = (() => {
       toast(e.message || "대시보드 조회 실패", true);
       return;
     }
-    sortKey = Auth.isStaff() ? "power" : "participation_score";
+    sortKey = "power"; // 전투력 전원 공개 — 기본 정렬도 공통
     sortDir = -1;
     renderKpi();
     renderClassBars();
@@ -59,13 +59,12 @@ const Dashboard = (() => {
   // ── KPI (4칸, 무채색 — 참여율은 전체/데이/나이트 3분할, 데이/나이트는 자리만) ──
   function renderKpi() {
     const k = data.kpi;
-    const staff = Auth.isStaff();
     const grid = document.getElementById("kpiGrid");
-    grid.className = "kpis" + (staff ? "" : " k3");
+    grid.className = "kpis"; // 전투력 전원 공개 — KPI 4칸 공통
     const rate = k.avg_participation_rate != null ? `${k.avg_participation_rate}%` : "-";
 
     let html = `<div class="kpi"><div class="lb">전체 인원</div><div class="v">${k.total_members}</div><div class="sub">${k.guild_count}개 결사</div></div>`;
-    if (staff && k.avg_power != null) {
+    if (k.avg_power != null) {
       html += `<div class="kpi"><div class="lb">평균 전투력</div><div class="v">${(k.avg_power || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
     }
     // 데이/나이트 조 지표는 !쟁 개편으로 폐지 — 평균 참여율은 전체 값만
@@ -186,7 +185,7 @@ const Dashboard = (() => {
     document.getElementById("dashGuildFilter").innerHTML =
       `<option value="전체">결사 전체</option>` + guilds.map((g) => `<option value="${g}">${g}</option>`).join("");
 
-    const sorts = staff ? ["전투력순", "참여점수순", "기여점수순"] : ["참여점수순", "기여점수순"];
+    const sorts = ["전투력순", "참여점수순", "기여점수순"]; // 전투력 전원 공개
     document.getElementById("dashSort").innerHTML = sorts.map((s) => `<option value="${s}">${s}</option>`).join("");
   }
 
@@ -274,7 +273,7 @@ const Dashboard = (() => {
     header += th("구분", "role");
     header += th("직업", "class");
     header += th("Lv", "level", true);
-    if (staff) header += th("전투력", "power", true);
+    header += th("전투력", "power", true); // 전원 공개
     header += th("일정참여율", "participation_rate", true);
     header += th("쟁참여율", "jaeng_rate", true);
     header += th("기여점수", "contribution_score", true);
@@ -292,7 +291,7 @@ const Dashboard = (() => {
           <td><span class="role ${isStaffRole ? "r-staff" : "r-member"}"></span></td>
           <td class="gtext cls"></td>
           <td class="num">${m.level ?? 0}</td>
-          ${staff ? `<td class="num"><b>${m.power != null ? m.power.toLocaleString() : "—"}</b></td>` : ""}
+          <td class="num"><b>${m.power != null ? m.power.toLocaleString() : "—"}</b></td>
           <td class="num">${rateHtml}</td>
           <td class="num" title="${jaengTitle}">${m.jaeng_rate != null ? `${m.jaeng_rate}%` : "—"}</td>
           <td class="num">${(m.contribution_score ?? 0).toLocaleString()}</td>
@@ -332,7 +331,7 @@ const Dashboard = (() => {
     const subParts = [m.class || "-"];
     if (m.subjugation_rank) subParts.push(`토벌 ${m.subjugation_rank}`);
     let subHtml = subParts.join(" · ");
-    if (staff && m.power != null) subHtml += ` · 전투력 <b>${m.power.toLocaleString()}</b>`;
+    if (m.power != null) subHtml += ` · 전투력 <b>${m.power.toLocaleString()}</b>`;
     card.querySelector(".sub").innerHTML = subHtml;
     return card;
   }

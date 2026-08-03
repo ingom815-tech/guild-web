@@ -178,6 +178,88 @@ tr.won td{background:var(--green-bg)}
 .mtable th{text-align:left;font-size:12px;font-weight:500;color:var(--txt3);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card);cursor:pointer;user-select:none}
 .mtable td{padding:8px 10px;border-bottom:1px solid #f3f4f6;white-space:nowrap}
 .mtable .num{text-align:right}
+/* ═══ 전력 분석 (운영진 — 전력분석탭_시안_v3 그대로, 전부 .warscope 스코프) ═══ */
+.warscope{--w-tank:#5B8DD9;--w-bruiser:#D06060;--w-healer:#1D9E75;--w-dealer:#9B59D0;--w-support:#E8A13C}
+.warscope .warbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.warscope .mc{font-size:12.5px;padding:6px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--txt2);cursor:pointer;font-weight:600;user-select:none}
+.warscope .mc.on{background:var(--green);color:#fff;border-color:var(--green)}
+.warscope .stat{margin-left:auto;font-size:12.5px;color:var(--txt2)}
+.warscope .stat b{font-weight:800}
+.warscope .stat .left{color:#A32D2D;font-weight:800}
+.warscope .pairing-banner{display:none;background:var(--green-bg);border:1px solid #9FE1CB;color:var(--green-dk);border-radius:10px;padding:9px 14px;font-size:12.5px;margin-bottom:10px;font-weight:600}
+.warscope .warcols{display:grid;grid-template-columns:300px 1fr;gap:12px}
+@media(max-width:900px){.warscope .warcols{grid-template-columns:1fr}}
+.warscope .warpanel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.warscope .warpanel h3,.warscope .warpairs h3{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.warscope .wmeta{font-size:11.5px;color:var(--txt3);font-weight:500}
+.warscope .pooltools{display:flex;gap:7px;margin-bottom:9px}
+.warscope .pooltools select{flex:1;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px;background:#fff;color:var(--txt2);font-weight:600;font-family:inherit}
+.warscope .wseg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.warscope .wseg span{padding:7px 11px;font-size:12px;color:var(--txt2);cursor:pointer;user-select:none;font-weight:600;white-space:nowrap}
+.warscope .wseg span.on{background:var(--green);color:#fff}
+.warscope .pool{display:flex;flex-direction:column;gap:7px;max-height:640px;overflow-y:auto}
+.warscope .pcard{border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;position:relative;transition:border-color .12s}
+.warscope .pcard:hover{border-color:var(--green)}
+.warscope .pcard.myth{border-color:var(--myth-bd);background:linear-gradient(135deg,#FFFDF6,#fff 60%)}
+.warscope .pcard.myth:hover{border-color:#F0B03F}
+.warscope .pcard .n{font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.warscope .pcard .n small{font-size:11px;color:var(--txt3);font-weight:600}
+.warscope .pcard .s{display:flex;gap:10px;font-size:11.5px;color:var(--txt2);margin-top:3px}
+.warscope .pcard .s b{font-weight:700}
+.warscope .mythdot{font-size:9px;font-weight:800;background:var(--gold-bg);color:var(--gold-tx);border-radius:5px;padding:1px 6px}
+.warscope .warboard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:1050px){.warscope .warboard{grid-template-columns:repeat(2,1fr)}}
+.warscope .role{border-radius:12px;border:1px solid var(--line);overflow:hidden;min-height:160px;display:flex;flex-direction:column}
+.warscope .role .rh{padding:8px 11px;font-size:12.5px;font-weight:800;color:#fff;display:flex;justify-content:space-between}
+.warscope .role .rh .c{font-weight:600;opacity:.85}
+.warscope .r-tank .rh{background:var(--w-tank)}
+.warscope .r-bruiser .rh{background:var(--w-bruiser)}
+.warscope .r-healer .rh{background:var(--w-healer)}
+.warscope .r-dealer .rh{background:var(--w-dealer)}
+.warscope .r-support .rh{background:var(--w-support)}
+.warscope .rbody{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;background:#fbfcfd}
+.warscope .chip{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;position:relative;transition:border-color .12s}
+.warscope .chip:hover{border-color:var(--txt3)}
+.warscope .chip.myth{border-color:var(--myth-bd)}
+/* 메인 지정 — 진한 칩(남색 배경 + 흰 글씨) + 우측 상단 흰 박스 배지 안에 금색 별 1~3개. 신화 보유 시 금테 유지 */
+.warscope .chip.main{background:#3D4654;border-color:#3D4654;color:#fff}
+.warscope .chip .mainstars{position:absolute;top:-6px;right:-4px;font-size:8px;line-height:1;color:#F0B03F;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.5px 2.5px 1.5px 3px;letter-spacing:.5px;box-shadow:0 1px 2px rgba(0,0,0,.1);pointer-events:none}
+/* 팝오버 메인 등급 선택 줄: 메인 ★|★★|★★★|해제 */
+.warscope .warpop .mainrow{display:flex;gap:5px;align-items:center;font-size:11.5px;color:var(--txt2);font-weight:700;padding:6px 0 2px}
+.warscope .warpop .mainrow .ms{flex:1;border:1px solid var(--line);border-radius:7px;padding:5px 0;text-align:center;cursor:pointer;color:#B08A2E;font-weight:700;font-size:11px;background:#fff;letter-spacing:1px;user-select:none}
+.warscope .warpop .mainrow .ms.off{color:var(--txt3);letter-spacing:0}
+.warscope .warpop .mainrow .ms.on{background:#3D4654;border-color:#3D4654;color:#F5C451}
+.warscope .warpop .mainrow .ms.off.on{color:#fff}
+.warscope .chip.main small{color:#B8C0CC}
+.warscope .chip.main:hover{border-color:#5A6478}
+.warscope .chip.main.myth{border-color:#F0B03F}
+.warscope .chip small{font-size:10px;color:var(--txt3);font-weight:600}
+.warscope .pairb{width:16px;height:16px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-left:auto;flex:none}
+.warscope .warpairs{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.warscope .prow{display:flex;gap:8px;flex-wrap:wrap}
+.warscope .pcell{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:#fbfcfd;border:1px solid var(--line);border-radius:999px;padding:6px 13px}
+.warscope .pcell .pairb{margin-left:0}
+.warscope .pcell .x{color:var(--txt3);cursor:pointer;font-weight:600;margin-left:2px}
+.warscope .pcell .arrow{color:var(--txt3);font-weight:600}
+.warscope .pm{display:inline-flex;flex-direction:column;align-items:center;line-height:1.25}
+.warscope .pm .pr{font-size:10px;font-weight:800;letter-spacing:.3px}
+.warscope .pm b{font-size:12.5px}
+.warscope .empty-hint{font-size:12px;color:#b6bac2;text-align:center;padding:14px 4px}
+.warscope .warpop{position:fixed;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 40px rgba(0,0,0,.16);padding:12px;z-index:60;width:230px;display:none}
+.warscope .warpop h4{font-size:12px;font-weight:800;margin-bottom:8px;color:var(--txt2)}
+.warscope .rbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.warscope .rb{font-size:12px;font-weight:700;padding:7px 0;border-radius:8px;border:1.5px solid var(--line);cursor:pointer;text-align:center;color:#fff}
+.warscope .rb.tank{background:var(--w-tank);border-color:var(--w-tank)}
+.warscope .rb.bruiser{background:var(--w-bruiser);border-color:var(--w-bruiser)}
+.warscope .rb.healer{background:var(--w-healer);border-color:var(--w-healer)}
+.warscope .rb.dealer{background:var(--w-dealer);border-color:var(--w-dealer)}
+.warscope .rb.support{background:var(--w-support);border-color:var(--w-support)}
+.warscope .warpop .sep{height:1px;background:#f1f2f4;margin:9px 0}
+.warscope .warpop .act{font-size:12px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--txt2);font-weight:600}
+.warscope .warpop .act:hover{background:#f6f7f9}
+.warscope .warpop .act.danger{color:#A32D2D}
+.warscope .waroverlay{position:fixed;inset:0;z-index:50;display:none}
+
 /* 대시보드 결사원 표 — 페이지 넘김 대신 표 안 세로 스크롤 (약 30명 표시), 제목줄 고정 */
 .dash-scroll{max-height:1170px;overflow-y:auto}
 .dash-scroll th{position:sticky;top:0;z-index:2}

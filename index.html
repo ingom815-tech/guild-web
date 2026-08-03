@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=60">
-<link rel="stylesheet" href="css/style.css?v=60">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=61">
+<link rel="stylesheet" href="css/style.css?v=61">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=60" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=61" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -97,7 +97,7 @@
   <div class="note">📐 1단계 파일럿 — 운영진 테스트 전용입니다. 재고 관리 / 드랍 등록 외 탭은 다음 단계에서 제공됩니다.</div>
 
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=60" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=61" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -111,10 +111,12 @@
     <div class="tab" data-s="dist" onclick="Tabs.go('dist',this)">분배</div>
     <div class="tab" data-s="treasury" onclick="Tabs.go('treasury',this)"><span class="lf">공금 관리</span><span class="ls">공금</span></div>
     <div class="tab" data-s="rules" onclick="Tabs.go('rules',this)">규정</div>
+    <div class="tab" data-s="warstatus" onclick="Tabs.go('warstatus',this)"><span class="lf">전력 현황</span><span class="ls">전력</span></div>
     <div class="tab" data-s="profile" onclick="Tabs.go('profile',this)">내 정보</div>
     <div class="divider staff-only"></div>
     <div class="tab staff staff-only" data-s="members" onclick="Tabs.go('members',this)"><span class="lf">결사원 관리</span><span class="ls">결사원</span></div>
     <div class="tab staff staff-only" data-s="part" onclick="Tabs.go('part',this)"><span class="lf">참여율 관리</span><span class="ls">참여율</span></div>
+    <div class="tab staff staff-only" data-s="war" onclick="Tabs.go('war',this)"><span class="lf">전력 분석</span><span class="ls">전력</span></div>
     <div class="tab staff staff-only" data-s="inv" onclick="Tabs.go('inv',this)"><span class="lf">재고 관리</span><span class="ls">재고</span></div>
     <div class="tab staff staff-only" data-s="drop" onclick="Tabs.go('drop',this)">드랍 등록</div>
     <div class="tab staff admin-only" data-s="logs" onclick="Tabs.go('logs',this)"><span class="lf">로그 관리</span><span class="ls">로그</span></div>
@@ -814,6 +816,61 @@
   </section>
 
   <!-- ═══ 관리자: 로그 관리 (참여/재고 로그 조회·삭제 — 삭제 시 데이터 롤백) ═══ -->
+  <!-- ═══ 결사원: 전력 현황 (운영진이 "공개"한 시점의 편성 스냅샷 — 읽기 전용) ═══ -->
+  <section class="screen warscope" id="s-warstatus">
+    <div class="warbar" id="wsGuildBar">
+      <span class="stat" id="wsPublishedAt"></span>
+    </div>
+    <div class="warpanel" id="wsEmpty" style="display:none">
+      <div class="empty-hint" style="padding:26px 0">아직 공개된 전력 편성이 없습니다 — 운영진이 공개하면 여기에 표시됩니다.</div>
+    </div>
+    <div id="wsContent">
+      <div class="warboard" id="wsBoard"></div>
+      <div class="warpairs">
+        <h3>짝지 편성</h3>
+        <div class="prow" id="wsPairList"></div>
+      </div>
+    </div>
+    <div class="toast" id="wsToast"></div>
+  </section>
+
+  <!-- ═══ 운영진: 전력 분석 (쟁 오더 작전판 — 전력분석탭_시안_v3 그대로) ═══ -->
+  <section class="screen warscope" id="s-war">
+    <div class="warbar" id="warGuildBar">
+      <span class="stat">배치 <b id="warCntDone">0</b> · <span class="left">미배치 <b id="warCntLeft">0</b></span>
+        <button type="button" class="btn sm" id="warPublishBtn" style="margin-left:12px">💾 저장</button>
+      </span>
+    </div>
+    <div class="meta" id="warPublishedInfo" style="margin:-6px 0 10px"></div>
+    <div class="pairing-banner" id="warPairBanner">짝지 지정 중 — 연결할 상대의 칩을 클릭하세요 (ESC 취소)</div>
+    <div class="warcols">
+      <!-- B파트: 미배치 풀 -->
+      <div class="warpanel">
+        <h3>미배치 결사원 <span class="wmeta">클릭하면 역할 선택</span></h3>
+        <div class="pooltools">
+          <select id="warPoolJob"></select>
+          <div class="seg wseg" id="warSortSeg">
+            <span class="on" data-s="default">기본</span>
+            <span data-s="cp">전투력</span>
+            <span data-s="part">참여율</span>
+          </div>
+        </div>
+        <div class="pool" id="warPool"></div>
+      </div>
+      <!-- A파트: 역할 보드 + 짝지 편성 -->
+      <div>
+        <div class="warboard" id="warBoard"></div>
+        <div class="warpairs">
+          <h3>짝지 편성</h3>
+          <div class="prow" id="warPairList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="waroverlay" id="warOverlay"></div>
+    <div class="warpop" id="warPop"></div>
+    <div class="toast" id="warToast"></div>
+  </section>
+
   <section class="screen" id="s-logs">
     <div class="toast" id="logAdmToast"></div>
     <div class="subtabs">
@@ -1078,24 +1135,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=60"></script>
-<script src="js/api.js?v=60"></script>
-<script src="js/auth.js?v=60"></script>
-<script src="js/logParser.js?v=60"></script>
-<script src="js/gamedata.js?v=60"></script>
-<script src="js/imageUtil.js?v=60"></script>
-<script src="js/inventory.js?v=60"></script>
-<script src="js/members.js?v=60"></script>
-<script src="js/treasury.js?v=60"></script>
-<script src="js/dashboard.js?v=60"></script>
-<script src="js/distribution.js?v=60"></script>
-<script src="js/warehouse.js?v=60"></script>
-<script src="js/distManage.js?v=60"></script>
-<script src="js/participationParser.js?v=60"></script>
-<script src="js/participation.js?v=60"></script>
-<script src="js/profile.js?v=60"></script>
-<script src="js/register.js?v=60"></script>
-<script src="js/logAdmin.js?v=60"></script>
-<script src="js/app.js?v=60"></script>
+<script src="js/config.js?v=61"></script>
+<script src="js/api.js?v=61"></script>
+<script src="js/auth.js?v=61"></script>
+<script src="js/logParser.js?v=61"></script>
+<script src="js/gamedata.js?v=61"></script>
+<script src="js/imageUtil.js?v=61"></script>
+<script src="js/inventory.js?v=61"></script>
+<script src="js/members.js?v=61"></script>
+<script src="js/treasury.js?v=61"></script>
+<script src="js/dashboard.js?v=61"></script>
+<script src="js/distribution.js?v=61"></script>
+<script src="js/warehouse.js?v=61"></script>
+<script src="js/distManage.js?v=61"></script>
+<script src="js/participationParser.js?v=61"></script>
+<script src="js/war.js?v=61"></script>
+<script src="js/warStatus.js?v=61"></script>
+<script src="js/participation.js?v=61"></script>
+<script src="js/profile.js?v=61"></script>
+<script src="js/register.js?v=61"></script>
+<script src="js/logAdmin.js?v=61"></script>
+<script src="js/app.js?v=61"></script>
 </body>
 </html>

@@ -122,6 +122,15 @@ const Api = (() => {
     register: (payload) => call("register", { method: "POST", body: payload }),
     getPublicGuilds: () => call("register", { method: "GET" }),
     getGuilds: () => call("members", { method: "GET", query: { view: "guilds" } }),
+    // 전력 분석 (운영진 — 역할 배치/짝지, 즉시 저장)
+    getWarBoard: () => call("members", { method: "GET", query: { view: "war" } }),
+    setWarRole: (user_id, role) => call("members", { method: "POST", query: { action: "war_role" }, body: { user_id, role } }),
+    setWarPair: (a, b) => call("members", { method: "POST", query: { action: "war_pair" }, body: { a, b } }),
+    clearWarPair: (user_id) => call("members", { method: "POST", query: { action: "war_unpair" }, body: { user_id } }),
+    publishWar: (guild) => call("members", { method: "POST", query: { action: "war_publish" }, body: { guild: guild || null } }),
+    setWarMain: (user_id, level) => call("members", { method: "POST", query: { action: "war_main" }, body: { user_id, level } }),
+    // 결사원 공개용 전력 현황 (전 회원 조회 가능 — dashboard 함수 경유)
+    getWarStatus: () => call("dashboard", { method: "GET", query: { view: "war_status" } }),
     updateGuild: (id, name) =>
       call("members", { method: "POST", query: { action: "guild_update" }, body: { id, name } }),
     addGuild: (name) => call("members", { method: "POST", query: { action: "guild_add" }, body: { name } }),
