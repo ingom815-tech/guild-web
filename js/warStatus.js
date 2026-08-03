@@ -14,7 +14,7 @@ const WarStatus = (() => {
 
   // { guilds: { 결사명: { published_at, members: [{nick, class, guild, role, pair, main, myth}] } } }
   let snapshot = null;
-  let gFilter = "all";
+  let gFilter = null; // 현재 결사 페이지 (전체 보기 없음)
 
   function toast(msg, isErr) {
     const t = document.getElementById("wsToast");
@@ -38,7 +38,7 @@ const WarStatus = (() => {
   }
 
   function visible(m) {
-    return gFilter === "all" || (m.guild || "") === gFilter;
+    return (m.guild || "(미지정)") === gFilter;
   }
 
   function render() {
@@ -61,19 +61,17 @@ const WarStatus = (() => {
     }
     empty.style.display = "none";
     content.style.display = "";
-    // 결사별 저장 시각 요약 (특정 결사 선택 시 그 결사만)
-    const times = (gFilter === "all" ? guildNames : guildNames.filter((g) => g === gFilter))
-      .map((g) => `${g} ${guildMap[g].published_at || ""}`);
-    at.textContent = times.length ? `저장 시각: ${times.join(" · ")}` : "";
+    if (!guildNames.includes(gFilter)) gFilter = guildNames[0] || null;
+    // 현재 결사의 저장 시각
+    at.textContent = gFilter && guildMap[gFilter] ? `저장 시각: ${gFilter} ${guildMap[gFilter].published_at || ""}` : "";
 
-    if (gFilter !== "all" && !guildNames.includes(gFilter)) gFilter = "all";
     const stat = bar.querySelector(".stat");
-    [["all", "전체 결사"], ...guildNames.map((g) => [g, g])].forEach(([val, label]) => {
+    guildNames.forEach((g) => {
       const chip = document.createElement("span");
-      chip.className = "mc" + (gFilter === val ? " on" : "");
-      chip.textContent = label;
+      chip.className = "mc" + (gFilter === g ? " on" : "");
+      chip.textContent = g;
       chip.addEventListener("click", () => {
-        gFilter = val;
+        gFilter = g;
         render();
       });
       bar.insertBefore(chip, stat);
@@ -106,10 +104,10 @@ const WarStatus = (() => {
     });
     board.appendChild(frag);
 
-    // 짝지 편성 스트립 (읽기 전용 — 해제 버튼 없음)
+    // 짝지 편성 스트립 (읽기 전용 — 현재 결사 짝만, 해제 버튼 없음)
     const pairsMap = {};
     mem.forEach((m) => {
-      if (m.pair != null) (pairsMap[m.pair] = pairsMap[m.pair] || []).push(m);
+      if (m.pair != null && visible(m)) (pairsMap[m.pair] = pairsMap[m.pair] || []).push(m);
     });
     const pl = document.getElementById("wsPairList");
     pl.innerHTML = "";

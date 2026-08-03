@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=61** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=62** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -76,7 +76,8 @@
 | f85f0de | Storage 한글 아이디 수정: profile·register `safeKey()` — 비ASCII를 UTF-8 hex로 치환("Invalid key" 해결) (v=58, 프론트 변경 없음) |
 | d857d1e | !긴급→!쟁 개편: 점수 5종 분리·쟁 별도 지표(0018 RPC), 조 선택 폐지(0019), 가입 승인 시 출석 소급 매칭, 대시보드 "일정참여율\|쟁참여율" (함수 4개 재배포) (v=59) |
 | e687dd8 | 드랍 텍스트 약식 등록: 붙은 수량 분리("별심조각5"→×5, logParser) + 미매칭 항목 유사 후보 드롭다운(글자·바이그램 포함율 점수, ≥15% 우선·없으면 최근접 3개 폴백)에서 "담기"로 장바구니 투입(inventory.js suggestItems) (v=60) |
-| (최신) | 전력 분석 탭(운영진 — 역할 5종 보드/짝지/미배치 풀, 전력분석탭_시안_v3, war_roles 0020~0022, 낙관적 즉시 저장, 메인 지정 = 별 1~3 등급 흰 배지) + 전력 현황 탭(결사원 공개 — "저장" 시 결사별 스냅샷 `app_settings.war_published`, dashboard `view=war_status`) + 대시보드 전투력 전원 공개 (members·dashboard 함수 재배포) — **현재 배포 버전 (v=61)** |
+| a37c92c | 전력 분석 탭(운영진 — 역할 5종 보드/짝지/미배치 풀, 전력분석탭_시안_v3, war_roles 0020~0022, 낙관적 즉시 저장, 메인 지정 = 별 1~3 등급 흰 배지) + 전력 현황 탭(결사원 공개 — "저장" 시 결사별 스냅샷 `app_settings.war_published`, dashboard `view=war_status`) + 대시보드 전투력 전원 공개 (members·dashboard 함수 재배포) (v=61) |
+| (최신) | 전력 분석/현황 탭 결사별 페이지 전환 — "전체 결사" 통합 뷰 제거, 결사 칩(알파/베타/감마/델타)이 페이지: 보드·미배치 풀·짝지·카운트 전부 현재 결사만, 소속 빈 인원은 "(미지정)" 페이지(저장 차단), 저장은 현재 결사 스냅샷만 발행 — **현재 배포 버전 (v=62)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

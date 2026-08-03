@@ -15,7 +15,7 @@ const War = (() => {
 
   let members = []; // {user_id, nick, guild, cls, cp, sch, war, myth, role, pair}
   let guilds = [];
-  let gFilter = "all";
+  let gFilter = null; // 현재 결사 페이지 (전체 보기 없음 — 결사별 페이지 4개)
   let poolJob = "all";
   let sortMode = "default"; // default | cp | part
   let pairingFrom = null; // 짝지 지정 중인 user_id
@@ -72,19 +72,29 @@ const War = (() => {
     el.textContent = `📢 저장됨(결사원 공개): ${entries.map(([g, at]) => `${g} ${at}`).join(" · ")} — 수정 후 다시 저장하면 반영됩니다.`;
   }
 
-  // ── 상단 결사 필터 칩 (guilds 동적 — 시안의 알파/베타/감마/델타 자리) ──
+  // ── 상단 결사 페이지 칩 (guilds 동적 — 알파/베타/감마/델타, 페이지처럼 전환) ──
+  function memGuild(m) {
+    return m.guild || "(미지정)";
+  }
+  function guildNames() {
+    const names = guilds.map((g) => g.name);
+    members.forEach((m) => {
+      if (!names.includes(memGuild(m))) names.push(memGuild(m));
+    });
+    return names;
+  }
   function renderGuildBar() {
     const bar = document.getElementById("warGuildBar");
     bar.querySelectorAll(".mc").forEach((el) => el.remove());
-    const names = [["all", "전체 결사"], ...guilds.map((g) => [g.name, g.name])];
-    if (!names.some(([v]) => v === gFilter)) gFilter = "all";
+    const names = guildNames();
+    if (!names.includes(gFilter)) gFilter = names[0] || null;
     const stat = bar.querySelector(".stat");
-    names.forEach(([val, label]) => {
+    names.forEach((name) => {
       const chip = document.createElement("span");
-      chip.className = "mc" + (gFilter === val ? " on" : "");
-      chip.textContent = label;
+      chip.className = "mc" + (gFilter === name ? " on" : "");
+      chip.textContent = name;
       chip.addEventListener("click", () => {
-        gFilter = val;
+        gFilter = name;
         renderGuildBar();
         render();
       });
@@ -101,7 +111,7 @@ const War = (() => {
   }
 
   function visible(m) {
-    return gFilter === "all" || m.guild === gFilter;
+    return memGuild(m) === gFilter;
   }
   const fmtRate = (v) => (v != null ? `${v}%` : "—");
 
@@ -129,10 +139,11 @@ const War = (() => {
     });
     pool.appendChild(poolFrag);
 
-    // ── A파트: 역할 보드 (결사 필터 적용) ──
+    // ── A파트: 역할 보드 (현재 결사 페이지만) ──
     const board = document.getElementById("warBoard");
     board.innerHTML = "";
-    const boardFrag = document.createDocumentFragment();
+    const grid = document.createElement("div");
+    grid.className = "warboard";
     ROLES.forEach((r) => {
       const list = members.filter((m) => m.role === r.id && visible(m));
       const col = document.createElement("div");
@@ -151,18 +162,19 @@ const War = (() => {
         chip.addEventListener("click", (e) => chipClick(e, m.user_id));
         bodyEl.appendChild(chip);
       });
-      boardFrag.appendChild(col);
+      grid.appendChild(col);
     });
-    board.appendChild(boardFrag);
+    board.appendChild(grid);
 
-    // ── 짝지 편성 스트립 (역할군 색 + 닉네임 세로 2단) ──
+    // ── 짝지 편성 스트립 (역할군 색 + 닉네임 세로 2단 — 현재 결사 짝만) ──
     const pairsMap = {};
     members.forEach((m) => {
       if (m.pair != null) (pairsMap[m.pair] = pairsMap[m.pair] || []).push(m);
     });
     const pl = document.getElementById("warPairList");
     pl.innerHTML = "";
-    const keys = Object.keys(pairsMap).map(Number).sort((a, b) => a - b);
+    const keys = Object.keys(pairsMap).map(Number).sort((a, b) => a - b)
+      .filter((k) => pairsMap[k].some((m) => visible(m)));
     if (!keys.length) {
       pl.innerHTML = `<span class="empty-hint">아직 짝지가 없습니다 — 배치된 칩을 눌러 "짝지 지정"</span>`;
     }
@@ -207,9 +219,9 @@ const War = (() => {
       pl.appendChild(cell);
     });
 
-    // ── 카운트 (전체 기준 — 미배치는 빨강 강조) ──
-    document.getElementById("warCntDone").textContent = members.filter((m) => m.role).length;
-    document.getElementById("warCntLeft").textContent = members.filter((m) => !m.role).length;
+    // ── 카운트 (현재 결사 기준 — 미배치는 빨강 강조) ──
+    document.getElementById("warCntDone").textContent = members.filter((m) => m.role && visible(m)).length;
+    document.getElementById("warCntLeft").textContent = members.filter((m) => !m.role && visible(m)).length;
   }
 
   // ── 팝오버 ──
@@ -409,25 +421,20 @@ const War = (() => {
   }
 
   function init() {
-    // 저장 = 현재 결사 필터 기준으로 스냅샷 발행 (전체 결사 선택 시 전체 저장)
+    // 저장 = 현재 결사 페이지의 편성 스냅샷 발행
     document.getElementById("warPublishBtn").addEventListener("click", async () => {
+      if (!gFilter || gFilter === "(미지정)") {
+        toast("소속 결사가 지정된 결사만 저장할 수 있습니다", true);
+        return;
+      }
       const btn = document.getElementById("warPublishBtn");
       btn.disabled = true;
       btn.textContent = "저장 중...";
       try {
-        const target = gFilter === "all" ? null : gFilter;
-        const res = await Api.publishWar(target);
-        if (target) {
-          publishedMap[target] = res.published_at;
-        } else {
-          // 전체 저장 — 배치 인원이 있는 결사들로 갱신
-          publishedMap = {};
-          members.filter((m) => m.role).forEach((m) => {
-            publishedMap[m.guild || "(미지정)"] = res.published_at;
-          });
-        }
+        const res = await Api.publishWar(gFilter);
+        publishedMap[gFilter] = res.published_at;
         renderPublishedInfo();
-        toast(`💾 저장 완료 — ${target || "전체 결사"} 편성이 전력 현황 탭에 공개되었습니다 (${res.count}명)`);
+        toast(`💾 저장 완료 — ${gFilter} 편성이 전력 현황 탭에 공개되었습니다 (${res.count}명)`);
       } catch (e) {
         toast(e.message || "저장 실패", true);
       } finally {
