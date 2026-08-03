@@ -160,7 +160,7 @@ const War = (() => {
       if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
       list.forEach((m) => {
         const chip = document.createElement("div");
-        chip.className = "chip wchip" + (m.myth ? " myth" : "");
+        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (m.main > 0 ? ` m${m.main}` : "");
         chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
           (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
           `</div>` +

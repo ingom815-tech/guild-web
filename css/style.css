@@ -226,8 +226,13 @@ tr.won td{background:var(--green-bg)}
 .warscope .chip{background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;position:relative;transition:border-color .12s}
 .warscope .chip:hover{border-color:var(--txt3)}
 .warscope .chip.myth{border-color:var(--myth-bd)}
-/* 메인 지정 — 우측 상단 흰 박스 배지 안에 금색 별 1~3개 (칩은 흰색 유지, 신화 금테와 공존) */
+/* 메인 지정 — 우측 상단 흰 박스 배지 안에 금색 별 1~3개 + 등급별 남색 음영(★3 진함 → ★1 연함) */
 .warscope .chip .mainstars{position:absolute;top:-6px;right:-4px;font-size:8px;line-height:1;color:#F0B03F;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.5px 2.5px 1.5px 3px;letter-spacing:.5px;box-shadow:0 1px 2px rgba(0,0,0,.1);pointer-events:none}
+/* ★1 = 음영 없음(흰 칩), ★2 = 옅은 남색, ★3 = 진한 남색 */
+.warscope .chip.m2{background:#E3E8F0;border-color:#CDD4E0}
+.warscope .chip.m3{background:#3D4654;border-color:#3D4654;color:#fff}
+.warscope .chip.m3 .cl{color:#B8C0CC}
+.warscope .chip.myth.m1,.warscope .chip.myth.m2,.warscope .chip.myth.m3{border-color:var(--myth-bd)}
 /* 팝오버 메인 등급 선택 줄: 메인 ★|★★|★★★|해제 */
 .warscope .warpop .mainrow{display:flex;gap:5px;align-items:center;font-size:11.5px;color:var(--txt2);font-weight:700;padding:6px 0 2px}
 .warscope .warpop .mainrow .ms{flex:1;border:1px solid var(--line);border-radius:7px;padding:5px 0;text-align:center;cursor:pointer;color:#B08A2E;font-weight:700;font-size:11px;background:#fff;letter-spacing:1px;user-select:none}

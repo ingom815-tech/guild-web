@@ -102,7 +102,7 @@ const WarStatus = (() => {
       list.forEach((m) => {
         const lv = Number(m.main) || 0;
         const chip = document.createElement("div");
-        chip.className = "chip wchip" + (m.myth ? " myth" : "");
+        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (lv > 0 ? ` m${lv}` : "");
         chip.style.cursor = "default";
         chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
           (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
