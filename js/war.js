@@ -243,19 +243,24 @@ const War = (() => {
     renderLineBoard();
   }
 
-  // ── 전력판 (전위/중위/후위 세로 3열 + 미지정 — 역할 배치자만 대상) ──
+  // ── 전력판 (전위/중위/후위 — 역할 배치자만 대상) ──
+  // 칩은 단순화(직업+닉+별 배지만, 음영·짝 번호 배지 없음). 짝지는 같은 색 테두리 + 나란히 정렬로 표시.
   function lineChip(m) {
     const chip = document.createElement("div");
-    chip.className = "chip wchip" + (m.myth ? " myth" : "") + (m.main > 0 ? ` m${m.main}` : "");
-    chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
-      (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
-      `</div>` +
+    chip.className = "chip wchip";
+    chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span></div>` +
       (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "");
     chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
     chip.querySelector(".cl").textContent = m.cls;
-    chip.title = m.nick;
+    chip.title = m.pair != null ? `${m.nick} · 짝지 ${m.pair}번` : m.nick;
+    if (m.pair != null) chip.style.border = `2px solid ${PAIRC[(m.pair - 1) % PAIRC.length]}`;
     chip.addEventListener("click", (e) => lineClick(e, m.user_id));
     return chip;
+  }
+
+  // 짝지끼리 나란히 오도록 정렬 (짝 번호 오름차순 → 솔로)
+  function pairSort(list) {
+    return [...list].sort((a, b) => (a.pair == null ? 1e9 : a.pair) - (b.pair == null ? 1e9 : b.pair));
   }
 
   function renderLineBoard() {
@@ -265,7 +270,7 @@ const War = (() => {
     wrap.className = "linecols";
     const assigned = members.filter((m) => m.role && visible(m));
     [...LINES, { id: null, name: "미지정" }].forEach((sec) => {
-      const list = assigned.filter((m) => (m.line || null) === sec.id);
+      const list = pairSort(assigned.filter((m) => (m.line || null) === sec.id));
       const col = document.createElement("div");
       col.className = `role lcol l-${sec.id || "none"}`;
       col.innerHTML = `<div class="rh">${sec.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;

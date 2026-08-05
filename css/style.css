@@ -290,13 +290,21 @@ tr.won td{background:var(--green-bg)}
 .warscope .rb.lmid{background:#E8A13C;border-color:#E8A13C}
 .warscope .rb.lrear{background:#5B8DD9;border-color:#5B8DD9}
 .warscope .rb.cur{outline:2px solid #1A1C20;outline-offset:1px}
-/* ── 전력판 (전위/중위/후위 — 역할 보드처럼 세로로 쌓인 가로 행 + 왼쪽 밴드) ── */
+/* ── 전력판 (전위/중위/후위 — 세로로 쌓인 가로 행, 섹터마다 행 전체 색 틴트 + 진한 밴드) ── */
 .warscope .warviewseg{display:inline-flex;margin-bottom:8px;background:#fff}
-.warscope .linecols{display:flex;flex-direction:column;gap:8px}
-.warscope .l-front .rh{background:#FBEBEB;color:#B04A4A}
-.warscope .l-mid .rh{background:#FCF3E3;color:#B57A1F}
-.warscope .l-rear .rh{background:#EAF1FB;color:#3D6DB5}
-.warscope .l-none .rh{background:#F1F3F6;color:#5A6478}
+.warscope .linecols{display:flex;flex-direction:column;gap:12px}
+.warscope .lcol .rbody{background:transparent}
+.warscope .l-front{background:#FCF3F3;border-color:#EDD5D5}
+.warscope .l-front .rh{background:#F0CCCC;color:#8F3232}
+.warscope .l-mid{background:#FCF8EC;border-color:#EBDFC1}
+.warscope .l-mid .rh{background:#F2DFB4;color:#84611A}
+.warscope .l-rear{background:#F3F7FD;border-color:#D4E0EF}
+.warscope .l-rear .rh{background:#C9DBF2;color:#2E5C95}
+.warscope .l-none{background:#F7F8FA;border-color:#E2E4E8}
+.warscope .l-none .rh{background:#E2E5EA;color:#5A6478}
+/* 본인 칩 강조 (전력 현황 탭) — 초록 이중 테두리 + "나" 배지 */
+.warscope .chip.me{box-shadow:0 0 0 2px #12B27C}
+.warscope .chip .mebadge{position:absolute;top:-7px;left:-5px;background:#12B27C;color:#fff;font-size:8px;font-weight:800;border-radius:4px;padding:1.5px 4px;line-height:1;pointer-events:none}
 .warscope .warpop .sep{height:1px;background:#f1f2f4;margin:9px 0}
 .warscope .warpop .act{font-size:12px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--txt2);font-weight:600}
 .warscope .warpop .act:hover{background:#f6f7f9}

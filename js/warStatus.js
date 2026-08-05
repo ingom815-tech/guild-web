@@ -106,6 +106,9 @@ const WarStatus = (() => {
       bar.insertBefore(chip, stat);
     });
 
+    // 본인 칩 강조용 — 로그인한 결사원의 닉네임 (Auth는 const라 window에 안 붙음 — typeof 가드)
+    const myNick = (typeof Auth !== "undefined" && Auth.getUser && (Auth.getUser() || {}).current_id) || null;
+
     // 역할 보드 (읽기 전용 — 시안: 흰 헤더에 역할명·인원·신화 수, 2단 칩(직업 위/닉 아래))
     const board = document.getElementById("wsBoard");
     board.innerHTML = "";
@@ -122,13 +125,15 @@ const WarStatus = (() => {
       if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
       list.forEach((m) => {
         const lv = Number(m.main) || 0;
+        const me = myNick && m.nick === myNick;
         const chip = document.createElement("div");
-        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (lv > 0 ? ` m${lv}` : "");
+        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (lv > 0 ? ` m${lv}` : "") + (me ? " me" : "");
         chip.style.cursor = "default";
         chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
           (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
           `</div>` +
-          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "");
+          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "") +
+          (me ? `<span class="mebadge">나</span>` : "");
         chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
         chip.querySelector(".cl").textContent = m.class || "-";
         chip.title = m.nick;
@@ -138,13 +143,15 @@ const WarStatus = (() => {
     });
     board.appendChild(frag);
 
-    // 전력판 (전위/중위/후위 세로 3열 — 읽기 전용, 섹터 지정된 인원만)
+    // 전력판 (전위/중위/후위 가로 행 — 읽기 전용, 섹터 지정된 인원만)
+    // 칩 단순화: 직업+닉+별 배지만. 짝지 = 같은 색 테두리 + 나란히 정렬(짝 번호순).
     const lb = document.getElementById("wsLineBoard");
     lb.innerHTML = "";
     const lwrap = document.createElement("div");
     lwrap.className = "linecols";
     LINES.forEach((sec) => {
-      const list = mem.filter((m) => m.line === sec.id && visible(m));
+      const list = mem.filter((m) => m.line === sec.id && visible(m))
+        .sort((a, b) => (a.pair == null ? 1e9 : a.pair) - (b.pair == null ? 1e9 : b.pair));
       const col = document.createElement("div");
       col.className = `role lcol l-${sec.id}`;
       col.innerHTML = `<div class="rh">${sec.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;
@@ -152,16 +159,17 @@ const WarStatus = (() => {
       if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
       list.forEach((m) => {
         const lv = Number(m.main) || 0;
+        const me = myNick && m.nick === myNick;
         const chip = document.createElement("div");
-        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (lv > 0 ? ` m${lv}` : "");
+        chip.className = "chip wchip" + (me ? " me" : "");
         chip.style.cursor = "default";
-        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
-          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
-          `</div>` +
-          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "");
+        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span></div>` +
+          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "") +
+          (me ? `<span class="mebadge">나</span>` : "");
         chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
         chip.querySelector(".cl").textContent = m.class || "-";
-        chip.title = m.nick;
+        chip.title = m.pair != null ? `${m.nick} · 짝지 ${m.pair}번` : m.nick;
+        if (m.pair != null) chip.style.border = `2px solid ${PAIRC[(m.pair - 1) % PAIRC.length]}`;
         bodyEl.appendChild(chip);
       });
       lwrap.appendChild(col);
