@@ -285,6 +285,18 @@ tr.won td{background:var(--green-bg)}
 .warscope .rb.mdealer{background:var(--w-mdealer);border-color:var(--w-mdealer)}
 .warscope .rb.pdealer{background:var(--w-pdealer);border-color:var(--w-pdealer)}
 .warscope .rb.support{background:var(--w-support);border-color:var(--w-support)}
+/* 전력판 섹터 선택 버튼 + 현재 섹터 강조 */
+.warscope .rb.lfront{background:#D06060;border-color:#D06060}
+.warscope .rb.lmid{background:#E8A13C;border-color:#E8A13C}
+.warscope .rb.lrear{background:#5B8DD9;border-color:#5B8DD9}
+.warscope .rb.cur{outline:2px solid #1A1C20;outline-offset:1px}
+/* ── 전력판 (전위/중위/후위 — 역할 보드처럼 세로로 쌓인 가로 행 + 왼쪽 밴드) ── */
+.warscope .warviewseg{display:inline-flex;margin-bottom:8px;background:#fff}
+.warscope .linecols{display:flex;flex-direction:column;gap:8px}
+.warscope .l-front .rh{background:#FBEBEB;color:#B04A4A}
+.warscope .l-mid .rh{background:#FCF3E3;color:#B57A1F}
+.warscope .l-rear .rh{background:#EAF1FB;color:#3D6DB5}
+.warscope .l-none .rh{background:#F1F3F6;color:#5A6478}
 .warscope .warpop .sep{height:1px;background:#f1f2f4;margin:9px 0}
 .warscope .warpop .act{font-size:12px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--txt2);font-weight:600}
 .warscope .warpop .act:hover{background:#f6f7f9}

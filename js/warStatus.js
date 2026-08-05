@@ -22,6 +22,13 @@ const WarStatus = (() => {
   // { guilds: { 결사명: { published_at, members: [{nick, class, guild, role, pair, main, myth}] } } }
   let snapshot = null;
   let gFilter = null; // 현재 결사 페이지 (전체 보기 없음)
+  let viewMode = "roles"; // roles | line(전력판)
+  let segWired = false;
+  const LINES = [
+    { id: "front", name: "전위" },
+    { id: "mid", name: "중위" },
+    { id: "rear", name: "후위" },
+  ];
 
   function toast(msg, isErr) {
     const t = document.getElementById("wsToast");
@@ -32,7 +39,21 @@ const WarStatus = (() => {
     toast._t = setTimeout(() => (t.style.display = "none"), 4000);
   }
 
+  function wireSeg() {
+    if (segWired) return;
+    segWired = true;
+    document.querySelectorAll("#wsViewSeg span").forEach((s) => {
+      s.addEventListener("click", () => {
+        viewMode = s.dataset.v;
+        document.querySelectorAll("#wsViewSeg span").forEach((x) => x.classList.toggle("on", x === s));
+        document.getElementById("wsBoard").style.display = viewMode === "roles" ? "" : "none";
+        document.getElementById("wsLineBoard").style.display = viewMode === "line" ? "" : "none";
+      });
+    });
+  }
+
   async function load() {
+    wireSeg();
     let data;
     try {
       data = await Api.getWarStatus();
@@ -116,6 +137,36 @@ const WarStatus = (() => {
       frag.appendChild(col);
     });
     board.appendChild(frag);
+
+    // 전력판 (전위/중위/후위 세로 3열 — 읽기 전용, 섹터 지정된 인원만)
+    const lb = document.getElementById("wsLineBoard");
+    lb.innerHTML = "";
+    const lwrap = document.createElement("div");
+    lwrap.className = "linecols";
+    LINES.forEach((sec) => {
+      const list = mem.filter((m) => m.line === sec.id && visible(m));
+      const col = document.createElement("div");
+      col.className = `role lcol l-${sec.id}`;
+      col.innerHTML = `<div class="rh">${sec.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;
+      const bodyEl = col.querySelector(".rbody");
+      if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+      list.forEach((m) => {
+        const lv = Number(m.main) || 0;
+        const chip = document.createElement("div");
+        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (lv > 0 ? ` m${lv}` : "");
+        chip.style.cursor = "default";
+        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
+          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
+          `</div>` +
+          (lv > 0 ? `<span class="mainstars">${"★".repeat(lv)}</span>` : "");
+        chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
+        chip.querySelector(".cl").textContent = m.class || "-";
+        chip.title = m.nick;
+        bodyEl.appendChild(chip);
+      });
+      lwrap.appendChild(col);
+    });
+    lb.appendChild(lwrap);
 
     // 짝지 편성 스트립 (읽기 전용 — 현재 결사 짝만, 해제 버튼 없음)
     const pairsMap = {};

@@ -20,9 +20,16 @@ const War = (() => {
     return role;
   }
 
-  let members = []; // {user_id, nick, guild, cls, cp, sch, war, myth, role, pair}
+  let members = []; // {user_id, nick, guild, cls, cp, sch, war, myth, role, pair, main, line}
   let guilds = [];
   let gFilter = null; // 현재 결사 페이지 (전체 보기 없음 — 결사별 페이지 4개)
+  let viewMode = "roles"; // roles = 역할 보드 | line = 전력판(전위/중위/후위)
+  const LINES = [
+    { id: "front", name: "전위" },
+    { id: "mid", name: "중위" },
+    { id: "rear", name: "후위" },
+  ];
+  const LNAME = { front: "전위", mid: "중위", rear: "후위" };
   let poolJob = "all";
   let sortMode = "default"; // default | cp | part
   let pairingFrom = null; // 짝지 지정 중인 user_id
@@ -54,6 +61,7 @@ const War = (() => {
         role: m.role ? normRole(m.role, m.class || "-") : null,
         pair: m.pair_no != null ? m.pair_no : null,
         main: Number(m.main) || 0, // 별 0~3
+        line: m.line || null, // 전력판 전위/중위/후위
       }));
       guilds = glist || [];
       publishedMap = data.published || {};
@@ -231,6 +239,93 @@ const War = (() => {
     // ── 카운트 (현재 결사 기준 — 미배치는 빨강 강조) ──
     document.getElementById("warCntDone").textContent = members.filter((m) => m.role && visible(m)).length;
     document.getElementById("warCntLeft").textContent = members.filter((m) => !m.role && visible(m)).length;
+
+    renderLineBoard();
+  }
+
+  // ── 전력판 (전위/중위/후위 세로 3열 + 미지정 — 역할 배치자만 대상) ──
+  function lineChip(m) {
+    const chip = document.createElement("div");
+    chip.className = "chip wchip" + (m.myth ? " myth" : "") + (m.main > 0 ? ` m${m.main}` : "");
+    chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
+      (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
+      `</div>` +
+      (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "");
+    chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
+    chip.querySelector(".cl").textContent = m.cls;
+    chip.title = m.nick;
+    chip.addEventListener("click", (e) => lineClick(e, m.user_id));
+    return chip;
+  }
+
+  function renderLineBoard() {
+    const board = document.getElementById("warLineBoard");
+    board.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.className = "linecols";
+    const assigned = members.filter((m) => m.role && visible(m));
+    [...LINES, { id: null, name: "미지정" }].forEach((sec) => {
+      const list = assigned.filter((m) => (m.line || null) === sec.id);
+      const col = document.createElement("div");
+      col.className = `role lcol l-${sec.id || "none"}`;
+      col.innerHTML = `<div class="rh">${sec.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;
+      const bodyEl = col.querySelector(".rbody");
+      if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+      list.forEach((m) => bodyEl.appendChild(lineChip(m)));
+      wrap.appendChild(col);
+    });
+    board.appendChild(wrap);
+  }
+
+  // 전력판 칩 클릭 → 섹터 선택 팝오버
+  function lineClick(e, uid) {
+    e.stopPropagation();
+    const m = findM(uid);
+    showPop(e.clientX, e.clientY, (pop) => {
+      const h = document.createElement("h4");
+      h.textContent = `${m.nick} — 섹터 선택`;
+      pop.appendChild(h);
+      const grid = document.createElement("div");
+      grid.className = "rbtns";
+      LINES.forEach((sec) => {
+        const b = document.createElement("div");
+        b.className = `rb l${sec.id}` + (m.line === sec.id ? " cur" : "");
+        b.textContent = sec.name;
+        b.addEventListener("click", () => setLine(uid, sec.id));
+        grid.appendChild(b);
+      });
+      pop.appendChild(grid);
+      if (m.pair != null) {
+        const note = document.createElement("div");
+        note.className = "meta";
+        note.style.cssText = "font-size:11px;margin-top:6px";
+        note.textContent = `짝지(${m.pair}번)도 함께 이동합니다`;
+        pop.appendChild(note);
+      }
+      if (m.line) {
+        const off = document.createElement("div");
+        off.className = "act";
+        off.textContent = "섹터 해제 (미지정으로)";
+        off.addEventListener("click", () => setLine(uid, null));
+        pop.appendChild(off);
+      }
+    });
+  }
+
+  // 섹터 지정 — 짝지가 있으면 짝도 같은 섹터로 함께 이동 (낙관적, 저장은 각각)
+  function setLine(uid, line) {
+    closePop();
+    const m = findM(uid);
+    m.line = line;
+    let mate = null;
+    if (m.pair != null) {
+      mate = members.find((x) => x.pair === m.pair && x.user_id !== uid);
+      if (mate) mate.line = line;
+    }
+    render();
+    const ops = [Api.setWarLine(uid, line)];
+    if (mate) ops.push(Api.setWarLine(mate.user_id, line));
+    saveBg(Promise.all(ops), "전력판 저장 실패");
   }
 
   // ── 팝오버 ──
@@ -452,6 +547,15 @@ const War = (() => {
       }
     });
     document.getElementById("warOverlay").addEventListener("click", closePop);
+    // 역할 보드 | 전력판 하위 탭 토글
+    document.querySelectorAll("#warViewSeg span").forEach((s) => {
+      s.addEventListener("click", () => {
+        viewMode = s.dataset.v;
+        document.querySelectorAll("#warViewSeg span").forEach((x) => x.classList.toggle("on", x === s));
+        document.getElementById("warBoard").style.display = viewMode === "roles" ? "" : "none";
+        document.getElementById("warLineBoard").style.display = viewMode === "line" ? "" : "none";
+      });
+    });
     document.getElementById("warPoolJob").addEventListener("change", (e) => {
       poolJob = e.target.value;
       render();

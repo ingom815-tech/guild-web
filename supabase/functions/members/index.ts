@@ -290,7 +290,7 @@ Deno.serve(async (req: Request) => {
     const targetGuild = typeof body.guild === "string" && body.guild ? body.guild : null;
 
     const [rolesRes, memRes, curRes] = await Promise.all([
-      supabase.from("war_roles").select("member_id, role, pair_no, main_level"),
+      supabase.from("war_roles").select("member_id, role, pair_no, main_level, line"),
       supabase.from("members").select("user_id, current_id, guild_name, class, status_check"),
       supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
     ]);
@@ -309,6 +309,7 @@ Deno.serve(async (req: Request) => {
         role: r.role,
         pair: r.pair_no,
         main: r.main_level || 0, // 별 0~3
+        line: r.line || null, // 전력판 전위/중위/후위
         myth: hasMythAqui(m.status_check),
       };
       const arr = perGuild.get(g);
@@ -362,6 +363,25 @@ Deno.serve(async (req: Request) => {
     }
     const { error } = await supabase.from("war_roles").update({ main_level: level }).eq("member_id", uid);
     if (error) return jsonResponse({ error: "메인 지정 저장에 실패했습니다." }, 500);
+    return jsonResponse({ ok: true });
+  }
+
+  // 전력판 섹터 지정 (전위/중위/후위 — null = 해제. 역할 배치자만 대상)
+  if (action === "war_line" && req.method === "POST") {
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "잘못된 요청 본문입니다." }, 400);
+    }
+    const uid = typeof body.user_id === "string" ? body.user_id : "";
+    if (!uid) return jsonResponse({ error: "user_id가 필요합니다." }, 400);
+    const line = body.line === null || body.line === undefined ? null : String(body.line);
+    if (line !== null && !["front", "mid", "rear"].includes(line)) {
+      return jsonResponse({ error: "섹터는 front/mid/rear 중 하나여야 합니다." }, 400);
+    }
+    const { error } = await supabase.from("war_roles").update({ line }).eq("member_id", uid);
+    if (error) return jsonResponse({ error: "전력판 저장에 실패했습니다." }, 500);
     return jsonResponse({ ok: true });
   }
 
@@ -535,7 +555,7 @@ Deno.serve(async (req: Request) => {
           .neq("role", "관리자")
           .order("current_id", { ascending: true }),
         supabase.from("season_participation").select("user_id, participation_rate").eq("season", season),
-        supabase.from("war_roles").select("member_id, role, pair_no, main_level"),
+        supabase.from("war_roles").select("member_id, role, pair_no, main_level, line"),
         supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
       ]);
       if (memRes.error) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
@@ -570,6 +590,7 @@ Deno.serve(async (req: Request) => {
             role: wr ? wr.role : null,
             pair_no: wr ? wr.pair_no : null,
             main: wr ? wr.main_level || 0 : 0, // 별 0~3
+            line: wr ? wr.line || null : null, // 전력판 전위/중위/후위
           };
         }),
       });

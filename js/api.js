@@ -129,6 +129,7 @@ const Api = (() => {
     clearWarPair: (user_id) => call("members", { method: "POST", query: { action: "war_unpair" }, body: { user_id } }),
     publishWar: (guild) => call("members", { method: "POST", query: { action: "war_publish" }, body: { guild: guild || null } }),
     setWarMain: (user_id, level) => call("members", { method: "POST", query: { action: "war_main" }, body: { user_id, level } }),
+    setWarLine: (user_id, line) => call("members", { method: "POST", query: { action: "war_line" }, body: { user_id, line } }),
     // 결사원 공개용 전력 현황 (전 회원 조회 가능 — dashboard 함수 경유)
     getWarStatus: () => call("dashboard", { method: "GET", query: { view: "war_status" } }),
     updateGuild: (id, name) =>
