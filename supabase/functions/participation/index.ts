@@ -82,6 +82,17 @@ async function getCurrentSeason(): Promise<number> {
   return 1;
 }
 
+// 점수 재계산 호출 — 간헐적 타임아웃 대비 1회 자동 재시도. err가 null이면 성공.
+async function recalcScores(season: number): Promise<{ err: string | null; total: number }> {
+  let lastErr = "재계산 실패";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await supabase.rpc("recalc_participation_scores", { p_season: season });
+    if (!error) return { err: null, total: (data as number) ?? 0 };
+    lastErr = error.message || lastErr;
+  }
+  return { err: lastErr, total: 0 };
+}
+
 async function setSetting(key: string, value: string): Promise<boolean> {
   const { error } = await supabase.from("app_settings").upsert({ key, value }, { onConflict: "key" });
   return !error;
@@ -138,7 +149,7 @@ Deno.serve(async (req: Request) => {
     if (op === "close_season") {
       const season = await getCurrentSeason();
       // 마감 직전 최종 재계산으로 season_participation 스냅샷 확정
-      const { error: rpcErr } = await supabase.rpc("recalc_participation_scores", { p_season: season });
+      const { err: rpcErr } = await recalcScores(season);
       if (rpcErr) return jsonResponse({ error: "마감 전 재계산에 실패했습니다." }, 500);
       if (!(await setSetting(`season_${season}_closed`, "true"))) {
         return jsonResponse({ error: "마감 플래그 저장에 실패했습니다." }, 500);
@@ -218,8 +229,9 @@ Deno.serve(async (req: Request) => {
       .eq("log_id", logId);
     await supabase.from("participation_logs").update({ total_participants: newCount ?? 0 }).eq("id", logId);
 
-    await supabase.rpc("recalc_participation_scores", { p_season: season });
-    return jsonResponse({ ok: true, total_participants: newCount ?? 0 });
+    // 재계산 (1회 재시도) — 실패해도 참석 변경 자체는 저장됨을 프론트에 알림
+    const { err: recalcErr } = await recalcScores(season);
+    return jsonResponse({ ok: true, total_participants: newCount ?? 0, recalc_failed: !!recalcErr });
   }
 
   // ── 조회 ──
@@ -417,9 +429,9 @@ Deno.serve(async (req: Request) => {
 
     let totalSessions = 0;
     if (inserted > 0) {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc("recalc_participation_scores", { p_season: season });
-      if (rpcErr) return jsonResponse({ error: "점수 재계산에 실패했습니다. (로그는 저장됨)" }, 500);
-      totalSessions = rpcData ?? 0;
+      const { err: rpcErr, total } = await recalcScores(season);
+      if (rpcErr) return jsonResponse({ error: "점수 재계산에 실패했습니다. (로그는 저장됨 — 다음 등록/보정 때 자동 반영)" }, 500);
+      totalSessions = total;
     }
 
     return jsonResponse({ inserted, skipped_duplicates: skipped, errors, total_sessions: totalSessions }, 201);
@@ -442,8 +454,8 @@ Deno.serve(async (req: Request) => {
     if (!data) return jsonResponse({ error: "해당 로그를 찾을 수 없습니다." }, 404);
 
     const season = await getCurrentSeason();
-    await supabase.rpc("recalc_participation_scores", { p_season: season });
-    return jsonResponse({ ok: true });
+    const { err: recalcErr } = await recalcScores(season);
+    return jsonResponse({ ok: true, recalc_failed: !!recalcErr });
   }
 
   return jsonResponse({ error: "지원하지 않는 메서드입니다." }, 405);

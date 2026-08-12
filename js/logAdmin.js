@@ -81,8 +81,9 @@ const LogAdmin = (() => {
           "참여 로그 삭제",
           `[${l.activity_type}] ${l.location || "-"} (${when}, ${l.total_participants ?? 0}명) 로그를 삭제할까요?\n출석 기록이 제거되고 이번 시즌 참여점수가 재계산됩니다.`,
           async () => {
-            await Api.deleteParticipationLog(l.id);
-            toast("🗑️ 참여 로그 삭제 + 점수 재계산 완료");
+            const res = await Api.deleteParticipationLog(l.id);
+            if (res && res.recalc_failed) toast("⚠ 로그는 삭제됐지만 점수 재계산이 실패했습니다 — 다음 등록/보정 때 자동 반영됩니다.", true);
+            else toast("🗑️ 참여 로그 삭제 + 점수 재계산 완료");
             await loadPart();
           }
         );
@@ -150,7 +151,8 @@ const LogAdmin = (() => {
             : "미매칭 이름이라 점수 변화는 없습니다. (명단 정리)";
           openConfirm("참석자 제거", `"${m.member_name}"을(를) 이 세션 명단에서 제거할까요?\n${scoreNote}`, async () => {
             const res = await Api.removeLogMember(l.id, m.user_id ? { user_id: m.user_id } : { member_name: m.member_name });
-            toast(`✓ 제거 완료 — 점수 재계산됨`);
+            if (res.recalc_failed) toast(`⚠ 제거는 저장됐지만 점수 재계산이 실패했습니다 — 다음 등록/보정 때 자동 반영됩니다.`, true);
+            else toast(`✓ 제거 완료 — 점수 재계산됨`);
             await refresh(res.total_participants);
           }, "제거");
         });
@@ -207,7 +209,8 @@ const LogAdmin = (() => {
       const name = sel.options[sel.selectedIndex].textContent;
       openConfirm("참석자 추가", `"${name}"을(를) 이 세션 참석자로 추가할까요?\n참여 횟수 +1 · 참여점수 +100점이 즉시 재계산됩니다.`, async () => {
         const res = await Api.addLogMember(l.id, sel.value);
-        toast(`✓ ${name} 참석 추가 — 점수 재계산됨`);
+        if (res.recalc_failed) toast(`⚠ ${name} 추가는 저장됐지만 점수 재계산이 실패했습니다 — 다음 등록/보정 때 자동 반영됩니다.`, true);
+        else toast(`✓ ${name} 참석 추가 — 점수 재계산됨`);
         await refresh(res.total_participants);
       }, "추가", false);
     });
