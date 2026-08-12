@@ -83,12 +83,14 @@ async function getCurrentSeason(): Promise<number> {
 }
 
 // 점수 재계산 호출 — 간헐적 타임아웃 대비 1회 자동 재시도. err가 null이면 성공.
+// 실패 시 에러 상세(code/message/details/hint)를 로그와 반환값에 남김 (원인 진단용).
 async function recalcScores(season: number): Promise<{ err: string | null; total: number }> {
   let lastErr = "재계산 실패";
   for (let attempt = 0; attempt < 2; attempt++) {
     const { data, error } = await supabase.rpc("recalc_participation_scores", { p_season: season });
     if (!error) return { err: null, total: (data as number) ?? 0 };
-    lastErr = error.message || lastErr;
+    console.error("recalc_participation_scores 실패:", JSON.stringify(error));
+    lastErr = [error.code, error.message, error.details, error.hint].filter(Boolean).join(" | ") || lastErr;
   }
   return { err: lastErr, total: 0 };
 }
@@ -229,9 +231,14 @@ Deno.serve(async (req: Request) => {
       .eq("log_id", logId);
     await supabase.from("participation_logs").update({ total_participants: newCount ?? 0 }).eq("id", logId);
 
-    // 재계산 (1회 재시도) — 실패해도 참석 변경 자체는 저장됨을 프론트에 알림
+    // 재계산 (1회 재시도) — 실패해도 참석 변경 자체는 저장됨을 프론트에 알림 (+에러 상세)
     const { err: recalcErr } = await recalcScores(season);
-    return jsonResponse({ ok: true, total_participants: newCount ?? 0, recalc_failed: !!recalcErr });
+    return jsonResponse({
+      ok: true,
+      total_participants: newCount ?? 0,
+      recalc_failed: !!recalcErr,
+      recalc_error: recalcErr || undefined,
+    });
   }
 
   // ── 조회 ──

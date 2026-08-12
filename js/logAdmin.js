@@ -209,7 +209,7 @@ const LogAdmin = (() => {
       const name = sel.options[sel.selectedIndex].textContent;
       openConfirm("참석자 추가", `"${name}"을(를) 이 세션 참석자로 추가할까요?\n참여 횟수 +1 · 참여점수 +100점이 즉시 재계산됩니다.`, async () => {
         const res = await Api.addLogMember(l.id, sel.value);
-        if (res.recalc_failed) toast(`⚠ ${name} 추가는 저장됐지만 점수 재계산이 실패했습니다 — 다음 등록/보정 때 자동 반영됩니다.`, true);
+        if (res.recalc_failed) toast(`⚠ ${name} 추가는 저장됐지만 점수 재계산이 실패했습니다${res.recalc_error ? ` (${res.recalc_error})` : ""} — 다음 등록/보정 때 자동 반영됩니다.`, true);
         else toast(`✓ ${name} 참석 추가 — 점수 재계산됨`);
         await refresh(res.total_participants);
       }, "추가", false);

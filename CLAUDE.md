@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=73** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=74** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -88,7 +88,8 @@
 | 4d0a543 | 드랍 등록 "기본 룻자"를 운영진/관리자 드롭다운으로 전환 (inventory `loadStaffLooters` — 드랍 화면 진입 시 1회 로드·캐시, 가나다순, "선택 안 함" 기본) (v=70) |
 | b560ebe | 드랍 별칭 확장: 전승서/계율서→설계자의 계율 조각, 녹색·황색·적색·청색별심→별빛 심연석, 별심조각→별빛심연석조각 (전부 확정 매칭) (v=71) |
 | 8f18494 | 로그 관리 확인 모달 버튼 라벨 수정 — 참석자 추가는 초록 "추가", 제거는 "제거", 삭제류는 기존 "삭제 (롤백 포함)" (openConfirm에 okLabel/danger 인자) (v=72) |
-| (최신) | 참여 재계산 신뢰성: participation 함수 `recalcScores` 헬퍼(1회 자동 재시도, 참석 보정·로그 삭제·대량 등록·시즌 마감 공통) + 실패 시 `recalc_failed` 응답 → 프론트가 "저장됐지만 재계산 실패" 경고 토스트 표시 (함수 재배포 완료) — **현재 배포 버전 (v=73)** |
+| 672c5fc | 참여 재계산 신뢰성: participation 함수 `recalcScores` 헬퍼(1회 자동 재시도, 참석 보정·로그 삭제·대량 등록·시즌 마감 공통) + 실패 시 `recalc_failed` 응답 → 프론트가 "저장됐지만 재계산 실패" 경고 토스트 표시 (함수 재배포) (v=73) |
+| (최신) | **API 경유 재계산 상시 실패 근본 수정(0026)** — safeupdate가 WHERE 없는 `UPDATE members SET contribution_score...`를 차단(21000)해 0018 이후 앱 호출 재계산이 전부 실패했었음(SQL Editor는 통과). WHERE 추가 + service_role GRANT 보강. 진단 로그·토스트에 에러 코드 표시(recalc_error) 유지 — **현재 배포 버전 (v=74)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 
