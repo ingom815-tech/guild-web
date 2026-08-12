@@ -61,7 +61,7 @@ const Dashboard = (() => {
     const k = data.kpi;
     const grid = document.getElementById("kpiGrid");
     grid.className = "kpis"; // 전투력 전원 공개 — KPI 4칸 공통
-    const rate = k.avg_participation_rate != null ? `${k.avg_participation_rate}%` : "-";
+    const rate = k.avg_participation_rate != null ? `${Math.round(k.avg_participation_rate)}%` : "-";
 
     let html = `<div class="kpi"><div class="lb">전체 인원</div><div class="v">${k.total_members}</div><div class="sub">${k.guild_count}개 결사</div></div>`;
     if (k.avg_power != null) {
@@ -282,8 +282,8 @@ const Dashboard = (() => {
     const bodyHtml = slice
       .map((m, i) => {
         const isStaffRole = m.role === "운영진" || m.role === "관리자";
-        const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
-        const rateHtml = rate; // 저조 참여율 빨간 강조 표시는 사용자 요청으로 비활성화
+        const rate = m.participation_rate != null ? `${Math.round(m.participation_rate)}%` : "—";
+        const rateHtml = rate; // 저조 참여율 빨간 강조 표시는 사용자 요청으로 비활성화 · 소수점 반올림 표시
         const jaengTitle = `쟁 ${m.jaeng_count || 0}회 — 오전 ${m.jaeng_morning || 0} · 오후 ${m.jaeng_evening || 0} · 새벽 ${m.jaeng_dawn || 0}`;
         return `<tr>
           <td class="num gtext" style="padding-right:22px">${i + 1}</td>
@@ -293,7 +293,7 @@ const Dashboard = (() => {
           <td class="num">${m.level ?? 0}</td>
           <td class="num"><b>${m.power != null ? m.power.toLocaleString() : "—"}</b></td>
           <td class="num">${rateHtml}</td>
-          <td class="num" title="${jaengTitle}">${m.jaeng_rate != null ? `${m.jaeng_rate}%` : "—"}</td>
+          <td class="num" title="${jaengTitle}">${m.jaeng_rate != null ? `${Math.round(m.jaeng_rate)}%` : "—"}</td>
           <td class="num">${(m.contribution_score ?? 0).toLocaleString()}</td>
         </tr>`;
       })

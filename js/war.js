@@ -128,7 +128,7 @@ const War = (() => {
   function visible(m) {
     return memGuild(m) === gFilter;
   }
-  const fmtRate = (v) => (v != null ? `${v}%` : "—");
+  const fmtRate = (v) => (v != null ? `${Math.round(v)}%` : "—");
 
   function render() {
     // ── B파트: 미배치 풀 (결사+직업 필터, 정렬) ──

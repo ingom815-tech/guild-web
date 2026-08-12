@@ -213,15 +213,24 @@ const LogParser = (() => {
         let mr = tryMatchItem(sname, ctx);
         let qty = 1;
         let outName = sname;
-        // 약식: 수량이 공백 없이 붙은 경우 ("별심조각5") — 전체 라인 매칭 실패 시 끝 숫자를 수량으로 분리 재시도.
-        // "특화5" 같은 로마자 등급 별칭은 위 tryMatchItem(numeralAlias)이 먼저 잡으므로 안전.
-        const tail = !mr ? line.match(/^(.+?)(\d+)개?$/) : null;
+        // 약식: 수량이 공백 없이 붙은 경우 ("별심조각5", "신화아퀴조각상자3개").
+        // 끝 숫자를 떼어낸 이름이 정확 일치(별칭 포함)하면 그쪽을 우선 — 전체 라인이
+        // 퍼지 부분일치로 수량 1로 잡히는 것 방지. "특화5"(로마자 등급 별칭)는 떼어낸
+        // "특화"가 정확 일치가 아니라서 기존 numeralAlias 매칭이 유지됨.
+        const tail = line.match(/^(.+?)(\d+)개?$/);
         if (tail) {
           const stem = tail[1].trim();
           const mr2 = tryMatchItem(stem, ctx);
-          qty = parseInt(tail[2], 10) || 1;
-          outName = stem;
-          if (mr2) mr = mr2;
+          const stemExact = mr2 &&
+            mr2.item_name.replace(/ /g, "").toLowerCase() === resolveItemAlias(stem).replace(/ /g, "").toLowerCase();
+          if (stemExact || (!mr && mr2)) {
+            mr = mr2;
+            qty = parseInt(tail[2], 10) || 1;
+            outName = stem;
+          } else if (!mr && !mr2) {
+            qty = parseInt(tail[2], 10) || 1;
+            outName = stem;
+          }
         }
         if (mr) {
           matched.push(toMatchedEntry(mr, qty, outName, defaultLooter, null, null, false));
@@ -235,10 +244,13 @@ const LogParser = (() => {
 
   // strictFuzzy: 레이드 로그 형식은 원본 app.py에서 대소문자/공백 무시 없는 엄격 비교(!=)를 쓰고,
   // 단순 형식은 공백 제거 + 대소문자 무시 비교를 쓴다 (두 분기의 원본 규칙이 서로 다름 — 그대로 재현).
+  // 단, 별칭 사전(ITEM_ALIASES)을 거쳐 품목명과 일치하는 경우는 확정 매칭으로 취급(유사매칭 아님).
   function toMatchedEntry(mr, qty, logName, looter, dropDate, bossName, strictFuzzy) {
+    const canon = resolveItemAlias(logName).replace(/ /g, "").toLowerCase();
+    const aliasExact = mr.item_name.replace(/ /g, "").toLowerCase() === canon;
     const fuzzy = strictFuzzy
-      ? mr.item_name !== logName
-      : mr.item_name.replace(/ /g, "").toLowerCase() !== logName.replace(/ /g, "").toLowerCase();
+      ? mr.item_name !== logName && !aliasExact
+      : !aliasExact;
     return {
       item_name: mr.item_name,
       grade: mr.grade,
