@@ -152,7 +152,7 @@ const LogAdmin = (() => {
             const res = await Api.removeLogMember(l.id, m.user_id ? { user_id: m.user_id } : { member_name: m.member_name });
             toast(`✓ 제거 완료 — 점수 재계산됨`);
             await refresh(res.total_participants);
-          });
+          }, "제거");
         });
         chip.appendChild(x);
         line.appendChild(chip);
@@ -209,7 +209,7 @@ const LogAdmin = (() => {
         const res = await Api.addLogMember(l.id, sel.value);
         toast(`✓ ${name} 참석 추가 — 점수 재계산됨`);
         await refresh(res.total_participants);
-      });
+      }, "추가", false);
     });
     addRow.appendChild(sel);
     addRow.appendChild(addBtn);
@@ -282,12 +282,15 @@ const LogAdmin = (() => {
     );
   }
 
-  // ── 확인 모달 ──
-  function openConfirm(title, msg, action) {
+  // ── 확인 모달 ── (okLabel/danger 미지정 시 기존 삭제용 기본값 유지)
+  function openConfirm(title, msg, action, okLabel, danger) {
     pendingAction = action;
     document.getElementById("logAdmConfirmTitle").textContent = title;
     document.getElementById("logAdmConfirmMsg").textContent = msg;
     document.getElementById("logAdmConfirmMsg").style.whiteSpace = "pre-line";
+    const ok = document.getElementById("logAdmOkBtn");
+    ok.textContent = okLabel || "삭제 (롤백 포함)";
+    ok.className = "btn sm" + (danger === false ? "" : " danger");
     document.getElementById("logAdmConfirmBackdrop").classList.add("on");
   }
 
