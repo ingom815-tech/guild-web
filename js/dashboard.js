@@ -283,7 +283,7 @@ const Dashboard = (() => {
       .map((m, i) => {
         const isStaffRole = m.role === "운영진" || m.role === "관리자";
         const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
-        const rateHtml = m.participation_rate != null && m.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        const rateHtml = rate; // 저조 참여율 빨간 강조 표시는 사용자 요청으로 비활성화
         const jaengTitle = `쟁 ${m.jaeng_count || 0}회 — 오전 ${m.jaeng_morning || 0} · 오후 ${m.jaeng_evening || 0} · 새벽 ${m.jaeng_dawn || 0}`;
         return `<tr>
           <td class="num gtext" style="padding-right:22px">${i + 1}</td>
