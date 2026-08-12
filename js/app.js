@@ -29,7 +29,10 @@ const Tabs = (() => {
       Inventory.load();
       Inventory.loadItemMaster();
     }
-    if (id === "drop") Inventory.loadItemMaster();
+    if (id === "drop") {
+      Inventory.loadItemMaster();
+      Inventory.loadStaffLooters();
+    }
     if (id === "members") Members.open(); // 캐시 진입점 — 수정 액션이 load()로 갱신
     if (id === "treasury") Treasury.load();
     if (id === "dashboard") Dashboard.load();

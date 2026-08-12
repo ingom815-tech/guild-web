@@ -38,6 +38,38 @@ const Inventory = (() => {
     }
   }
 
+  // 기본 룻자 드롭다운 — 운영진/관리자 닉네임 목록 (드랍 등록 화면 진입 시 1회 로드)
+  let staffLootersLoaded = false;
+  async function loadStaffLooters() {
+    if (staffLootersLoaded) return;
+    const sel = document.getElementById("logDefaultLooter");
+    if (!sel) return;
+    let members;
+    try {
+      members = (await Api.listMembers()) || [];
+    } catch (e) {
+      return; // 실패 시 다음 진입 때 재시도
+    }
+    const staff = members
+      .filter((m) => m.role === "운영진" || m.role === "관리자")
+      .map((m) => m.current_id || m.user_id)
+      .sort((a, b) => a.localeCompare(b, "ko"));
+    const cur = sel.value;
+    sel.innerHTML = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "선택 안 함";
+    sel.appendChild(none);
+    for (const nick of staff) {
+      const o = document.createElement("option");
+      o.value = nick;
+      o.textContent = nick;
+      sel.appendChild(o);
+    }
+    if (cur && staff.includes(cur)) sel.value = cur;
+    staffLootersLoaded = true;
+  }
+
   function autoFillFromItemMaster(nameInputId, gradeSelectId, categorySelectId) {
     const nameInput = document.getElementById(nameInputId);
     nameInput.addEventListener("input", () => {
@@ -641,5 +673,5 @@ const Inventory = (() => {
     autoFillFromItemMaster("editName", "editGrade", "editCategory");
   }
 
-  return { init, load, filter, setGrade, loadItemMaster, GRADES, CATEGORIES };
+  return { init, load, filter, setGrade, loadItemMaster, loadStaffLooters, GRADES, CATEGORIES };
 })();
