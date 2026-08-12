@@ -89,7 +89,8 @@
 | b560ebe | 드랍 별칭 확장: 전승서/계율서→설계자의 계율 조각, 녹색·황색·적색·청색별심→별빛 심연석, 별심조각→별빛심연석조각 (전부 확정 매칭) (v=71) |
 | 8f18494 | 로그 관리 확인 모달 버튼 라벨 수정 — 참석자 추가는 초록 "추가", 제거는 "제거", 삭제류는 기존 "삭제 (롤백 포함)" (openConfirm에 okLabel/danger 인자) (v=72) |
 | 672c5fc | 참여 재계산 신뢰성: participation 함수 `recalcScores` 헬퍼(1회 자동 재시도, 참석 보정·로그 삭제·대량 등록·시즌 마감 공통) + 실패 시 `recalc_failed` 응답 → 프론트가 "저장됐지만 재계산 실패" 경고 토스트 표시 (함수 재배포) (v=73) |
-| (최신) | **API 경유 재계산 상시 실패 근본 수정(0026)** — safeupdate가 WHERE 없는 `UPDATE members SET contribution_score...`를 차단(21000)해 0018 이후 앱 호출 재계산이 전부 실패했었음(SQL Editor는 통과). WHERE 추가 + service_role GRANT 보강. 진단 로그·토스트에 에러 코드 표시(recalc_error) 유지 — **현재 배포 버전 (v=74)** |
+| (최신) | **API 경유 재계산 상시 실패 근본 수정(0026)** — safeupdate가 WHERE 없는 `UPDATE members SET contribution_score...`를 차단(21000)해 0018 이후 앱 호출 재계산이 전부 실패했었음(SQL Editor는 통과). WHERE 추가 + service_role GRANT 보강. 진단 로그·토스트에 에러 코드 표시(recalc_error) 유지 (v=74) |
+| (최신) | 재고 dedup 규칙 변경: 품목명만 → **품목명+룻자** (룻자 다르면 별도 행 — 룻자별 물량 관리, inventory 함수 재배포). 기존 합산분은 재고 DELETE 후 룻자별 재등록으로 정리 — **현재 배포 버전 (v=74, 프론트 변경 없음)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

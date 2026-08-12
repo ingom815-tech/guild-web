@@ -126,19 +126,21 @@ function normalizeDropDate(raw: string | null): string | null {
 }
 
 /**
- * 동일 item_name + status='재고' 행이 있으면 수량만 합산(UPDATE), 없으면 새로 등록(INSERT).
- * 기존 앱의 dedup 규칙을 그대로 재현. 단일 등록·배치 등록(텍스트 로그 파싱) 양쪽에서 재사용.
+ * 동일 item_name + 동일 룻자 + status='재고' 행이 있으면 수량만 합산(UPDATE), 없으면 새로 등록(INSERT).
+ * 룻자가 다르면 별도 행 유지 — 누가 몇 개 룻했는지 관리하기 위함 (2026-08-13 사용자 요청으로
+ * 기존 "품목명만" dedup에서 변경). 단일 등록·배치 등록(텍스트 로그 파싱) 양쪽에서 재사용.
  */
 async function upsertInventoryItem(
   item: InventoryPayload,
   extra: InventoryExtra,
 ): Promise<{ data?: unknown; error?: boolean; wasUpdate?: boolean }> {
-  const { data: existing, error: findErr } = await supabase
+  let findQ = supabase
     .from("inventory")
     .select("id, quantity")
     .eq("item_name", item.item_name)
-    .eq("status", "재고")
-    .maybeSingle();
+    .eq("status", "재고");
+  findQ = item.looter ? findQ.eq("looter", item.looter) : findQ.is("looter", null);
+  const { data: existing, error: findErr } = await findQ.limit(1).maybeSingle();
   if (findErr) return { error: true };
 
   if (existing) {
