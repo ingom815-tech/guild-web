@@ -152,6 +152,39 @@ Deno.serve(async (req: Request) => {
     .filter((m) => m.role !== "관리자")
     .map((m) => ({ ...m, participation_rate: rateMap.get(m.user_id) ?? null }));
 
+  // ── 결사별 쟁 컨텐츠 모수 (쟁참여율 분모 = 결사가 참여한 쟁/긴급 세션 + 유니/결던 전체) ──
+  let jaengPool: { guild: string; jaeng: number; total: number }[] = [];
+  {
+    const [jaengLogsRes, uniRes, guildsRes] = await Promise.all([
+      supabase.from("participation_logs").select("id").eq("season", season).in("activity_type", ["쟁", "긴급"]),
+      supabase.from("participation_logs").select("id", { count: "exact", head: true }).eq("season", season).in("activity_type", ["유니", "결던"]),
+      supabase.from("guilds").select("name").order("sort_order", { ascending: true }),
+    ]);
+    const jaengIds = (jaengLogsRes.data || []).map((l) => l.id as number);
+    const uniCnt = uniRes.count ?? 0;
+    const guildOf = new Map((allMembers || []).map((m) => [m.user_id as string, (m.guild_name as string) || ""]));
+    const perGuild = new Map<string, Set<number>>();
+    if (jaengIds.length) {
+      const { data: plmRows } = await supabase
+        .from("participation_log_members")
+        .select("log_id, user_id")
+        .in("log_id", jaengIds)
+        .not("user_id", "is", null);
+      for (const r of plmRows || []) {
+        const g = guildOf.get(r.user_id as string) || "";
+        if (!g) continue;
+        if (!perGuild.has(g)) perGuild.set(g, new Set());
+        perGuild.get(g)!.add(r.log_id as number);
+      }
+    }
+    const names = (guildsRes.data || []).map((g) => g.name as string);
+    for (const g of perGuild.keys()) if (!names.includes(g)) names.push(g);
+    jaengPool = names.map((g) => {
+      const j = perGuild.get(g)?.size || 0;
+      return { guild: g, jaeng: j, total: j + uniCnt };
+    });
+  }
+
   // ── KPI ──
   const totalMembers = members.length;
   const guildCount = new Set(members.map((m) => m.guild_name).filter((g) => g != null && g !== "")).size;
@@ -224,6 +257,7 @@ Deno.serve(async (req: Request) => {
     avg_participation_rate: avgRate,
     avg_contribution: avgContribution,
     avg_power: avgPower, // 전원 공개
+    jaeng_pool: jaengPool, // 결사별 쟁 컨텐츠 모수 (쟁참여율 분모)
   };
   if (staff) {
     kpi.pending_requests = pendingRequests;

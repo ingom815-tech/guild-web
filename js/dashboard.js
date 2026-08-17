@@ -70,6 +70,20 @@ const Dashboard = (() => {
     // 데이/나이트 조 지표는 !쟁 개편으로 폐지 — 평균 참여율은 전체 값만
     html += `<div class="kpi"><div class="lb">평균 참여율</div><div class="v">${rate}</div><div class="sub">쟁 제외 기준</div></div>`;
     html += `<div class="kpi"><div class="lb">평균 기여점수</div><div class="v">${(k.avg_contribution || 0).toLocaleString()}</div><div class="sub">&nbsp;</div></div>`;
+    // 결사별 쟁 컨텐츠 모수 — 쟁참여율 분모(결사가 참여한 쟁 세션 + 유니·결던)를 공개해
+    // "모수가 큰 결사는 그만큼 많이 뛰었다"는 맥락을 함께 보여준다
+    if (Array.isArray(k.jaeng_pool) && k.jaeng_pool.length) {
+      const esc = (s) => String(s).replace(/[<>&"]/g, "");
+      const pool = k.jaeng_pool
+        .map((p) => `<span style="margin-right:14px;white-space:nowrap">${esc(p.guild)} <b>${p.total}</b></span>`)
+        .join("");
+      const tip = esc(k.jaeng_pool.map((p) => `${p.guild}: 쟁 ${p.jaeng} + 유니·결던 ${p.total - p.jaeng}`).join(" / "));
+      // 4칸 그리드 아래 한 줄 전체를 쓰는 가로 스트립 (혼자 줄바꿈되어 빈 칸 생기는 것 방지)
+      html += `<div class="kpi" title="${tip}" style="grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 18px">` +
+        `<span class="lb" style="margin:0">결사별 쟁 진행 횟수</span>` +
+        `<span style="font-size:13.5px;font-weight:700">${pool}</span>` +
+        `<span class="sub" style="margin-left:auto">쟁참여율 계산 기준</span></div>`;
+    }
     grid.innerHTML = html;
   }
 
