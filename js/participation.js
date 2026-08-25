@@ -163,6 +163,8 @@ const Participation = (() => {
       jaeng_rate: m.jrates.length ? m.jrates.reduce((s, v) => s + v, 0) / m.jrates.length : null,
     }));
     rows = rows.filter((r) => ss.guildSel.has(r.guild));
+    const q = (document.getElementById("partSsSearch").value || "").trim().toLowerCase();
+    if (q) rows = rows.filter((r) => (r.current_id || r.user_id || "").toLowerCase().includes(q));
     rows.sort((a, b) => (sortMode === "power"
       ? (b.power || 0) - (a.power || 0)
       : (b.participation_score || 0) - (a.participation_score || 0)));
