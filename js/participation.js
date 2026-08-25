@@ -43,6 +43,7 @@ const Participation = (() => {
     renderSeason();
     renderStatusTable();
     renderLogs();
+    renderNickHistory(); // 닉 이력 카드 — 결사 열은 loadSeasonScores의 meta 로드 후 재렌더로 채워짐
     loadGuildFilter(); // 결사 필터 칩 — 실패해도 나머지 화면 유지
     loadSeasonScores(); // 시즌별 기록은 별도 조회 — 실패해도 나머지 화면은 유지
   }
@@ -90,6 +91,35 @@ const Participation = (() => {
     if (!ss.guildSel.size) ss.guilds.forEach((g) => ss.guildSel.add(g));
     renderSeasonFilters();
     await renderSeasonScores();
+    renderNickHistory(); // meta(결사) 로드 후 다시 그려 결사 열 채움
+  }
+
+  // ── 닉네임 변경 이력 (member_nick_history — 검색 가능) ──
+  function renderNickHistory() {
+    if (!status) return;
+    const q = (document.getElementById("nickHistSearch").value || "").trim().toLowerCase();
+    const memMap = new Map((status.members || []).map((m) => [m.user_id, m.current_id || m.user_id]));
+    const meta = ss.meta || new Map();
+    let rows = (status.nick_history || []).map((h) => ({
+      old: h.nickname,
+      cur: memMap.get(h.user_id) || h.user_id,
+      guild: meta.get(h.user_id) ? meta.get(h.user_id).guild : "-",
+      uid: h.user_id,
+    }));
+    if (q) rows = rows.filter((r) => [r.old, r.cur, r.uid].some((v) => String(v || "").toLowerCase().includes(q)));
+    rows.sort((a, b) => a.cur.localeCompare(b.cur, "ko") || a.old.localeCompare(b.old, "ko"));
+    document.getElementById("nickHistEmpty").style.display = rows.length ? "none" : "block";
+    const table = document.getElementById("nickHistTable");
+    table.innerHTML =
+      `<tr><th>이전 닉네임</th><th>현재 닉네임</th><th>결사</th><th>아이디</th></tr>` +
+      rows.map(() => `<tr><td><b class="o"></b></td><td class="c"></td><td class="gtext g"></td><td class="gtext u"></td></tr>`).join("");
+    const trs = table.querySelectorAll("tr");
+    rows.forEach((r, i) => {
+      trs[i + 1].querySelector(".o").textContent = r.old;
+      trs[i + 1].querySelector(".c").textContent = r.cur;
+      trs[i + 1].querySelector(".g").textContent = r.guild;
+      trs[i + 1].querySelector(".u").textContent = r.uid;
+    });
   }
 
   function ssChip(label, on, onClick) {
@@ -162,12 +192,17 @@ const Participation = (() => {
       participation_rate: m.rates.length ? m.rates.reduce((s, v) => s + v, 0) / m.rates.length : null,
       jaeng_rate: m.jrates.length ? m.jrates.reduce((s, v) => s + v, 0) / m.jrates.length : null,
     }));
+    // 기여점수 = 표시 중인(합산) 참여점수 × 0.7 + 전투력 × 0.3 (공식 불변)
+    rows.forEach((r) => {
+      r.contribution = Math.round((r.participation_score || 0) * 0.7 + (r.power || 0) * 0.3);
+    });
     rows = rows.filter((r) => ss.guildSel.has(r.guild));
     const q = (document.getElementById("partSsSearch").value || "").trim().toLowerCase();
     if (q) rows = rows.filter((r) => (r.current_id || r.user_id || "").toLowerCase().includes(q));
     rows.sort((a, b) => {
       if (sortMode === "power") return (b.power || 0) - (a.power || 0);
       if (sortMode === "jaeng") return (b.jaeng_rate ?? -1) - (a.jaeng_rate ?? -1); // 쟁률 없음(—)은 맨 뒤
+      if (sortMode === "contrib") return (b.contribution || 0) - (a.contribution || 0);
       return (b.participation_score || 0) - (a.participation_score || 0);
     });
 
@@ -179,7 +214,7 @@ const Participation = (() => {
 
     document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
     const table = document.getElementById("partSeasonTable");
-    let html = `<tr><th>닉네임</th><th>결사</th><th>직업</th><th class="num">전투력</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th></tr>`;
+    let html = `<tr><th>닉네임</th><th>결사</th><th>직업</th><th class="num">전투력</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
     html += rows
       .map((r) => {
         const rateV = r.participation_rate != null ? Math.round(r.participation_rate) : null;
@@ -196,6 +231,7 @@ const Participation = (() => {
           <td class="num gtext" title="${jaengTitle}">${r.jaeng_rate != null ? `${Math.round(r.jaeng_rate)}%` : "—"}</td>
           <td class="num"><b>${(r.participation_score || 0).toLocaleString()}</b></td>
           <td class="num">${rateHtml}</td>
+          <td class="num gtext">${(r.contribution || 0).toLocaleString()}</td>
         </tr>`;
       })
       .join("");
@@ -531,5 +567,5 @@ const Participation = (() => {
     document.getElementById("qp").addEventListener("input", filter);
   }
 
-  return { init, load, filter, loadSeasonScores, renderSeasonScores };
+  return { init, load, filter, loadSeasonScores, renderSeasonScores, renderNickHistory };
 })();
