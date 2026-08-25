@@ -165,9 +165,11 @@ const Participation = (() => {
     rows = rows.filter((r) => ss.guildSel.has(r.guild));
     const q = (document.getElementById("partSsSearch").value || "").trim().toLowerCase();
     if (q) rows = rows.filter((r) => (r.current_id || r.user_id || "").toLowerCase().includes(q));
-    rows.sort((a, b) => (sortMode === "power"
-      ? (b.power || 0) - (a.power || 0)
-      : (b.participation_score || 0) - (a.participation_score || 0)));
+    rows.sort((a, b) => {
+      if (sortMode === "power") return (b.power || 0) - (a.power || 0);
+      if (sortMode === "jaeng") return (b.jaeng_rate ?? -1) - (a.jaeng_rate ?? -1); // 쟁률 없음(—)은 맨 뒤
+      return (b.participation_score || 0) - (a.participation_score || 0);
+    });
 
     document.getElementById("partSeasonNote").textContent = seasons.length > 1
       ? `시즌 ${seasons.join("+")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁률은 시즌별 값의 단순 평균.`
