@@ -470,6 +470,12 @@ const Participation = (() => {
     const listEl = document.getElementById("partLogList");
     document.querySelectorAll("#partLogList .irow[data-id]").forEach((el) => el.remove());
     document.getElementById("partLogEmpty").style.display = logs.length ? "none" : "flex";
+    // 접힌 헤더에 건수 배지 (기본 접힘 — 목록이 길어 화면을 밀어내는 것 방지)
+    const cnt = document.getElementById("partLogCount");
+    if (cnt) {
+      cnt.textContent = logs.length;
+      cnt.style.display = logs.length ? "" : "none";
+    }
 
     logs.forEach((l) => {
       const row = document.createElement("div");

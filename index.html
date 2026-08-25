@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=80">
-<link rel="stylesheet" href="css/style.css?v=80">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=81">
+<link rel="stylesheet" href="css/style.css?v=81">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=80" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=81" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=80" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=81" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -691,8 +691,12 @@
     </div>
 
     <div class="card">
-      <b style="font-size:15px">🗂️ 입력 이력</b>
-      <div class="list" id="partLogList" style="border:0;margin-top:8px">
+      <div class="row" style="justify-content:space-between;align-items:center;cursor:pointer;user-select:none"
+           onclick="const b=document.getElementById('partLogList'),a=document.getElementById('partLogToggle');const open=b.style.display==='none';b.style.display=open?'':'none';a.textContent=open?'접기 ▲':'펼치기 ▼'">
+        <b style="font-size:15px">🗂️ 입력 이력 <span class="cnt" id="partLogCount" style="display:none"></span></b>
+        <span class="meta" id="partLogToggle">펼치기 ▼</span>
+      </div>
+      <div class="list" id="partLogList" style="border:0;margin-top:8px;display:none">
         <div class="irow meta" id="partLogEmpty" style="display:none">이번 시즌 입력된 로그가 없습니다.</div>
       </div>
     </div>
@@ -1166,26 +1170,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=80"></script>
-<script src="js/api.js?v=80"></script>
-<script src="js/auth.js?v=80"></script>
-<script src="js/logParser.js?v=80"></script>
-<script src="js/gamedata.js?v=80"></script>
-<script src="js/imageUtil.js?v=80"></script>
-<script src="js/inventory.js?v=80"></script>
-<script src="js/members.js?v=80"></script>
-<script src="js/treasury.js?v=80"></script>
-<script src="js/dashboard.js?v=80"></script>
-<script src="js/distribution.js?v=80"></script>
-<script src="js/warehouse.js?v=80"></script>
-<script src="js/distManage.js?v=80"></script>
-<script src="js/participationParser.js?v=80"></script>
-<script src="js/war.js?v=80"></script>
-<script src="js/warStatus.js?v=80"></script>
-<script src="js/participation.js?v=80"></script>
-<script src="js/profile.js?v=80"></script>
-<script src="js/register.js?v=80"></script>
-<script src="js/logAdmin.js?v=80"></script>
-<script src="js/app.js?v=80"></script>
+<script src="js/config.js?v=81"></script>
+<script src="js/api.js?v=81"></script>
+<script src="js/auth.js?v=81"></script>
+<script src="js/logParser.js?v=81"></script>
+<script src="js/gamedata.js?v=81"></script>
+<script src="js/imageUtil.js?v=81"></script>
+<script src="js/inventory.js?v=81"></script>
+<script src="js/members.js?v=81"></script>
+<script src="js/treasury.js?v=81"></script>
+<script src="js/dashboard.js?v=81"></script>
+<script src="js/distribution.js?v=81"></script>
+<script src="js/warehouse.js?v=81"></script>
+<script src="js/distManage.js?v=81"></script>
+<script src="js/participationParser.js?v=81"></script>
+<script src="js/war.js?v=81"></script>
+<script src="js/warStatus.js?v=81"></script>
+<script src="js/participation.js?v=81"></script>
+<script src="js/profile.js?v=81"></script>
+<script src="js/register.js?v=81"></script>
+<script src="js/logAdmin.js?v=81"></script>
+<script src="js/app.js?v=81"></script>
 </body>
 </html>
