@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=75** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=76** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -91,7 +91,8 @@
 | 672c5fc | 참여 재계산 신뢰성: participation 함수 `recalcScores` 헬퍼(1회 자동 재시도, 참석 보정·로그 삭제·대량 등록·시즌 마감 공통) + 실패 시 `recalc_failed` 응답 → 프론트가 "저장됐지만 재계산 실패" 경고 토스트 표시 (함수 재배포) (v=73) |
 | (최신) | **API 경유 재계산 상시 실패 근본 수정(0026)** — safeupdate가 WHERE 없는 `UPDATE members SET contribution_score...`를 차단(21000)해 0018 이후 앱 호출 재계산이 전부 실패했었음(SQL Editor는 통과). WHERE 추가 + service_role GRANT 보강. 진단 로그·토스트에 에러 코드 표시(recalc_error) 유지 (v=74) |
 | b4e83d1 | 재고 dedup 규칙 변경: 품목명만 → **품목명+룻자** (룻자 다르면 별도 행 — 룻자별 물량 관리, inventory 함수 재배포) (v=74, 프론트 변경 없음) |
-| (최신) | **쟁참여율 결사별 분모 개편(0027)** — 결사별 분모 = 그 결사 매칭 회원이 참석한 쟁/긴급 세션 수 + 유니·결던 전체 수(전 결사 공통). 소속 미지정은 전체 폴백, 소속 변경 시 재계산부터 새 결사 기준 소급. 대시보드 KPI 아래 전폭 스트립 "결사별 쟁 진행 횟수"(dashboard 함수 `kpi.jaeng_pool`, 툴팁에 쟁+유니·결던 분해, 함수 재배포) — **현재 배포 버전 (v=75)** |
+| (최신) | **쟁참여율 결사별 분모 개편(0027)** — 결사별 분모 = 그 결사 매칭 회원이 참석한 쟁/긴급 세션 수 + 유니·결던 전체 수(전 결사 공통). 소속 미지정은 전체 폴백, 소속 변경 시 재계산부터 새 결사 기준 소급. 대시보드 KPI 아래 전폭 스트립 "결사별 쟁 진행 횟수"(dashboard 함수 `kpi.jaeng_pool`, 툴팁에 쟁+유니·결던 분해, 함수 재배포) (v=75) |
+| (최신) | 시즌별 참여 기록 필터: 시즌 칩 복수 선택(점수·횟수 합산, 율은 단순 평균) + 결사 칩 복수 선택 + 정렬(참여점수/전투력순) + 결사·전투력 열 추가. 결사·전투력은 listMembers 매핑(프론트만, 함수 무변경). ⚠ 참여 현황 카드에 `#partGuildChips` 기존재 — 시즌 기록용은 `#partSsGuildChips` 별도 id(충돌 사고 수정) — **현재 배포 버전 (v=76)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=75">
-<link rel="stylesheet" href="css/style.css?v=75">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=76">
+<link rel="stylesheet" href="css/style.css?v=76">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=75" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=76" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=75" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=76" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -700,7 +700,14 @@
     <div class="card">
       <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <b style="font-size:15px">📚 시즌별 참여 기록</b>
-        <select id="partSeasonSel" onchange="Participation.loadSeasonScores()" style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;background:var(--card)"></select>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <span id="partSeasonChips" class="row" style="gap:6px;flex-wrap:wrap"></span>
+          <span id="partSsGuildChips" class="row" style="gap:6px;flex-wrap:wrap"></span>
+          <select id="partSeasonSort" onchange="Participation.renderSeasonScores()" style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;background:var(--card)">
+            <option value="score">참여점수순</option>
+            <option value="power">전투력순</option>
+          </select>
+        </div>
       </div>
       <div class="meta" id="partSeasonNote" style="margin-bottom:8px"></div>
       <div class="mtable" style="max-height:60vh;overflow:auto"><table id="partSeasonTable"></table></div>
@@ -1146,26 +1153,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=75"></script>
-<script src="js/api.js?v=75"></script>
-<script src="js/auth.js?v=75"></script>
-<script src="js/logParser.js?v=75"></script>
-<script src="js/gamedata.js?v=75"></script>
-<script src="js/imageUtil.js?v=75"></script>
-<script src="js/inventory.js?v=75"></script>
-<script src="js/members.js?v=75"></script>
-<script src="js/treasury.js?v=75"></script>
-<script src="js/dashboard.js?v=75"></script>
-<script src="js/distribution.js?v=75"></script>
-<script src="js/warehouse.js?v=75"></script>
-<script src="js/distManage.js?v=75"></script>
-<script src="js/participationParser.js?v=75"></script>
-<script src="js/war.js?v=75"></script>
-<script src="js/warStatus.js?v=75"></script>
-<script src="js/participation.js?v=75"></script>
-<script src="js/profile.js?v=75"></script>
-<script src="js/register.js?v=75"></script>
-<script src="js/logAdmin.js?v=75"></script>
-<script src="js/app.js?v=75"></script>
+<script src="js/config.js?v=76"></script>
+<script src="js/api.js?v=76"></script>
+<script src="js/auth.js?v=76"></script>
+<script src="js/logParser.js?v=76"></script>
+<script src="js/gamedata.js?v=76"></script>
+<script src="js/imageUtil.js?v=76"></script>
+<script src="js/inventory.js?v=76"></script>
+<script src="js/members.js?v=76"></script>
+<script src="js/treasury.js?v=76"></script>
+<script src="js/dashboard.js?v=76"></script>
+<script src="js/distribution.js?v=76"></script>
+<script src="js/warehouse.js?v=76"></script>
+<script src="js/distManage.js?v=76"></script>
+<script src="js/participationParser.js?v=76"></script>
+<script src="js/war.js?v=76"></script>
+<script src="js/warStatus.js?v=76"></script>
+<script src="js/participation.js?v=76"></script>
+<script src="js/profile.js?v=76"></script>
+<script src="js/register.js?v=76"></script>
+<script src="js/logAdmin.js?v=76"></script>
+<script src="js/app.js?v=76"></script>
 </body>
 </html>

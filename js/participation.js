@@ -48,40 +48,148 @@ const Participation = (() => {
   }
 
   // ── 시즌별 참여 기록 (season_participation 스냅샷 조회) ──
+  // 필터: 시즌 복수 선택(점수·횟수 합산, 율은 단순 평균) + 결사 복수 선택 + 정렬(참여점수/전투력)
+  const ss = {
+    seasons: [], current: null,
+    selected: new Set(),   // 선택된 시즌 (최소 1개)
+    guilds: [], guildSel: new Set(),
+    cache: new Map(),      // season → rows (마감 시즌은 불변 — 캐시 재사용)
+    meta: null,            // user_id → {guild, power} (결사 필터·전투력 정렬용)
+  };
+
+  async function ssEnsureMeta() {
+    if (ss.meta) return;
+    const all = await Api.listMembers().catch(() => []);
+    ss.meta = new Map(all.map((m) => [m.user_id, { guild: m.guild_name || "(미지정)", power: m.power || 0 }]));
+  }
+
+  async function ssFetch(season) {
+    if (!ss.cache.has(season)) {
+      const d = await Api.getSeasonScores(season);
+      ss.cache.set(season, d.rows || []);
+    }
+    return ss.cache.get(season);
+  }
+
   async function loadSeasonScores() {
-    const sel = document.getElementById("partSeasonSel");
-    const season = sel.value ? Number(sel.value) : undefined;
     let data;
     try {
-      data = await Api.getSeasonScores(season);
+      data = await Api.getSeasonScores();
+      await ssEnsureMeta();
     } catch (e) {
       document.getElementById("partSeasonNote").textContent =
         `시즌별 기록 조회 실패: ${e.message || ""} — participation 함수가 최신 버전인지 확인해주세요.`;
       return;
     }
-    sel.innerHTML = (data.seasons || []).length
-      ? data.seasons.map((s) => `<option value="${s}"${s === data.season ? " selected" : ""}>시즌 ${s}${s === data.current_season ? " (현재)" : ""}</option>`).join("")
-      : `<option value="${data.season}" selected>시즌 ${data.season}</option>`;
-    document.getElementById("partSeasonNote").textContent =
-      data.season === data.current_season
-        ? "현재 진행 중인 시즌의 스냅샷입니다 (로그 저장·삭제 시 갱신)."
-        : `시즌 ${data.season} 마감 시점의 확정 기록입니다.`;
+    ss.seasons = (data.seasons || []).length ? data.seasons : [data.season];
+    ss.current = data.current_season;
+    ss.cache.set(data.season, data.rows || []); // 현재 시즌은 진입 때마다 최신으로 갱신
+    if (!ss.selected.size) ss.selected.add(data.season);
+    const gset = new Set([...ss.meta.values()].map((v) => v.guild));
+    ss.guilds = [...gset].sort((a, b) => a.localeCompare(b, "ko"));
+    if (!ss.guildSel.size) ss.guilds.forEach((g) => ss.guildSel.add(g));
+    renderSeasonFilters();
+    await renderSeasonScores();
+  }
 
-    const rows = data.rows || [];
+  function ssChip(label, on, onClick) {
+    const c = document.createElement("span");
+    c.className = "fchip" + (on ? " on" : "");
+    c.textContent = label;
+    c.style.cursor = "pointer";
+    c.addEventListener("click", onClick);
+    return c;
+  }
+
+  function renderSeasonFilters() {
+    const sBox = document.getElementById("partSeasonChips");
+    sBox.innerHTML = "";
+    ss.seasons.forEach((s) => {
+      sBox.appendChild(ssChip(`시즌 ${s}${s === ss.current ? "(현재)" : ""}`, ss.selected.has(s), async () => {
+        if (ss.selected.has(s)) {
+          if (ss.selected.size === 1) return; // 최소 1개 유지
+          ss.selected.delete(s);
+        } else ss.selected.add(s);
+        renderSeasonFilters();
+        await renderSeasonScores();
+      }));
+    });
+    // 주의: 참여 현황 카드에 #partGuildChips가 이미 존재 — 시즌별 기록용은 별도 id 사용
+    const gBox = document.getElementById("partSsGuildChips");
+    gBox.innerHTML = "";
+    ss.guilds.forEach((g) => {
+      gBox.appendChild(ssChip(g, ss.guildSel.has(g), async () => {
+        if (ss.guildSel.has(g)) ss.guildSel.delete(g);
+        else ss.guildSel.add(g);
+        renderSeasonFilters();
+        await renderSeasonScores();
+      }));
+    });
+  }
+
+  async function renderSeasonScores() {
+    const sortMode = document.getElementById("partSeasonSort").value || "score";
+    const seasons = [...ss.selected].sort((a, b) => a - b);
+    let perSeason;
+    try {
+      perSeason = await Promise.all(seasons.map((s) => ssFetch(s)));
+    } catch (e) {
+      document.getElementById("partSeasonNote").textContent = `시즌별 기록 조회 실패: ${e.message || ""}`;
+      return;
+    }
+    // 시즌 병합: 점수·횟수는 합산, 참여율·쟁률은 시즌별 값의 단순 평균
+    const SUM_COLS = ["bontu_score", "siteum_score", "uni_score", "gyeoldun_score", "byeolbong_score",
+      "participation_score", "jaeng_count", "jaeng_morning", "jaeng_evening", "jaeng_dawn"];
+    const merged = new Map();
+    perSeason.forEach((rowsInSeason) => {
+      rowsInSeason.forEach((r) => {
+        let m = merged.get(r.user_id);
+        if (!m) {
+          m = { user_id: r.user_id, current_id: r.current_id, class: r.class, rates: [], jrates: [] };
+          SUM_COLS.forEach((k) => (m[k] = 0));
+          merged.set(r.user_id, m);
+        }
+        SUM_COLS.forEach((k) => (m[k] += r[k] || 0));
+        if (r.participation_rate != null) m.rates.push(r.participation_rate);
+        if (r.jaeng_rate != null) m.jrates.push(r.jaeng_rate);
+      });
+    });
+    const meta = ss.meta || new Map();
+    let rows = [...merged.values()].map((m) => ({
+      ...m,
+      guild: meta.get(m.user_id) ? meta.get(m.user_id).guild : "(미지정)",
+      power: meta.get(m.user_id) ? meta.get(m.user_id).power : 0,
+      participation_rate: m.rates.length ? m.rates.reduce((s, v) => s + v, 0) / m.rates.length : null,
+      jaeng_rate: m.jrates.length ? m.jrates.reduce((s, v) => s + v, 0) / m.jrates.length : null,
+    }));
+    rows = rows.filter((r) => ss.guildSel.has(r.guild));
+    rows.sort((a, b) => (sortMode === "power"
+      ? (b.power || 0) - (a.power || 0)
+      : (b.participation_score || 0) - (a.participation_score || 0)));
+
+    document.getElementById("partSeasonNote").textContent = seasons.length > 1
+      ? `시즌 ${seasons.join("+")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁률은 시즌별 값의 단순 평균.`
+      : (seasons[0] === ss.current
+          ? "현재 진행 중인 시즌의 스냅샷입니다 (로그 저장·삭제 시 갱신)."
+          : `시즌 ${seasons[0]} 마감 시점의 확정 기록입니다.`);
+
     document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
     const table = document.getElementById("partSeasonTable");
-    let html = `<tr><th>닉네임</th><th>직업</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th></tr>`;
+    let html = `<tr><th>닉네임</th><th>결사</th><th>직업</th><th class="num">전투력</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th></tr>`;
     html += rows
       .map((r) => {
-        const rate = r.participation_rate != null ? `${r.participation_rate}%` : "—";
-        const rateHtml = r.participation_rate != null && r.participation_rate < 50 ? `<span class="low">${rate}</span>` : rate;
+        const rateV = r.participation_rate != null ? Math.round(r.participation_rate) : null;
+        const rate = rateV != null ? `${rateV}%` : "—";
+        const rateHtml = rateV != null && rateV < 50 ? `<span class="low">${rate}</span>` : rate;
         const jaengTitle = `오전 ${r.jaeng_morning || 0} · 오후 ${r.jaeng_evening || 0} · 새벽 ${r.jaeng_dawn || 0}`;
         return `<tr>
           <td><b class="nm"></b></td>
+          <td class="gtext gld"></td>
           <td class="gtext cls"></td>
+          <td class="num gtext">${(r.power || 0).toLocaleString()}</td>
           ${ACTIVITIES.map((a) => `<td class="num gtext">${r[ACTIVITY_COLS[a]] || 0}</td>`).join("")}
           <td class="num" title="${jaengTitle}"><b>${r.jaeng_count || 0}</b></td>
-          <td class="num gtext" title="${jaengTitle}">${r.jaeng_rate != null ? `${r.jaeng_rate}%` : "—"}</td>
+          <td class="num gtext" title="${jaengTitle}">${r.jaeng_rate != null ? `${Math.round(r.jaeng_rate)}%` : "—"}</td>
           <td class="num"><b>${(r.participation_score || 0).toLocaleString()}</b></td>
           <td class="num">${rateHtml}</td>
         </tr>`;
@@ -91,6 +199,7 @@ const Participation = (() => {
     const trs = table.querySelectorAll("tr");
     rows.forEach((r, i) => {
       trs[i + 1].querySelector(".nm").textContent = r.current_id || r.user_id;
+      trs[i + 1].querySelector(".gld").textContent = r.guild;
       trs[i + 1].querySelector(".cls").textContent = r.class || "-";
     });
   }
@@ -418,5 +527,5 @@ const Participation = (() => {
     document.getElementById("qp").addEventListener("input", filter);
   }
 
-  return { init, load, filter, loadSeasonScores };
+  return { init, load, filter, loadSeasonScores, renderSeasonScores };
 })();
