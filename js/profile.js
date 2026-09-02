@@ -147,6 +147,14 @@ const Profile = (() => {
     fillGuildSelect(data.info.guild_name || "");
     document.getElementById("pfRank").value = data.info.subjugation_rank || "";
     clsSel.value = GameData.CLASS_OPTIONS.includes(data.info.class) ? data.info.class : "";
+    // 클래스변경 (예정 클래스) — 전력 현황 클래스현황용
+    const nextSel = document.getElementById("pfNextClass");
+    if (!nextSel.options.length) {
+      nextSel.innerHTML =
+        `<option value="">변경 없음</option>` +
+        GameData.CLASS_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("");
+    }
+    nextSel.value = GameData.CLASS_OPTIONS.includes(data.info.next_class) ? data.info.next_class : "";
     document.getElementById("pfLevel").value = data.info.level ?? 0;
     document.getElementById("pfAbyss").value = data.info.abyss_level || "";
     document.getElementById("pfPower").value = data.info.power ?? 0;
@@ -459,6 +467,7 @@ const Profile = (() => {
         guild_name: document.getElementById("pfGuild").value, // 셀프 변경 허용 (서버 PUT이 이미 수용)
         subjugation_rank: document.getElementById("pfRank").value.trim(),
         class: document.getElementById("pfClass").value.trim(),
+        next_class: document.getElementById("pfNextClass").value.trim(),
         level: parseInt(document.getElementById("pfLevel").value, 10) || 0,
         abyss_level: document.getElementById("pfAbyss").value.trim(),
         power: parseInt(document.getElementById("pfPower").value, 10) || 0,

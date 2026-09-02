@@ -43,7 +43,6 @@ const Participation = (() => {
     renderSeason();
     renderStatusTable();
     renderLogs();
-    renderNickHistory(); // 닉 이력 카드 — 결사 열은 loadSeasonScores의 meta 로드 후 재렌더로 채워짐
     loadGuildFilter(); // 결사 필터 칩 — 실패해도 나머지 화면 유지
     loadSeasonScores(); // 시즌별 기록은 별도 조회 — 실패해도 나머지 화면은 유지
   }
@@ -91,36 +90,8 @@ const Participation = (() => {
     if (!ss.guildSel.size) ss.guilds.forEach((g) => ss.guildSel.add(g));
     renderSeasonFilters();
     await renderSeasonScores();
-    renderNickHistory(); // meta(결사) 로드 후 다시 그려 결사 열 채움
   }
-
-  // ── 닉네임 변경 이력 (member_nick_history — 검색 가능) ──
-  function renderNickHistory() {
-    if (!status) return;
-    const q = (document.getElementById("nickHistSearch").value || "").trim().toLowerCase();
-    const memMap = new Map((status.members || []).map((m) => [m.user_id, m.current_id || m.user_id]));
-    const meta = ss.meta || new Map();
-    let rows = (status.nick_history || []).map((h) => ({
-      old: h.nickname,
-      cur: memMap.get(h.user_id) || h.user_id,
-      guild: meta.get(h.user_id) ? meta.get(h.user_id).guild : "-",
-      uid: h.user_id,
-    }));
-    if (q) rows = rows.filter((r) => [r.old, r.cur, r.uid].some((v) => String(v || "").toLowerCase().includes(q)));
-    rows.sort((a, b) => a.cur.localeCompare(b.cur, "ko") || a.old.localeCompare(b.old, "ko"));
-    document.getElementById("nickHistEmpty").style.display = rows.length ? "none" : "block";
-    const table = document.getElementById("nickHistTable");
-    table.innerHTML =
-      `<tr><th>이전 닉네임</th><th>현재 닉네임</th><th>결사</th><th>아이디</th></tr>` +
-      rows.map(() => `<tr><td><b class="o"></b></td><td class="c"></td><td class="gtext g"></td><td class="gtext u"></td></tr>`).join("");
-    const trs = table.querySelectorAll("tr");
-    rows.forEach((r, i) => {
-      trs[i + 1].querySelector(".o").textContent = r.old;
-      trs[i + 1].querySelector(".c").textContent = r.cur;
-      trs[i + 1].querySelector(".g").textContent = r.guild;
-      trs[i + 1].querySelector(".u").textContent = r.uid;
-    });
-  }
+  // (닉네임 변경 이력 카드는 결사원 관리 탭 하위 메뉴로 이동 — members.js renderNickHistory)
 
   function ssChip(label, on, onClick) {
     const c = document.createElement("span");
@@ -573,5 +544,5 @@ const Participation = (() => {
     document.getElementById("qp").addEventListener("input", filter);
   }
 
-  return { init, load, filter, loadSeasonScores, renderSeasonScores, renderNickHistory };
+  return { init, load, filter, loadSeasonScores, renderSeasonScores };
 })();

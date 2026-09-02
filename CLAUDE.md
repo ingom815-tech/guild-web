@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=81** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=82** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -96,7 +96,8 @@
 | 1932737 | 시즌별 참여 기록에 닉네임 검색(`#partSsSearch` — 부분 일치·대소문자 무시, 시즌 합산·결사 필터·정렬과 동시 적용) (v=77) |
 | f61346f | 시즌별 참여 기록 정렬에 쟁참여율순 추가(쟁률 없음은 맨 뒤) (v=78) |
 | (최신) | 시즌별 참여 기록 기여점수순 정렬+기여점수 열(합산 참여점수×0.7+전투력×0.3, v=79) + 참여율 관리에 닉네임 변경 이력 카드(`renderNickHistory` — status.nick_history 기반 검색: 이전닉/현재닉/아이디, 결사 열은 listMembers 매핑. 이력은 합병 0016 리셋 이후 내정보 변경분만 — 관리자 대리 변경은 미기록, 합병 전은 `member_nick_history_archive`) (v=80) |
-| (최신) | 참여율 관리 입력 이력 카드 기본 접힘(헤더 건수 배지 + 펼치기/접기 토글) — **현재 배포 버전 (v=81)** |
+| 5f4fca1 | 참여율 관리 입력 이력 카드 기본 접힘(헤더 건수 배지 + 펼치기/접기 토글) (v=81) |
+| (최신) | **클래스현황 신설**: 내정보에 "클래스변경"(members.next_class, 0028 + profile 함수) → 전력 현황 [역할 보드\|전력판\|클래스현황] 하위탭. 클래스현황은 **실시간**(dashboard view=war_status가 `class_status` 동봉 — 내정보 저장 즉시 반영, 스냅샷 아님), 7직업 섹터 항상 표시(밴드 100px: 직업명/N명·신화N 2단), 변경자=변경 클래스 섹터+`현직업 ➜ 변경` 표기, 신화=금테+"신화" 배지(.mythtag). 결사 버튼은 getPublicGuilds로 항상 4개. + 닉네임 이력을 결사원 관리 하위탭으로 이동(members.js renderNickHistory) — **현재 배포 버전 (v=82, profile·dashboard 함수 재배포 필요)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

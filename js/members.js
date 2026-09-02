@@ -165,14 +165,62 @@ const Members = (() => {
   // ── 가입 신청 관리 (하위탭) ──
   let regConfirmAction = null;
 
-  // 하위탭 전환: 결사원 목록 ↔ 가입 신청
+  // 하위탭 전환: 결사원 목록 ↔ 가입 신청 ↔ 닉네임 이력
   function setSection(el) {
     document.querySelectorAll(".stab[data-ms]").forEach((c) => c.classList.remove("on"));
     el.classList.add("on");
     const section = el.dataset.ms;
     document.getElementById("membersSectionList").classList.toggle("hidden", section !== "list");
     document.getElementById("membersSectionReg").classList.toggle("hidden", section !== "reg");
+    document.getElementById("membersSectionNick").classList.toggle("hidden", section !== "nick");
     if (section === "reg") loadRegistrations();
+    if (section === "nick") loadNickHistory();
+  }
+
+  // ── 닉네임 변경 이력 (member_nick_history — 참여율 관리에서 이동, 검색 가능) ──
+  let nickHist = null; // { history: [{user_id, nickname}], memMap, guildMap }
+
+  async function loadNickHistory() {
+    if (!nickHist) {
+      try {
+        const [st, all] = await Promise.all([Api.getParticipationStatus(), Api.listMembers()]);
+        nickHist = {
+          history: st.nick_history || [],
+          memMap: new Map((all || []).map((m) => [m.user_id, m.current_id || m.user_id])),
+          guildMap: new Map((all || []).map((m) => [m.user_id, m.guild_name || "(미지정)"])),
+        };
+      } catch (e) {
+        document.getElementById("nickHistEmpty").textContent = `이력 조회 실패: ${e.message || ""}`;
+        document.getElementById("nickHistEmpty").style.display = "block";
+        return;
+      }
+    }
+    renderNickHistory();
+  }
+
+  function renderNickHistory() {
+    if (!nickHist) return;
+    const q = (document.getElementById("nickHistSearch").value || "").trim().toLowerCase();
+    let rows = nickHist.history.map((h) => ({
+      old: h.nickname,
+      cur: nickHist.memMap.get(h.user_id) || h.user_id,
+      guild: nickHist.guildMap.get(h.user_id) || "-",
+      uid: h.user_id,
+    }));
+    if (q) rows = rows.filter((r) => [r.old, r.cur, r.uid].some((v) => String(v || "").toLowerCase().includes(q)));
+    rows.sort((a, b) => a.cur.localeCompare(b.cur, "ko") || a.old.localeCompare(b.old, "ko"));
+    document.getElementById("nickHistEmpty").style.display = rows.length ? "none" : "block";
+    const table = document.getElementById("nickHistTable");
+    table.innerHTML =
+      `<tr><th>이전 닉네임</th><th>현재 닉네임</th><th>결사</th><th>아이디</th></tr>` +
+      rows.map(() => `<tr><td><b class="o"></b></td><td class="c"></td><td class="gtext g"></td><td class="gtext u"></td></tr>`).join("");
+    const trs = table.querySelectorAll("tr");
+    rows.forEach((r, i) => {
+      trs[i + 1].querySelector(".o").textContent = r.old;
+      trs[i + 1].querySelector(".c").textContent = r.cur;
+      trs[i + 1].querySelector(".g").textContent = r.guild;
+      trs[i + 1].querySelector(".u").textContent = r.uid;
+    });
   }
 
   async function loadRegistrations() {
@@ -1432,5 +1480,5 @@ const Members = (() => {
     });
   }
 
-  return { init, load, open, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection, onSortChange, onSeasonRange };
+  return { init, load, open, filter, setRole, setView, setAquiView, setRuneFilter, toggleOnlyNo, setSection, onSortChange, onSeasonRange, renderNickHistory };
 })();

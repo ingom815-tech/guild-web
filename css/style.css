@@ -302,6 +302,12 @@ tr.won td{background:var(--green-bg)}
 .warscope .l-rear .rh{background:#C9DBF2;color:#2E5C95}
 .warscope .l-none{background:#F7F8FA;border-color:#E2E4E8}
 .warscope .l-none .rh{background:#E2E5EA;color:#5A6478}
+/* 클래스현황 섹터 행 (중립 밴드) + 신화 보유 강조 배지 */
+.warscope .c-class{background:#FAFBFC}
+.warscope .c-class .rh{background:#EDF0F4;color:#475062;width:100px;gap:3px}
+.warscope .c-class .rh .cname{font-size:12.5px;font-weight:800;line-height:1.2}
+.warscope .c-class .rh .c{font-size:10.5px;font-weight:600;opacity:.8;white-space:nowrap}
+.warscope .chip .mythtag{position:absolute;top:-6px;right:-4px;font-size:8px;line-height:1;font-weight:800;color:#B07B10;background:#FFF7E0;border:1px solid #F0B03F;border-radius:4px;padding:1.5px 3px;pointer-events:none}
 /* 본인 칩 강조 (전력 현황 탭) — 초록 이중 테두리 + "나" 배지 */
 .warscope .chip.me{box-shadow:0 0 0 2px #12B27C}
 .warscope .chip .mebadge{position:absolute;top:-7px;left:-5px;background:#12B27C;color:#fff;font-size:8px;font-weight:800;border-radius:4px;padding:1.5px 4px;line-height:1;pointer-events:none}

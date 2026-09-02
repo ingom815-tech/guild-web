@@ -251,7 +251,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const { data: me } = await supabase
       .from("members")
-      .select("user_id, current_id, guild_name, subjugation_rank, class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, participation_score, contribution_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
+      .select("user_id, current_id, guild_name, subjugation_rank, class, next_class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, participation_score, contribution_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
       .eq("user_id", user.user_id)
       .maybeSingle();
     if (!me) return jsonResponse({ error: "회원 정보를 찾을 수 없습니다." }, 404);
@@ -275,6 +275,7 @@ Deno.serve(async (req: Request) => {
         guild_name: me.guild_name,
         subjugation_rank: me.subjugation_rank,
         class: me.class,
+        next_class: me.next_class, // 클래스변경 (예정 클래스 — null = 변경 없음)
         level: me.level,
         abyss_level: me.abyss_level,
         power: me.power,
@@ -336,6 +337,13 @@ Deno.serve(async (req: Request) => {
 
     for (const key of ["guild_name", "subjugation_rank", "class", "abyss_level"]) {
       if (typeof body[key] === "string") patch[key] = (body[key] as string).trim() || null;
+    }
+    // 클래스변경 (예정 클래스) — 직업 7종 또는 빈 값(변경 없음)
+    if (body.next_class !== undefined) {
+      const nc = typeof body.next_class === "string" ? body.next_class.trim() : "";
+      const CLASS7 = ["집행관", "주문각인사", "향사수", "환영검사", "태양감시자", "심연추방자", "야만투사"];
+      if (nc && !CLASS7.includes(nc)) return jsonResponse({ error: "클래스변경 값이 올바르지 않습니다." }, 400);
+      patch.next_class = nc || null;
     }
     if (body.level !== undefined) {
       const level = Number(body.level);

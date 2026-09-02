@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=81">
-<link rel="stylesheet" href="css/style.css?v=81">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=82">
+<link rel="stylesheet" href="css/style.css?v=82">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=81" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=82" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=81" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=82" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -494,6 +494,10 @@
             <div class="field" style="flex:1"><label for="pfAbyss">심연</label><input type="text" id="pfAbyss"></div>
             <div class="field" style="flex:1"><label for="pfPower">전투력</label><input type="number" id="pfPower" min="0"></div>
           </div>
+          <div class="row" style="gap:10px;align-items:center">
+            <div class="field" style="flex:1;max-width:240px;margin-bottom:0"><label for="pfNextClass">클래스변경</label><select id="pfNextClass" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;background:var(--bg)"></select></div>
+            <div class="meta" style="flex:2">변경 예정 클래스를 선택하고 저장하면 전력 현황 &gt; 클래스현황에 바로 반영됩니다.</div>
+          </div>
           <div class="field"><label for="pfNewPw">비밀번호 변경 (빈칸이면 유지)</label><input type="password" id="pfNewPw" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)"></div>
           <button type="submit" class="btn sm" id="pfInfoSaveBtn">기본정보 저장</button>
         </form>
@@ -567,6 +571,19 @@
     <div class="subtabs">
       <span class="stab on" data-ms="list" onclick="Members.setSection(this)">결사원 목록</span>
       <span class="stab" data-ms="reg" onclick="Members.setSection(this)">📮 가입 신청 <span class="cnt" id="regRequestsCount">0</span></span>
+      <span class="stab" data-ms="nick" onclick="Members.setSection(this)">📝 닉네임 이력</span>
+    </div>
+
+    <div class="hidden" id="membersSectionNick">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <b style="font-size:15px">📝 닉네임 변경 이력</b>
+          <input type="search" id="nickHistSearch" name="nick-hist-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/아이디 검색..." oninput="Members.renderNickHistory()" style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;min-width:180px">
+        </div>
+        <div class="meta" style="margin-bottom:8px">내정보에서 닉네임을 변경하면 이전 닉이 기록됩니다 — 출석 로그 매칭에도 이 이력이 사용됩니다.</div>
+        <div class="mtable" style="max-height:60vh;overflow:auto"><table id="nickHistTable"></table></div>
+        <div class="meta" id="nickHistEmpty" style="display:none;text-align:center;padding:20px">기록된 닉네임 변경 이력이 없습니다.</div>
+      </div>
     </div>
 
     <div class="hidden" id="membersSectionReg">
@@ -721,15 +738,6 @@
       <div class="meta" id="partSeasonEmpty" style="display:none;text-align:center;padding:20px">이 시즌의 기록이 없습니다.</div>
     </div>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <b style="font-size:15px">📝 닉네임 변경 이력</b>
-        <input type="search" id="nickHistSearch" name="nick-hist-query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="🔍 닉네임/아이디 검색..." oninput="Participation.renderNickHistory()" style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;min-width:180px">
-      </div>
-      <div class="meta" style="margin-bottom:8px">내정보에서 닉네임을 변경하면 이전 닉이 기록됩니다 — 출석 로그 매칭에도 이 이력이 사용됩니다.</div>
-      <div class="mtable" style="max-height:420px;overflow:auto"><table id="nickHistTable"></table></div>
-      <div class="meta" id="nickHistEmpty" style="display:none;text-align:center;padding:20px">기록된 닉네임 변경 이력이 없습니다.</div>
-    </div>
   </section>
 
   <!-- ═══ 운영진: 재고 관리 (실제 동작) ═══ -->
@@ -851,9 +859,11 @@
         <div class="seg wseg warviewseg" id="wsViewSeg">
           <span class="on" data-v="roles">역할 보드</span>
           <span data-v="line">전력판</span>
+          <span data-v="class">클래스현황</span>
         </div>
         <div class="warboard" id="wsBoard"></div>
         <div id="wsLineBoard" style="display:none"></div>
+        <div id="wsClassBoard" style="display:none"></div>
       </div>
       <div class="warpairs vert">
         <h3>짝지 편성</h3>
@@ -1170,26 +1180,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=81"></script>
-<script src="js/api.js?v=81"></script>
-<script src="js/auth.js?v=81"></script>
-<script src="js/logParser.js?v=81"></script>
-<script src="js/gamedata.js?v=81"></script>
-<script src="js/imageUtil.js?v=81"></script>
-<script src="js/inventory.js?v=81"></script>
-<script src="js/members.js?v=81"></script>
-<script src="js/treasury.js?v=81"></script>
-<script src="js/dashboard.js?v=81"></script>
-<script src="js/distribution.js?v=81"></script>
-<script src="js/warehouse.js?v=81"></script>
-<script src="js/distManage.js?v=81"></script>
-<script src="js/participationParser.js?v=81"></script>
-<script src="js/war.js?v=81"></script>
-<script src="js/warStatus.js?v=81"></script>
-<script src="js/participation.js?v=81"></script>
-<script src="js/profile.js?v=81"></script>
-<script src="js/register.js?v=81"></script>
-<script src="js/logAdmin.js?v=81"></script>
-<script src="js/app.js?v=81"></script>
+<script src="js/config.js?v=82"></script>
+<script src="js/api.js?v=82"></script>
+<script src="js/auth.js?v=82"></script>
+<script src="js/logParser.js?v=82"></script>
+<script src="js/gamedata.js?v=82"></script>
+<script src="js/imageUtil.js?v=82"></script>
+<script src="js/inventory.js?v=82"></script>
+<script src="js/members.js?v=82"></script>
+<script src="js/treasury.js?v=82"></script>
+<script src="js/dashboard.js?v=82"></script>
+<script src="js/distribution.js?v=82"></script>
+<script src="js/warehouse.js?v=82"></script>
+<script src="js/distManage.js?v=82"></script>
+<script src="js/participationParser.js?v=82"></script>
+<script src="js/war.js?v=82"></script>
+<script src="js/warStatus.js?v=82"></script>
+<script src="js/participation.js?v=82"></script>
+<script src="js/profile.js?v=82"></script>
+<script src="js/register.js?v=82"></script>
+<script src="js/logAdmin.js?v=82"></script>
+<script src="js/app.js?v=82"></script>
 </body>
 </html>

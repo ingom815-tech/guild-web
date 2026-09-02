@@ -79,6 +79,18 @@ const AQUI_TARGETS = [
   { id: "B2", label: "보호의 축복", classes: ["주문각인사"], color: "#22c55e" },
 ];
 
+// 신화 아퀴 보유 판정: status_check 우측 토큰에 ":m" 등급 또는 레거시 "M숫자" 토큰 (members 함수와 동일 규칙)
+function hasMythAqui(sc: string | null): boolean {
+  if (!sc || !sc.includes("|")) return false;
+  const right = sc.split("|").slice(1).join("|");
+  for (const t of right.split(",").map((x) => x.trim()).filter(Boolean)) {
+    if (t.includes(":")) {
+      if (t.split(":")[1] === "m") return true;
+    } else if (/^M\d/.test(t)) return true;
+  }
+  return false;
+}
+
 // status_check 문자열("T:3|A3:m,B2:l,...")에서 보유 아퀴 스킬 id set 추출 (원본 _parse_aqui_ids 그대로).
 function parseAquiIds(sc: string | null): Set<string> {
   const owned = new Set<string>();
@@ -114,15 +126,35 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "GET") return jsonResponse({ error: "GET만 지원합니다." }, 405);
 
-  // ── 결사원 공개용 전력 현황 (운영진이 전력 분석에서 "공개"한 시점의 스냅샷) ──
+  // ── 결사원 공개용 전력 현황 ──
+  // 역할 보드/전력판 = 운영진이 전력 분석에서 "저장"한 시점의 스냅샷.
+  // 클래스현황(class_status) = 실시간 — 결사원이 내정보에서 클래스변경을 저장하면 즉시 반영.
   if (new URL(req.url).searchParams.get("view") === "war_status") {
-    const { data } = await supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle();
-    if (!data || !data.value) return jsonResponse({ published: false });
-    try {
-      return jsonResponse({ published: true, ...JSON.parse(data.value) });
-    } catch {
-      return jsonResponse({ published: false });
+    const [pubRes, memRes] = await Promise.all([
+      supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
+      supabase.from("members").select("user_id, current_id, guild_name, class, next_class, role, status_check"),
+    ]);
+    const classStatus: Record<string, Record<string, unknown>[]> = {};
+    for (const m of memRes.data || []) {
+      if (m.role === "관리자") continue;
+      const g = (m.guild_name as string) || "(미지정)";
+      (classStatus[g] = classStatus[g] || []).push({
+        nick: m.current_id || m.user_id,
+        class: m.class,
+        next_class: m.next_class || null,
+        myth: hasMythAqui(m.status_check),
+      });
     }
+    let snap: Record<string, unknown> | null = null;
+    if (pubRes.data && pubRes.data.value) {
+      try {
+        const parsed = JSON.parse(pubRes.data.value);
+        if (parsed && typeof parsed === "object" && parsed.guilds) snap = parsed;
+      } catch {
+        // 스냅샷 파싱 실패 — 클래스현황만 제공
+      }
+    }
+    return jsonResponse({ published: !!snap, ...(snap || {}), class_status: classStatus });
   }
 
   const staff = isStaff(user);
