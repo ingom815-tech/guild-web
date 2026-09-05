@@ -84,8 +84,8 @@ const DEFAULT_REGULATIONS: Record<string, unknown> = {
   // 공통 신청 관문: 참여율 N% 이상 (스샷 2종 관문은 호출부에서 별도 검사)
   apply_min_participation_pct: 35,
   // 내판가 (표시용 — 공금 자동 기록 없음, 수동 현금 입금 흐름 유지)
-  price_krw_legend_aqui: 100000,
-  price_krw_starlight: 50000,
+  // 2026-08-26 개정: 아퀴 내판가 폐지, 별빛 심연석 5만 → 3만
+  price_krw_starlight: 30000,
   price_krw_legend_sim: 5000,
 };
 
@@ -169,24 +169,24 @@ function isLegendSimyeonItem(itemName: string): boolean {
   return ns.includes("심연석") && !ns.includes("조각") && !ns.includes("별빛") && !ns.includes("찬란한");
 }
 
-// 내판가 (표시 전용): 전설 아퀴 = 100,000원 / 별빛 심연석 = 50,000원 / 전설 심연석 = 5,000원.
+// 내판가 (표시 전용): 별빛 심연석 = 30,000원 / 전설 심연석 = 5,000원.
+// 2026-08-26 개정: 아퀴(전설 포함) 내판가 폐지 — 표기하지 않음.
 function salePriceKrw(
   itemName: string,
-  category: string | null,
-  grade: string | null,
+  _category: string | null,
+  _grade: string | null,
   regs: Record<string, unknown>,
 ): number | null {
   const ns = itemName.replace(/ /g, "");
   if (isLegendSimyeonItem(itemName)) return Number(regs.price_krw_legend_sim ?? 5000);
-  if (ns.includes("별빛심연석") && !ns.includes("조각")) return Number(regs.price_krw_starlight ?? 50000);
-  const cat = (category || "").replace(/ /g, "");
-  if ((cat === "아퀴" || cat === "아퀴룬") && grade === "전설") return Number(regs.price_krw_legend_aqui ?? 100000);
+  if (ns.includes("별빛심연석") && !ns.includes("조각")) return Number(regs.price_krw_starlight ?? 30000);
   return null;
 }
 
 // 공식 구분 5분류 (카테고리 표준화 — 프론트 GameData.category5와 동일 규칙).
 // DB 구분 값이 이미 5분류면 그대로, 구 값이면 이름 기반으로 환산한다.
-const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
+// 2026-08-26 개정: 브로치 카테고리 폐지 — 브로치 품목은 "전파편 및 기타"로 분류
+const DIST_CATEGORIES = ["아퀴룬", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
 
 // 자유 신청 판정 (R5): (a) 전설 아퀴 2회 이상 유찰 (b) 대량 소모품 free_apply 플래그
 // (c) 심연석 계열 전체(별빛/조각/찬란한/전설) — 수량 개념 없이 신청만 받고 운영진이 선정.
@@ -208,7 +208,6 @@ function isFreeApplyItem(
 function classifyTab(itemName: string, category: string | null, _grade: string | null): string {
   if (category && DIST_CATEGORIES.includes(category)) return category;
   const noSpace = itemName.replace(/ /g, "");
-  if (noSpace.includes("브로치")) return "브로치";
   if (noSpace.includes("별빛심연석")) return "별빛심연석";
   if (noSpace.includes("찬란한")) return "찬란한심연석";
   if ((category || "") === "아퀴") return "아퀴룬";

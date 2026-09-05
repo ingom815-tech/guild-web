@@ -199,12 +199,12 @@ const GameData = (() => {
   // 공식 아이템 구분 5분류 (분배신청_단순화시안_v4 기준으로 표준화된 체계).
   // DB 구분 값이 이미 5분류면 그대로, 구 값(아퀴/심연석/기타/장비슬롯)이 남아 있으면
   // 이름 기반으로 환산한다 — 서버 classifyTab과 같은 우선순위(브로치 → 별빛 → 찬란 → 아퀴).
-  const DIST_CATEGORIES = ["아퀴룬", "브로치", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
+  // 2026-08-26 개정: 브로치 카테고리 폐지 — 브로치 품목은 "전파편 및 기타"로 분류
+  const DIST_CATEGORIES = ["아퀴룬", "별빛심연석", "찬란한심연석", "전파편 및 기타"];
 
   function category5(itemName, category, grade) {
     if (DIST_CATEGORIES.includes(category)) return category;
     const ns = String(itemName || "").replace(/ /g, "");
-    if (ns.includes("브로치")) return "브로치";
     if (ns.includes("별빛심연석")) return "별빛심연석";
     if (ns.includes("찬란한")) return "찬란한심연석";
     if (category === "아퀴") return "아퀴룬";
