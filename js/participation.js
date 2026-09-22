@@ -338,6 +338,7 @@ const Participation = (() => {
       box.innerHTML = `
         <div class="row" style="gap:8px;flex-wrap:wrap">
           <span class="badge b-green">!${s.activity_type}</span>
+          ${s.defaulted ? `<span class="badge b-gray" title="활동 태그가 없어 !시틈으로 자동 분류됨">태그 없음 → 자동</span>` : ""}
           ${slot ? `<span class="badge b-legend">⚔️ ${slot}</span>` : ""}
           <b class="dtv"></b>
           <span class="meta locv"></span>

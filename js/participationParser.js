@@ -113,13 +113,9 @@ const ParticipationParser = (() => {
 
     const members = parseMembers(text);
 
-    if (!activity) {
-      return {
-        ok: false,
-        error: `활동 태그 없음 — !본토 / !시틈 / !유니 / !결던 / !별봉 / !쟁 중 하나를 메시지 끝에 추가하세요. (장소: ${location || "?"}, 시각: ${display || "?"})`,
-        location, log_datetime: dt, log_date: date, total_participants: total, commander, members,
-      };
-    }
+    // 활동 태그가 없으면 !시틈으로 기본 처리 (2026-09-22 운영 방침 — defaulted 플래그로 미리보기에 표시)
+    const defaulted = !activity;
+    const finalActivity = activity || "시틈";
 
     if (!members.length) {
       return {
@@ -130,8 +126,8 @@ const ParticipationParser = (() => {
     }
 
     return {
-      ok: true, error: null,
-      activity_type: activity, log_datetime: dt, log_date: date,
+      ok: true, error: null, defaulted,
+      activity_type: finalActivity, log_datetime: dt, log_date: date,
       location, total_participants: total, commander, members,
     };
   }
@@ -175,7 +171,8 @@ const ParticipationParser = (() => {
         activity = detectActivity(combined);
         lookahead++;
       }
-      results.push(parseSingleBlock(combined));
+      // 끝내 태그가 없으면 뒤 메시지를 합치지 않은 원본 블록만 !시틈 기본으로 파싱 (명단 오염 방지)
+      results.push(parseSingleBlock(activity ? combined : msg));
     }
     return results;
   }
@@ -186,8 +183,9 @@ const ParticipationParser = (() => {
       return parseKakaoLog(text);
     }
 
+    // 태그가 전혀 없으면: 저장 블록별로 나눠 각각 파싱 (블록마다 !시틈 기본 세션)
     const tagMatches = [...text.matchAll(TAG_RE)];
-    if (!tagMatches.length) return [parseSingleBlock(text)];
+    if (!tagMatches.length) return splitUntagged(text);
 
     const results = [];
     let prevEnd = 0;
@@ -215,6 +213,24 @@ const ParticipationParser = (() => {
           }
         }
       }
+    }
+    // 마지막 태그 뒤에 남은 태그 없는 저장 블록들도 !시틈 기본으로 처리 (기존엔 조용히 버려졌음)
+    const trailing = text.slice(prevEnd).trim();
+    if (trailing && BLOCK_START_RE.test(trailing)) {
+      results.push(...splitUntagged(trailing));
+    }
+    return results;
+  }
+
+  // 태그 없는 텍스트를 저장 블록 단위로 나눠 각각 파싱 (parseSingleBlock이 !시틈 기본 적용)
+  function splitUntagged(text) {
+    const splits = [...text.matchAll(new RegExp(BLOCK_START_RE.source, "g"))];
+    if (splits.length <= 1) return [parseSingleBlock(text)];
+    const results = [];
+    for (let idx = 0; idx < splits.length; idx++) {
+      const start = splits[idx].index;
+      const end = idx + 1 < splits.length ? splits[idx + 1].index : text.length;
+      results.push(parseSingleBlock(text.slice(start, end).trim()));
     }
     return results;
   }
