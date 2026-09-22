@@ -447,6 +447,7 @@ Deno.serve(async (req: Request) => {
   const MANAGE_ACTIONS = new Set([
     "confirm", "bulk_cancel", "dispatch", "undispatch", "revert",
     "decline_conflict", "finalize", "cancel_history", "delete_history",
+    "brooch",
   ]);
   if (action && MANAGE_ACTIONS.has(action) && req.method === "POST") {
     if (!isStaff(user)) return jsonResponse({ error: "운영진만 사용할 수 있는 기능입니다." }, 403);
@@ -734,6 +735,24 @@ Deno.serve(async (req: Request) => {
       if (error) return jsonResponse({ error: "이력 삭제에 실패했습니다." }, 500);
       return jsonResponse({ ok: true });
     }
+
+    // 브로치 분배 체크 저장 (운영진 — 체크된 user_id 목록 통째 교체, app_settings JSON)
+    if (action === "brooch") {
+      const checked = Array.isArray(body.checked)
+        ? (body.checked as unknown[]).filter((v): v is string => typeof v === "string")
+        : null;
+      if (!checked) return jsonResponse({ error: "checked 배열이 필요합니다." }, 400);
+      const value = JSON.stringify({
+        checked,
+        updated_at: new Date().toISOString(),
+        updated_by: user.current_id,
+      });
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ key: "brooch_distribution", value }, { onConflict: "key" });
+      if (error) return jsonResponse({ error: "저장에 실패했습니다." }, 500);
+      return jsonResponse({ ok: true });
+    }
   }
 
   // ── 신청 화면 데이터 ──
@@ -743,6 +762,42 @@ Deno.serve(async (req: Request) => {
     // 결사 창고용 경량 조회: 활성 기간만 (view=items의 전체 재고/자격 계산 없이)
     if (view === "period") {
       return jsonResponse({ period: await getActivePeriod() });
+    }
+
+    // ── 브로치 분배 체크 (전 회원 조회 — 기여점수순 명단 + 저장된 체크) ──
+    if (view === "brooch") {
+      const [memRes, setRes] = await Promise.all([
+        supabase
+          .from("members")
+          .select("user_id, current_id, guild_name, power, jaeng_rate, contribution_score")
+          .neq("role", "관리자"),
+        supabase.from("app_settings").select("value").eq("key", "brooch_distribution").maybeSingle(),
+      ]);
+      if (memRes.error) return jsonResponse({ error: "결사원 조회에 실패했습니다." }, 500);
+      let saved: { checked?: unknown; updated_at?: string; updated_by?: string } = {};
+      try {
+        saved = setRes.data?.value ? JSON.parse(setRes.data.value) : {};
+      } catch {
+        saved = {};
+      }
+      const members = (memRes.data || [])
+        .map((m) => ({
+          user_id: m.user_id,
+          nick: m.current_id,
+          guild: m.guild_name || "",
+          power: Number(m.power) || 0,
+          jaeng_rate: Number(m.jaeng_rate) || 0,
+          contribution_score: Number(m.contribution_score) || 0,
+        }))
+        .sort((a, b) => b.contribution_score - a.contribution_score || b.power - a.power);
+      return jsonResponse({
+        members,
+        checked: Array.isArray(saved.checked) ? saved.checked.filter((v) => typeof v === "string") : [],
+        updated_at: saved.updated_at ?? null,
+        updated_by: saved.updated_by ?? null,
+        is_staff: isStaff(user),
+        me: user.user_id,
+      });
     }
 
     // ── 신청 현황 (전 회원 조회 — 원본 get_items_with_requests_full) ──

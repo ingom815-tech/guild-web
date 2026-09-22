@@ -8,6 +8,7 @@ const Tabs = (() => {
     status: () => DistManage.openStatus(),
     result: () => DistManage.openResult(),
     history: () => DistManage.openHistory(),
+    brooch: () => Brooch.open(),
   };
   let distSub = "warehouse"; // 마지막으로 보던 하위 탭 기억 (기본 = 결사 창고)
 
@@ -66,6 +67,7 @@ const App = (() => {
     Auth.startActivityTracking(); // 자동 로그아웃용 마지막 활동 시각 기록 시작
     Auth.applyRoleUI(user);
     Tabs.go("dashboard", document.querySelector('.tab[data-s="dashboard"]'));
+    Profile.checkSpecAlarm(); // 스펙 갱신 20일 경과 알림 (비동기 — 화면 진입 안 막음)
   }
 
   function initLoginForm() {
@@ -135,6 +137,7 @@ const App = (() => {
     Distribution.init();
     Warehouse.init();
     DistManage.init();
+    Brooch.init();
     Participation.init();
     War.init();
     Profile.init();

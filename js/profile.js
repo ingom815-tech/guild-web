@@ -520,7 +520,121 @@ const Profile = (() => {
     wireDropzone("aqui", "pfAquiDrop", "pfAquiImg");
     document.getElementById("pfPowerUploadBtn").addEventListener("click", () => uploadImgs("power"));
     document.getElementById("pfAquiUploadBtn").addEventListener("click", () => uploadImgs("aqui"));
+
+    initSpecAlarm();
   }
 
-  return { init, load, setTab };
+  // ── 스펙 갱신 알림 ──────────────────────────────────────────────────────
+  // 장비 스샷·아퀴룬 스샷 각각의 마지막 업로드 시각(스샷 파일명에 박힌 epoch ms)을 보고,
+  // 둘 중 하나라도 20일이 지났거나 기록이 없으면 로그인할 때마다 모달을 띄운다 (스누즈 없음).
+  const SPEC_STALE_DAYS = 20;
+  const specFiles = { power: null, aqui: [] };
+
+  // 스샷 URL 배열 → 가장 최근 업로드 epoch ms. 업로드 경로가 `{Date.now()}_{i}.jpg`로 저장되므로
+  // 파일명의 13자리 숫자가 곧 업로드 시각. 옛 형식(합병 전 등)이라 못 읽으면 null = 기록 없음.
+  function shotLastTs(urls) {
+    let last = null;
+    for (const u of urls || []) {
+      const m = String(u).match(/(\d{13})_\d+\.\w+/);
+      if (m) last = Math.max(last ?? 0, Number(m[1]));
+    }
+    return last;
+  }
+
+  function shotAge(urls) {
+    const ts = shotLastTs(urls);
+    if (ts === null) return { days: null, label: "기록 없음" };
+    const days = Math.floor((Date.now() - ts) / 86400000);
+    return { days, label: days === 0 ? "오늘 갱신됨" : `${days}일 전 갱신` };
+  }
+
+  async function checkSpecAlarm() {
+    let p;
+    try {
+      p = await Api.getProfile();
+    } catch (_) {
+      return; // 세션 만료 등 — 알람은 조용히 포기
+    }
+    if (p.locked) return; // 분배 기간 잠금 중엔 수정 불가 — 알람 생략
+    const powerAge = shotAge(p.power_imgs);
+    const aquiAge = shotAge(p.aqui_imgs);
+    const stale = (a) => a.days === null || a.days >= SPEC_STALE_DAYS;
+    if (!stale(powerAge) && !stale(aquiAge)) return;
+
+    const parts = [];
+    if (stale(powerAge)) parts.push(`장비 스샷 ${powerAge.label}`);
+    if (stale(aquiAge)) parts.push(`아퀴룬 스샷 ${aquiAge.label}`);
+    document.getElementById("specModalMsg").textContent =
+      `${parts.join(" · ")} — 현재 전투력과 스크린샷을 갱신해 주세요!`;
+    document.getElementById("specPowerAge").textContent = powerAge.label;
+    document.getElementById("specAquiAge").textContent = aquiAge.label;
+    document.getElementById("specPower").value = p.info && p.info.power != null ? p.info.power : "";
+    specFiles.power = null;
+    specFiles.aqui = [];
+    document.getElementById("specPowerName").textContent = "";
+    document.getElementById("specAquiName").textContent = "";
+    document.getElementById("specErr").style.display = "none";
+    document.getElementById("specModalBackdrop").classList.add("on");
+  }
+
+  function initSpecAlarm() {
+    const backdrop = document.getElementById("specModalBackdrop");
+    const errBox = document.getElementById("specErr");
+
+    function wirePick(kind, btnId, inputId, nameId, max) {
+      const input = document.getElementById(inputId);
+      document.getElementById(btnId).addEventListener("click", () => input.click());
+      input.addEventListener("change", () => {
+        const imgs = [...input.files].filter((f) => !f.type || f.type.startsWith("image/")).slice(0, max);
+        if (kind === "power") specFiles.power = imgs[0] || null;
+        else specFiles.aqui = imgs;
+        document.getElementById(nameId).textContent = imgs.length
+          ? `선택됨: ${imgs.length === 1 ? imgs[0].name : imgs.length + "장"}`
+          : "";
+        input.value = "";
+      });
+    }
+    wirePick("power", "specPowerPickBtn", "specPowerInput", "specPowerName", 1);
+    wirePick("aqui", "specAquiPickBtn", "specAquiInput", "specAquiName", 10);
+
+    // 나중에 하기 — 이번만 닫는다. 두 스샷이 모두 갱신될 때까지 다음 로그인에 다시 뜬다.
+    document.getElementById("specLaterBtn").addEventListener("click", () => backdrop.classList.remove("on"));
+
+    document.getElementById("specSaveBtn").addEventListener("click", async () => {
+      errBox.style.display = "none";
+      const power = Number(document.getElementById("specPower").value);
+      if (!Number.isFinite(power) || power <= 0) {
+        errBox.textContent = "전투력을 입력해주세요.";
+        errBox.style.display = "block";
+        return;
+      }
+      if (!specFiles.power && !specFiles.aqui.length) {
+        errBox.textContent = "장비 또는 아퀴룬 스샷을 1장 이상 선택해주세요.";
+        errBox.style.display = "block";
+        return;
+      }
+      const btn = document.getElementById("specSaveBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>갱신 중...';
+      try {
+        await Api.updateProfile({ power }); // profile_updated_at 스탬프도 함께 갱신
+        if (specFiles.power) {
+          await Api.uploadProfileImages("power", await ImageUtil.filesToDataUrls([specFiles.power], 1));
+        }
+        if (specFiles.aqui.length) {
+          await Api.uploadProfileImages("aqui", await ImageUtil.filesToDataUrls(specFiles.aqui, 10));
+        }
+        backdrop.classList.remove("on");
+        alert("스펙이 갱신되었습니다. 감사합니다! ⚔️");
+      } catch (err) {
+        errBox.textContent = err.message || "갱신에 실패했습니다.";
+        errBox.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "갱신하기";
+      }
+    });
+  }
+
+  return { init, load, setTab, checkSpecAlarm };
 })();

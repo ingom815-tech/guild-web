@@ -115,6 +115,9 @@ const Api = (() => {
       call("distribution", { method: "POST", query: { action: "cancel_history" }, body: { history_id } }),
     deleteDistHistory: (history_id) =>
       call("distribution", { method: "POST", query: { action: "delete_history" }, body: { history_id } }),
+    getBroochBoard: () => call("distribution", { method: "GET", query: { view: "brooch" } }),
+    saveBroochChecks: (checked) =>
+      call("distribution", { method: "POST", query: { action: "brooch" }, body: { checked } }),
     getProfile: () => call("profile", { method: "GET" }),
     updateProfile: (patch) => call("profile", { method: "PUT", body: patch }),
     uploadProfileImages: (kind, images) =>

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=83">
-<link rel="stylesheet" href="css/style.css?v=83">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=84">
+<link rel="stylesheet" href="css/style.css?v=84">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=83" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=84" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=83" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=84" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -127,6 +127,7 @@
     <span class="fchip" data-ds="status" onclick="Tabs.goDist('status')">분배 현황</span>
     <span class="fchip" data-ds="result" onclick="Tabs.goDist('result')">결과</span>
     <span class="fchip" data-ds="history" onclick="Tabs.goDist('history')">이력</span>
+    <span class="fchip" data-ds="brooch" onclick="Tabs.goDist('brooch')">브로치</span>
   </div>
 
   <!-- ═══ 대시보드 (실제 동작, 전 회원 — 대시보드_최종통합_시안_v2 레이아웃) ═══ -->
@@ -260,6 +261,20 @@
       </div>
     </div>
     <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
+  </section>
+
+  <!-- ═══ 브로치 분배 체크 (전 회원 조회 / 체크·저장은 운영진) ═══ -->
+  <section class="screen" id="s-brooch">
+    <div class="toast" id="broochToast"></div>
+    <div class="panel">
+      <h3>브로치 분배 <span class="meta" id="broochMeta"></span></h3>
+      <div class="note" id="broochNote" style="margin-bottom:10px"></div>
+      <div class="row hidden" id="broochStaffBar" style="gap:10px;align-items:center;margin-bottom:10px;justify-content:flex-end">
+        <span class="meta">체크를 바꾼 뒤 저장을 눌러야 반영됩니다</span>
+        <button type="button" class="btn sm" id="broochSaveBtn">체크 저장</button>
+      </div>
+      <div class="mtable" style="max-height:65vh;overflow:auto"><table id="broochTable"></table></div>
+    </div>
   </section>
 
   <!-- ═══ 결사 창고 (결사원용 재고 열람 — 결사창고_결사원용_시안, 열람 전용) ═══ -->
@@ -1179,26 +1194,54 @@
   </div>
 </div>
 
-<script src="js/config.js?v=83"></script>
-<script src="js/api.js?v=83"></script>
-<script src="js/auth.js?v=83"></script>
-<script src="js/logParser.js?v=83"></script>
-<script src="js/gamedata.js?v=83"></script>
-<script src="js/imageUtil.js?v=83"></script>
-<script src="js/inventory.js?v=83"></script>
-<script src="js/members.js?v=83"></script>
-<script src="js/treasury.js?v=83"></script>
-<script src="js/dashboard.js?v=83"></script>
-<script src="js/distribution.js?v=83"></script>
-<script src="js/warehouse.js?v=83"></script>
-<script src="js/distManage.js?v=83"></script>
-<script src="js/participationParser.js?v=83"></script>
-<script src="js/war.js?v=83"></script>
-<script src="js/warStatus.js?v=83"></script>
-<script src="js/participation.js?v=83"></script>
-<script src="js/profile.js?v=83"></script>
-<script src="js/register.js?v=83"></script>
-<script src="js/logAdmin.js?v=83"></script>
-<script src="js/app.js?v=83"></script>
+<!-- ═══ 스펙 갱신 알림 모달 (로그인 시 profile_updated_at 20일 경과) ═══ -->
+<div class="modal-backdrop" id="specModalBackdrop">
+  <div class="modal">
+    <h3>⚔️ 스펙 갱신 안내</h3>
+    <div class="note" id="specModalMsg" style="margin-bottom:12px"></div>
+    <div class="field"><label for="specPower">현재 전투력</label><input type="number" id="specPower" min="0" placeholder="예: 350000"></div>
+    <div class="field">
+      <label>⚔️ 장비(전투력) 스샷 <span class="meta" id="specPowerAge"></span></label>
+      <button type="button" class="btn ghost sm" id="specPowerPickBtn">📷 스샷 선택 (1장)</button>
+      <input type="file" id="specPowerInput" accept="image/*" style="display:none">
+      <div class="meta" id="specPowerName" style="margin-top:6px"></div>
+    </div>
+    <div class="field">
+      <label>🔮 아퀴룬 스샷 <span class="meta" id="specAquiAge"></span></label>
+      <button type="button" class="btn ghost sm" id="specAquiPickBtn">📷 스샷 선택 (여러 장 가능)</button>
+      <input type="file" id="specAquiInput" accept="image/*" multiple style="display:none">
+      <div class="meta" id="specAquiName" style="margin-top:6px"></div>
+    </div>
+    <div class="meta" style="margin-bottom:10px">올리면 기존 스샷이 통째로 교체됩니다. 두 스샷이 모두 갱신될 때까지 로그인할 때마다 안내가 뜹니다.</div>
+    <div class="err-msg" id="specErr"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px">
+      <button type="button" class="btn ghost sm" id="specLaterBtn">나중에 하기</button>
+      <button type="button" class="btn sm" id="specSaveBtn">갱신하기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js?v=84"></script>
+<script src="js/api.js?v=84"></script>
+<script src="js/auth.js?v=84"></script>
+<script src="js/logParser.js?v=84"></script>
+<script src="js/gamedata.js?v=84"></script>
+<script src="js/imageUtil.js?v=84"></script>
+<script src="js/inventory.js?v=84"></script>
+<script src="js/members.js?v=84"></script>
+<script src="js/treasury.js?v=84"></script>
+<script src="js/dashboard.js?v=84"></script>
+<script src="js/distribution.js?v=84"></script>
+<script src="js/warehouse.js?v=84"></script>
+<script src="js/distManage.js?v=84"></script>
+<script src="js/brooch.js?v=84"></script>
+<script src="js/participationParser.js?v=84"></script>
+<script src="js/war.js?v=84"></script>
+<script src="js/warStatus.js?v=84"></script>
+<script src="js/participation.js?v=84"></script>
+<script src="js/profile.js?v=84"></script>
+<script src="js/register.js?v=84"></script>
+<script src="js/logAdmin.js?v=84"></script>
+<script src="js/app.js?v=84"></script>
 </body>
 </html>

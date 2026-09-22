@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=83** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=84** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -98,7 +98,8 @@
 | (최신) | 시즌별 참여 기록 기여점수순 정렬+기여점수 열(합산 참여점수×0.7+전투력×0.3, v=79) + 참여율 관리에 닉네임 변경 이력 카드(`renderNickHistory` — status.nick_history 기반 검색: 이전닉/현재닉/아이디, 결사 열은 listMembers 매핑. 이력은 합병 0016 리셋 이후 내정보 변경분만 — 관리자 대리 변경은 미기록, 합병 전은 `member_nick_history_archive`) (v=80) |
 | 5f4fca1 | 참여율 관리 입력 이력 카드 기본 접힘(헤더 건수 배지 + 펼치기/접기 토글) (v=81) |
 | (최신) | **클래스현황 신설**: 내정보에 "클래스변경"(members.next_class, 0028 + profile 함수) → 전력 현황 [역할 보드\|전력판\|클래스현황] 하위탭. 클래스현황은 **실시간**(dashboard view=war_status가 `class_status` 동봉 — 내정보 저장 즉시 반영, 스냅샷 아님), 7직업 섹터 항상 표시(밴드 100px: 직업명/N명·신화N 2단), 변경자=변경 클래스 섹터+`현직업 ➜ 변경` 표기, 신화=금테+"신화" 배지(.mythtag). 결사 버튼은 getPublicGuilds로 항상 4개. + 닉네임 이력을 결사원 관리 하위탭으로 이동(members.js renderNickHistory) (v=82, profile·dashboard 함수 재배포) |
-| (최신) | **내판가 개정(2026-08-26)**: 아퀴 내판가 폐지(salePriceKrw 아퀴 분기 제거), 별빛 심연석 5만→3만(price_krw_starlight 기본값+규정 카드). **브로치 카테고리 폐지** — DIST_CATEGORIES 4종, 브로치 품목은 "전파편 및 기타"로 분류(front category5·server classifyTab·창고 SECTIONS). 규정 탭 개정 이력 줄 추가. distribution 함수 재배포 + guild_regulations JSON 정리 SQL — **현재 배포 버전 (v=83)** |
+| 04313e9 | **내판가 개정(2026-08-26)**: 아퀴 내판가 폐지(salePriceKrw 아퀴 분기 제거), 별빛 심연석 5만→3만(price_krw_starlight 기본값+규정 카드). **브로치 카테고리 폐지** — DIST_CATEGORIES 4종, 브로치 품목은 "전파편 및 기타"로 분류(front category5·server classifyTab·창고 SECTIONS). 규정 탭 개정 이력 줄 추가. distribution 함수 재배포(완료) + guild_regulations JSON 정리 SQL(대기) (v=83) |
+| (최신) | **브로치 분배 체크 + 스펙 갱신 알림**: ①분배 하위탭 "브로치" 신설(js/brooch.js) — 전 회원이 기여점수순 명단(순번·닉·결사·전투력·쟁참여율·기여점수) 조회, 운영진만 체크+저장(distribution `view=brooch`/`action=brooch`, app_settings `brooch_distribution` JSON — SQL 불필요, 관리자 제외, 탭 진입마다 재조회, 구버전 함수 응답 시 재배포 안내). ②로그인 시 스펙 갱신 알림 — 장비·아퀴룬 **스샷 각각**의 마지막 업로드 시각(스샷 파일명 13자리 epoch ms)이 기준, 하나라도 20일 경과/기록 없음이면 **매 로그인마다** 모달(스누즈 없음): 전투력 입력(필수)+장비 1장·아퀴 최대 10장 첨부 → 갱신하기(updateProfile+uploadProfileImages, 분배 잠금 중엔 생략). profile 함수는 내정보 저장·인증샷 업로드 시 `profile_updated_at` 스탬프 복원(알람 필수 아님, 기록용). distribution·profile 함수 재배포 완료 — **현재 배포 버전 (v=84)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

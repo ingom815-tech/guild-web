@@ -119,6 +119,9 @@ function validateStatusCheck(raw: string): string | null {
 function kstNowEpoch(): number {
   return Date.now() + 9 * 3600 * 1000;
 }
+function kstNowString(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19);
+}
 function naiveKstToEpoch(ts: string): number {
   return new Date(ts.replace(" ", "T") + (ts.endsWith("Z") ? "" : "Z")).getTime();
 }
@@ -241,7 +244,7 @@ Deno.serve(async (req: Request) => {
     const column = kind === "power" ? "power_img_url" : "status_check_img_url";
     const { error } = await supabase
       .from("members")
-      .update({ [column]: JSON.stringify(urls) })
+      .update({ [column]: JSON.stringify(urls), profile_updated_at: kstNowString() })
       .eq("user_id", user.user_id);
     if (error) return jsonResponse({ error: "이미지 저장에 실패했습니다." }, 500);
     return jsonResponse({ ok: true, urls });
@@ -251,7 +254,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const { data: me } = await supabase
       .from("members")
-      .select("user_id, current_id, guild_name, subjugation_rank, class, next_class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, participation_score, contribution_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn")
+      .select("user_id, current_id, guild_name, subjugation_rank, class, next_class, level, abyss_level, power, equipment_info, status_check, power_img_url, status_check_img_url, participation_score, contribution_score, jaeng_count, jaeng_rate, jaeng_morning, jaeng_evening, jaeng_dawn, profile_updated_at")
       .eq("user_id", user.user_id)
       .maybeSingle();
     if (!me) return jsonResponse({ error: "회원 정보를 찾을 수 없습니다." }, 404);
@@ -286,6 +289,7 @@ Deno.serve(async (req: Request) => {
       status_check: me.status_check,
       power_imgs: parseImgUrls(me.power_img_url),
       aqui_imgs: parseImgUrls(me.status_check_img_url),
+      profile_updated_at: me.profile_updated_at ?? null, // 스펙 갱신 알림 기준 (KST 벽시계값)
       // 쟁 지표 (참여점수와 별도 — 조 선택 기능은 폐지됨)
       jaeng: {
         count: me.jaeng_count ?? 0,
@@ -381,6 +385,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!Object.keys(patch).length) return jsonResponse({ error: "변경할 내용이 없습니다." }, 400);
+
+    // 스펙 갱신 시각 스탬프 (로그인 시 20일 경과 알림의 기준 — KST 벽시계값)
+    patch.profile_updated_at = kstNowString();
 
     const { error } = await supabase.from("members").update(patch).eq("user_id", user.user_id);
     if (error) return jsonResponse({ error: "저장에 실패했습니다." }, 500);
