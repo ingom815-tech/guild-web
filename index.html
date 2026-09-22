@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=88">
-<link rel="stylesheet" href="css/style.css?v=88">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=89">
+<link rel="stylesheet" href="css/style.css?v=89">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=88" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=89" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=88" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=89" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -345,11 +345,14 @@
           <div class="f"><span class="k">신청</span><span class="v warn">운영진에게 1:1 신청 (벼락/곰)</span></div>
         </div>
       </div>
-      <div class="icard sys">
-        <div class="nm">신규 전퀴 라인</div>
+      <div class="icard staff">
+        <div class="nm">신규 전퀴 지원</div>
         <div class="fields">
-          <div class="f"><span class="k">받는 순서</span><span class="v">기여점수 순</span></div>
-          <div class="f"><span class="k">참고</span><span class="v"><small>지원 활용은 결거 다이아만</small></span></div>
+          <div class="f"><span class="k">지원 라인</span><span class="v"><small>정화 · 희방 · 신규 PVE · 신규 PVP</small></span></div>
+          <div class="f"><span class="k">받는 순서</span><span class="v">쟁 참여도 우선 고려</span></div>
+          <div class="f"><span class="k">방법</span><span class="v warn">희망자 조사 → 쟁참여율 기준 운영진 회의 → 지급</span></div>
+          <div class="f"><span class="k">한도</span><span class="v">PVE / PVP 각 1개씩 · 시즌당</span></div>
+          <div class="f"><span class="k">참고</span><span class="v"><small>상황에 따라 유동 변경 가능 · 지원 활용은 결거 다이아만</small></span></div>
         </div>
       </div>
       <div class="icard sys">
@@ -376,13 +379,29 @@
           <div class="f"><span class="k">참고</span><span class="v"><small>결사·부결사 전원 입주 후 남는 주둔지에서 분배 진행</small></span></div>
         </div>
       </div>
-      <div class="icard tbd">
+      <div class="icard staff">
         <div class="nm">3단 브로치</div>
-        <div class="fields"><div class="f"><span class="k">상태</span><span class="v mut">패치 상황 보고 추후 결정</span></div></div>
+        <div class="fields">
+          <div class="f"><span class="k">지원</span><span class="v">캐릭터당 1회 · 최대 5개</span></div>
+          <div class="f"><span class="k">받는 순서</span><span class="v">전투력 상위 순</span></div>
+          <div class="f"><span class="k">우선 조건</span><span class="v warn">① 결사증표 ② 태양석 ③ 전단계 브로치 풀강 준비자 우선</span></div>
+          <div class="f"><span class="k">참고</span><span class="v"><small>캐릭터 / 전승 간 전투력 차이는 분배 기준에 미포함</small></span></div>
+        </div>
       </div>
-      <div class="icard tbd">
+      <div class="icard sys">
         <div class="nm">영웅 재해</div>
-        <div class="fields"><div class="f"><span class="k">상태</span><span class="v mut">패치 상황 보고 추후 결정</span></div></div>
+        <div class="fields">
+          <div class="f"><span class="k">받는 순서</span><span class="v">기여점수 순</span></div>
+          <div class="f"><span class="k">참고</span><span class="v"><small>기여점수 = 콘텐츠 참여도 + 전투력</small></span></div>
+        </div>
+      </div>
+      <div class="icard staff">
+        <div class="nm">쟁 참여도 우수 보상</div>
+        <div class="fields">
+          <div class="f"><span class="k">대상</span><span class="v">쟁 참여도 상위 · 기본 최대 10명</span></div>
+          <div class="f"><span class="k">보상 선택</span><span class="v"><small>별빛심연석 1개 / 전설심연석 3개 / 골드 25억 / 다이아 3,000 (수수료 발생)</small></span></div>
+          <div class="f"><span class="k">참고</span><span class="v"><small>필요 시 운영진 회의 후 추가 지급 가능</small></span></div>
+        </div>
       </div>
     </div>
 
@@ -390,7 +409,7 @@
     <div class="rterms">
       <b>내판가</b> 아이템 수령 시 결사에 납부하는 내부 판매가 · <b>결거 다이아</b> 결사 거래 다이아 · <b>유찰</b> 지망자가 없어 다음 회차로 넘어간 아이템 (2회 유찰 시 지망 칸 없이 자유 신청)
     </div>
-    <div class="rrev">개정 이력: 2026-07-22 합병 개정판 시행 · 2026-08-26 내판가 개정(아퀴 내판가 폐지 · 별빛 심연석 3만 원) · 문의는 운영진에게</div>
+    <div class="rrev">개정 이력: 2026-07-22 합병 개정판 시행 · 2026-08-26 내판가 개정(아퀴 내판가 폐지 · 별빛 심연석 3만 원) · 2026-09-22 결사 회의 반영(3단 브로치·영웅 재해 확정 / 신규 전퀴 지원 개정 / 쟁 참여도 우수 보상 신설) · 문의는 운영진에게</div>
   </section>
 
   <!-- ═══ 공금 관리 (공금관리_개선시안.html — 전 회원 조회 가능 / 입출금은 운영진 이상) ═══ -->
@@ -1257,27 +1276,27 @@
   </div>
 </div>
 
-<script src="js/config.js?v=88"></script>
-<script src="js/api.js?v=88"></script>
-<script src="js/auth.js?v=88"></script>
-<script src="js/logParser.js?v=88"></script>
-<script src="js/gamedata.js?v=88"></script>
-<script src="js/imageUtil.js?v=88"></script>
-<script src="js/inventory.js?v=88"></script>
-<script src="js/members.js?v=88"></script>
-<script src="js/treasury.js?v=88"></script>
-<script src="js/dashboard.js?v=88"></script>
-<script src="js/distribution.js?v=88"></script>
-<script src="js/warehouse.js?v=88"></script>
-<script src="js/distManage.js?v=88"></script>
-<script src="js/brooch.js?v=88"></script>
-<script src="js/participationParser.js?v=88"></script>
-<script src="js/war.js?v=88"></script>
-<script src="js/warStatus.js?v=88"></script>
-<script src="js/participation.js?v=88"></script>
-<script src="js/profile.js?v=88"></script>
-<script src="js/register.js?v=88"></script>
-<script src="js/logAdmin.js?v=88"></script>
-<script src="js/app.js?v=88"></script>
+<script src="js/config.js?v=89"></script>
+<script src="js/api.js?v=89"></script>
+<script src="js/auth.js?v=89"></script>
+<script src="js/logParser.js?v=89"></script>
+<script src="js/gamedata.js?v=89"></script>
+<script src="js/imageUtil.js?v=89"></script>
+<script src="js/inventory.js?v=89"></script>
+<script src="js/members.js?v=89"></script>
+<script src="js/treasury.js?v=89"></script>
+<script src="js/dashboard.js?v=89"></script>
+<script src="js/distribution.js?v=89"></script>
+<script src="js/warehouse.js?v=89"></script>
+<script src="js/distManage.js?v=89"></script>
+<script src="js/brooch.js?v=89"></script>
+<script src="js/participationParser.js?v=89"></script>
+<script src="js/war.js?v=89"></script>
+<script src="js/warStatus.js?v=89"></script>
+<script src="js/participation.js?v=89"></script>
+<script src="js/profile.js?v=89"></script>
+<script src="js/register.js?v=89"></script>
+<script src="js/logAdmin.js?v=89"></script>
+<script src="js/app.js?v=89"></script>
 </body>
 </html>
