@@ -447,7 +447,7 @@ Deno.serve(async (req: Request) => {
   const MANAGE_ACTIONS = new Set([
     "confirm", "bulk_cancel", "dispatch", "undispatch", "revert",
     "decline_conflict", "finalize", "cancel_history", "delete_history",
-    "brooch",
+    "brooch", "manual_history",
   ]);
   if (action && MANAGE_ACTIONS.has(action) && req.method === "POST") {
     if (!isStaff(user)) return jsonResponse({ error: "운영진만 사용할 수 있는 기능입니다." }, 403);
@@ -734,6 +734,92 @@ Deno.serve(async (req: Request) => {
       const { error } = await supabase.from("distribution_history").delete().eq("id", histId);
       if (error) return jsonResponse({ error: "이력 삭제에 실패했습니다." }, 500);
       return jsonResponse({ ok: true });
+    }
+
+    // 수동 분배 등록 (운영진 — 정식 신청 절차를 거치지 않고 나간 아이템을 이력에 직접 기록.
+    // 재고 차감·공금 이동 없음. looter="수동 분배"로 정식 분배와 구분, 취소 대신 이력 삭제로 정리)
+    if (action === "manual_history") {
+      const itemName = typeof body.item_name === "string" ? body.item_name.trim() : "";
+      if (!itemName) return jsonResponse({ error: "품목명이 필요합니다." }, 400);
+      let quantity = Number(body.quantity);
+      if (!Number.isFinite(quantity) || !Number.isInteger(quantity) || quantity < 1) quantity = 1;
+      const grade = typeof body.grade === "string" && body.grade.trim() ? body.grade.trim() : null;
+      const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : "전파편 및 기타";
+      const receiverUid = typeof body.receiver_user_id === "string" && body.receiver_user_id.trim() ? body.receiver_user_id.trim() : null;
+      let receiverName = typeof body.receiver === "string" ? body.receiver.trim() : "";
+      if (receiverUid) {
+        const { data: rm } = await supabase.from("members").select("user_id, current_id").eq("user_id", receiverUid).maybeSingle();
+        if (!rm) return jsonResponse({ error: "수령자를 찾을 수 없습니다." }, 404);
+        receiverName = rm.current_id || rm.user_id;
+      }
+      if (!receiverName) return jsonResponse({ error: "수령자가 필요합니다." }, 400);
+
+      // 판매 대금 다이아(선택) — 정식 분배와 동일하게 룻자(운영진) 계좌로 입금
+      let diamond = Number(body.diamond_amount);
+      if (!Number.isFinite(diamond) || !Number.isInteger(diamond) || diamond < 0) diamond = 0;
+      let diaTo: string | null = null;
+      let diaName = "";
+      if (diamond > 0) {
+        const diaUid = typeof body.dia_owner_user_id === "string" && body.dia_owner_user_id.trim() ? body.dia_owner_user_id.trim() : "";
+        if (!diaUid) return jsonResponse({ error: "다이아 입금 계좌(룻자)가 필요합니다." }, 400);
+        const { data: dm } = await supabase.from("members").select("user_id, current_id").eq("user_id", diaUid).maybeSingle();
+        if (!dm) return jsonResponse({ error: "다이아 입금 계좌를 찾을 수 없습니다." }, 404);
+        diaTo = dm.user_id;
+        diaName = dm.current_id || dm.user_id;
+        // 계좌 통합 별칭 적용 (finalize와 동일 — 어떤 경로든 별칭 계좌로 통합)
+        try {
+          const { data: aliasRow } = await supabase.from("app_settings").select("value").eq("key", "dia_account_alias").maybeSingle();
+          if (aliasRow && aliasRow.value) {
+            const alias = JSON.parse(aliasRow.value) as Record<string, string>;
+            if (alias[diaTo]) {
+              const { data: am } = await supabase.from("members").select("user_id, current_id").eq("user_id", alias[diaTo]).maybeSingle();
+              if (am) {
+                diaTo = am.user_id;
+                diaName = am.current_id || am.user_id;
+              }
+            }
+          }
+        } catch {
+          // 별칭 설정이 없거나 형식 오류면 원래 대상 유지
+        }
+      }
+
+      const { data: ins, error: insErr } = await supabase
+        .from("distribution_history")
+        .insert({
+          item_name: itemName,
+          category,
+          grade,
+          quantity,
+          looter: "수동 분배",
+          looter_user_id: null,
+          receiver: receiverName,
+          receiver_user_id: receiverUid,
+          distributed_at: kstNowString(),
+          diamond_amount: diamond,
+          cash_amount: 0,
+        })
+        .select("id")
+        .single();
+      if (insErr) return jsonResponse({ error: "수동 분배 등록에 실패했습니다." }, 500);
+
+      if (diamond > 0 && diaTo) {
+        const { error: diaErr } = await supabase.rpc("apply_treasury_transaction", {
+          p_asset_type: "다이아",
+          p_direction: "입금",
+          p_amount: diamond,
+          p_owner_user_id: diaTo,
+          p_owner_name: diaName,
+          p_description: `수동 분배: ${itemName} → ${receiverName}`,
+          p_ref_type: "manual_distribution",
+          p_ref_id: String(ins.id),
+          p_created_by: user.user_id,
+        });
+        if (diaErr) {
+          return jsonResponse({ ok: true, history_id: ins.id, warn: "다이아 입금 실패 — 공금 관리에서 수동 입금 필요" }, 201);
+        }
+      }
+      return jsonResponse({ ok: true, history_id: ins.id }, 201);
     }
 
     // 브로치 분배 체크 저장 (운영진 — 체크된 user_id 목록 통째 교체, app_settings JSON)

@@ -115,6 +115,8 @@ const Api = (() => {
       call("distribution", { method: "POST", query: { action: "cancel_history" }, body: { history_id } }),
     deleteDistHistory: (history_id) =>
       call("distribution", { method: "POST", query: { action: "delete_history" }, body: { history_id } }),
+    createManualDistribution: (entry) =>
+      call("distribution", { method: "POST", query: { action: "manual_history" }, body: entry }),
     getBroochBoard: () => call("distribution", { method: "GET", query: { view: "brooch" } }),
     saveBroochChecks: (checked) =>
       call("distribution", { method: "POST", query: { action: "brooch" }, body: { checked } }),

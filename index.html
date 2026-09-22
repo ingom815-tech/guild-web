@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프라시아 전기 — 결사 관리</title>
-<link rel="icon" type="image/png" href="img/bi_simbol.png?v=84">
-<link rel="stylesheet" href="css/style.css?v=84">
+<link rel="icon" type="image/png" href="img/bi_simbol.png?v=85">
+<link rel="stylesheet" href="css/style.css?v=85">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div class="lg-bg"></div>
   <div class="lg-fx"></div>
   <div class="lg-card">
-    <div class="emblem"><img src="img/bi_simbol.png?v=84" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
+    <div class="emblem"><img src="img/bi_simbol.png?v=85" alt="logo" onerror="this.parentElement.classList.add('fb');this.parentElement.textContent='⚔️'"></div>
     <h1>프라시아 전기 결사 관리</h1>
     <div class="lg-sub">결사원 전용 시스템입니다</div>
     <div class="err-msg" id="loginErr"></div>
@@ -95,7 +95,7 @@
 <!-- ═══ 메인 앱 ═══ -->
 <div class="wrap hidden" id="appScreen">
   <header>
-    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=84" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
+    <h1 style="display:flex;align-items:center;gap:8px"><img src="img/bi_simbol.png?v=85" alt="" style="height:24px;width:auto" onerror="this.remove()">프라시아 전기<span class="lf"> — 결사 관리</span></h1>
     <div class="user-chip">
       <span id="userGreeting"></span>
       <span class="role-badge" id="userRoleBadge"></span>
@@ -254,10 +254,11 @@
       <input type="date" id="hTo" onchange="DistManage.renderHistory()" style="border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card)">
     </div>
     <div class="card">
-      <div class="row" style="gap:18px;flex-wrap:wrap">
+      <div class="row" style="gap:18px;flex-wrap:wrap;align-items:center">
         <span class="meta">총 <b id="hCount" style="color:var(--txt)">0</b>건</span>
         <span class="meta">💎 다이아 합계 <b id="hDiaSum" style="color:var(--txt)">0</b></span>
         <span class="meta">💵 현금 합계 <b id="hCashSum" style="color:var(--txt)">0</b>원</span>
+        <button type="button" class="btn sm staff-only" id="manualDistBtn" style="margin-left:auto">➕ 수동 분배</button>
       </div>
     </div>
     <div class="mtable" style="max-height:65vh;overflow:auto"><table id="historyTable"></table></div>
@@ -1194,6 +1195,34 @@
   </div>
 </div>
 
+<!-- ═══ 수동 분배 등록 모달 (운영진 — 정식 절차 없이 나간 아이템을 이력에 직접 기록) ═══ -->
+<div class="modal-backdrop" id="manualDistBackdrop">
+  <div class="modal wide">
+    <h3>➕ 수동 분배 등록</h3>
+    <div class="note" style="margin-bottom:14px">정식 분배 절차를 거치지 않고 나간 아이템을 이력에 기록합니다. 재고 차감은 없으며, 판매 대금 다이아를 입력하면 선택한 룻자 계좌(공금)로 입금됩니다.</div>
+    <div class="mdgrid">
+      <div class="field sp2"><label for="mdItem">품목명</label><input type="text" id="mdItem" placeholder="예: 표적관통(신규PVP) 전설아퀴룬" required></div>
+      <div class="field"><label for="mdReceiver">수령자 <span class="meta">자동 검색</span></label>
+        <input type="text" id="mdReceiver" list="mdReceiverList" placeholder="닉네임 검색..." autocomplete="off">
+        <datalist id="mdReceiverList"></datalist>
+      </div>
+      <div class="field"><label for="mdCat">구분</label><select id="mdCat"></select></div>
+      <div class="field"><label for="mdGrade">등급</label><select id="mdGrade">
+        <option value="">없음</option><option>신화</option><option>절대자</option><option>전설</option><option>영웅</option><option>희귀</option>
+      </select></div>
+      <div class="field"><label for="mdQty">수량</label><input type="number" id="mdQty" min="1" value="1"></div>
+      <div class="field"><label for="mdDia">💎 판매 대금 다이아 <span class="meta">무상 0</span></label><input type="number" id="mdDia" min="0" value="0"></div>
+      <div class="field"><label for="mdDiaOwner">입금 계좌(룻자)</label><select id="mdDiaOwner"></select></div>
+      <div class="field"><label for="mdReason">사유 <span class="meta">선택</span></label><input type="text" id="mdReason" placeholder="예: 쟁탐 참여 보상"></div>
+    </div>
+    <div class="err-msg" id="mdErr"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px">
+      <button type="button" class="btn ghost sm" id="mdCancelBtn">취소</button>
+      <button type="button" class="btn sm" id="mdSaveBtn">등록</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ 스펙 갱신 알림 모달 (로그인 시 profile_updated_at 20일 경과) ═══ -->
 <div class="modal-backdrop" id="specModalBackdrop">
   <div class="modal">
@@ -1221,27 +1250,27 @@
   </div>
 </div>
 
-<script src="js/config.js?v=84"></script>
-<script src="js/api.js?v=84"></script>
-<script src="js/auth.js?v=84"></script>
-<script src="js/logParser.js?v=84"></script>
-<script src="js/gamedata.js?v=84"></script>
-<script src="js/imageUtil.js?v=84"></script>
-<script src="js/inventory.js?v=84"></script>
-<script src="js/members.js?v=84"></script>
-<script src="js/treasury.js?v=84"></script>
-<script src="js/dashboard.js?v=84"></script>
-<script src="js/distribution.js?v=84"></script>
-<script src="js/warehouse.js?v=84"></script>
-<script src="js/distManage.js?v=84"></script>
-<script src="js/brooch.js?v=84"></script>
-<script src="js/participationParser.js?v=84"></script>
-<script src="js/war.js?v=84"></script>
-<script src="js/warStatus.js?v=84"></script>
-<script src="js/participation.js?v=84"></script>
-<script src="js/profile.js?v=84"></script>
-<script src="js/register.js?v=84"></script>
-<script src="js/logAdmin.js?v=84"></script>
-<script src="js/app.js?v=84"></script>
+<script src="js/config.js?v=85"></script>
+<script src="js/api.js?v=85"></script>
+<script src="js/auth.js?v=85"></script>
+<script src="js/logParser.js?v=85"></script>
+<script src="js/gamedata.js?v=85"></script>
+<script src="js/imageUtil.js?v=85"></script>
+<script src="js/inventory.js?v=85"></script>
+<script src="js/members.js?v=85"></script>
+<script src="js/treasury.js?v=85"></script>
+<script src="js/dashboard.js?v=85"></script>
+<script src="js/distribution.js?v=85"></script>
+<script src="js/warehouse.js?v=85"></script>
+<script src="js/distManage.js?v=85"></script>
+<script src="js/brooch.js?v=85"></script>
+<script src="js/participationParser.js?v=85"></script>
+<script src="js/war.js?v=85"></script>
+<script src="js/warStatus.js?v=85"></script>
+<script src="js/participation.js?v=85"></script>
+<script src="js/profile.js?v=85"></script>
+<script src="js/register.js?v=85"></script>
+<script src="js/logAdmin.js?v=85"></script>
+<script src="js/app.js?v=85"></script>
 </body>
 </html>

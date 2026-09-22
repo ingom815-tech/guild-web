@@ -617,6 +617,8 @@ const DistManage = (() => {
 
     const histFrag = document.createDocumentFragment(); // 최대 500행 — 일괄 삽입
     rows.forEach((r) => {
+      // 수동 분배 건: 재고·공금이 걸려 있지 않아 "분배취소"(복원)가 무의미 — 삭제만 노출
+      const isManual = !r.looter_user_id && r.looter === "수동 분배";
       const tr = document.createElement("tr");
       tr.innerHTML =
         `<td class="meta">${String(r.distributed_at || "").slice(0, 16)}</td>` +
@@ -624,31 +626,37 @@ const DistManage = (() => {
         `<td class="num">${r.quantity ?? 1}</td><td class="lt"></td><td class="rv"></td>` +
         `<td class="num">${(r.diamond_amount || 0).toLocaleString()}</td>` +
         `<td class="num">${(r.cash_amount || 0).toLocaleString()}</td>` +
-        (admin ? `<td><span style="display:flex;gap:4px"><button class="btn sm ghost cancel">↩ 분배취소</button><button class="btn sm ghost del" style="color:#A32D2D">삭제</button></span></td>` : "");
+        (admin ? `<td><span style="display:flex;gap:4px">${isManual ? "" : '<button class="btn sm ghost cancel">↩ 분배취소</button>'}<button class="btn sm ghost del" style="color:#A32D2D">삭제</button></span></td>` : "");
       tr.querySelector(".ct").textContent = r.category || "-";
       tr.querySelector(".it").textContent = r.item_name;
       tr.querySelector(".lt").textContent = r.looter || "-";
       tr.querySelector(".rv").textContent = r.receiver || "-";
+      if (isManual) tr.querySelector(".lt").style.color = "var(--txt3)";
       if (admin) {
-        tr.querySelector(".cancel").addEventListener("click", () =>
-          openConfirm(
-            "분배취소",
-            `[${r.item_name}] → ${r.receiver} 분배를 취소할까요?\n재고 복원 + 확정 신청 복원 + 공금 역전(다이아 ${(r.diamond_amount || 0).toLocaleString()} / 현금 ${(r.cash_amount || 0).toLocaleString()})이 실행됩니다.`,
-            async () => {
-              try {
-                await Api.cancelDistHistory(r.id);
-                DistSync.bump();
-                toast("historyToast", "✓ 분배를 취소하고 재고/공금을 복원했습니다.");
-                await loadHistory();
-              } catch (e) {
-                toast("historyToast", e.message || "분배취소 실패", true);
-              }
-            },
-            "분배취소",
-          ),
-        );
+        if (!isManual) {
+          tr.querySelector(".cancel").addEventListener("click", () =>
+            openConfirm(
+              "분배취소",
+              `[${r.item_name}] → ${r.receiver} 분배를 취소할까요?\n재고 복원 + 확정 신청 복원 + 공금 역전(다이아 ${(r.diamond_amount || 0).toLocaleString()} / 현금 ${(r.cash_amount || 0).toLocaleString()})이 실행됩니다.`,
+              async () => {
+                try {
+                  await Api.cancelDistHistory(r.id);
+                  DistSync.bump();
+                  toast("historyToast", "✓ 분배를 취소하고 재고/공금을 복원했습니다.");
+                  await loadHistory();
+                } catch (e) {
+                  toast("historyToast", e.message || "분배취소 실패", true);
+                }
+              },
+              "분배취소",
+            ),
+          );
+        }
+        const delWarn = isManual && (r.diamond_amount || 0) > 0
+          ? `\n⚠ 이 수동 분배로 입금된 다이아 ${(r.diamond_amount || 0).toLocaleString()}개는 자동으로 되돌아가지 않습니다 — 공금 관리에서 직접 출금 정정이 필요합니다.`
+          : "";
         tr.querySelector(".del").addEventListener("click", () =>
-          openConfirm("이력 삭제", `[${r.item_name}] 이력을 삭제할까요?\n(복원 없이 기록만 지웁니다 — 되돌릴 수 없음)`, async () => {
+          openConfirm("이력 삭제", `[${r.item_name}] 이력을 삭제할까요?\n(복원 없이 기록만 지웁니다 — 되돌릴 수 없음)${delWarn}`, async () => {
             try {
               await Api.deleteDistHistory(r.id);
               DistSync.bump();
@@ -667,6 +675,103 @@ const DistManage = (() => {
 
   function init() {
     initConfirmModal();
+    initManualDist();
+  }
+
+  // ── 수동 분배 등록 (운영진 — 정식 절차 없이 나간 아이템을 이력에 직접 기록) ──
+  let mdNickToUid = new Map(); // 수령자 검색 입력(닉네임) → user_id 매칭용
+
+  function initManualDist() {
+    const backdrop = document.getElementById("manualDistBackdrop");
+    const errBox = document.getElementById("mdErr");
+
+    document.getElementById("manualDistBtn").addEventListener("click", async () => {
+      document.getElementById("mdItem").value = "";
+      document.getElementById("mdQty").value = "1";
+      document.getElementById("mdReason").value = "";
+      document.getElementById("mdGrade").value = "";
+      document.getElementById("mdDia").value = "0";
+      errBox.style.display = "none";
+      const catSel = document.getElementById("mdCat");
+      catSel.innerHTML = GameData.DIST_CATEGORIES.map((c) => `<option>${c}</option>`).join("");
+      catSel.value = "전파편 및 기타";
+      // 수령자(전 결사원 — 검색 입력+datalist)·다이아 입금 계좌(운영진/관리자) 목록
+      // 운영진 전용 화면이라 listMembers 사용 가능
+      document.getElementById("mdReceiver").value = "";
+      const rcvList = document.getElementById("mdReceiverList");
+      const diaSel = document.getElementById("mdDiaOwner");
+      diaSel.innerHTML = '<option value="">불러오는 중...</option>';
+      backdrop.classList.add("on");
+      try {
+        const members = await Api.listMembers();
+        const sorted = members
+          .slice()
+          .sort((a, b) => String(a.current_id || a.user_id).localeCompare(String(b.current_id || b.user_id), "ko"));
+        mdNickToUid = new Map(sorted.map((m) => [String(m.current_id || m.user_id), m.user_id]));
+        rcvList.innerHTML = sorted.map((m) => `<option value="${m.current_id || m.user_id}"></option>`).join("");
+        diaSel.innerHTML = '<option value="">계좌 선택...</option>' +
+          sorted
+            .filter((m) => m.role === "운영진" || m.role === "관리자")
+            .map((m) => `<option value="${m.user_id}">${m.current_id || m.user_id}</option>`).join("");
+      } catch (e) {
+        mdNickToUid = new Map();
+        diaSel.innerHTML = '<option value="">목록 조회 실패</option>';
+      }
+    });
+
+    document.getElementById("mdCancelBtn").addEventListener("click", () => backdrop.classList.remove("on"));
+
+    document.getElementById("mdSaveBtn").addEventListener("click", async () => {
+      errBox.style.display = "none";
+      const itemName = document.getElementById("mdItem").value.trim();
+      const receiverNick = document.getElementById("mdReceiver").value.trim();
+      const receiverUid = mdNickToUid.get(receiverNick);
+      if (!itemName) {
+        errBox.textContent = "품목명을 입력해주세요.";
+        errBox.style.display = "block";
+        return;
+      }
+      if (!receiverUid) {
+        errBox.textContent = receiverNick
+          ? `"${receiverNick}" 결사원을 찾을 수 없습니다 — 검색 목록에서 정확한 닉네임을 선택해주세요.`
+          : "수령자를 입력해주세요.";
+        errBox.style.display = "block";
+        return;
+      }
+      const diamond = parseInt(document.getElementById("mdDia").value, 10) || 0;
+      const diaOwnerUid = document.getElementById("mdDiaOwner").value;
+      if (diamond > 0 && !diaOwnerUid) {
+        errBox.textContent = "다이아 입금 계좌(룻자)를 선택해주세요.";
+        errBox.style.display = "block";
+        return;
+      }
+      const reason = document.getElementById("mdReason").value.trim();
+      const btn = document.getElementById("mdSaveBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>등록 중...';
+      try {
+        const res = await Api.createManualDistribution({
+          item_name: reason ? `${itemName} (${reason})` : itemName,
+          category: document.getElementById("mdCat").value,
+          grade: document.getElementById("mdGrade").value,
+          quantity: parseInt(document.getElementById("mdQty").value, 10) || 1,
+          receiver_user_id: receiverUid,
+          diamond_amount: diamond,
+          dia_owner_user_id: diamond > 0 ? diaOwnerUid : null,
+        });
+        backdrop.classList.remove("on");
+        DistSync.bump();
+        if (res && res.warn) toast("historyToast", `등록됨 — ${res.warn}`, true);
+        else toast("historyToast", diamond > 0 ? "✓ 수동 분배 등록 + 다이아 공금 입금 완료" : "✓ 수동 분배를 등록했습니다.");
+        await loadHistory();
+      } catch (e) {
+        errBox.textContent = e.message || "등록에 실패했습니다.";
+        errBox.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "등록";
+      }
+    });
   }
 
   return { init, loadStatus, openStatus, renderStatus, setStatusTab, loadResult, openResult, loadHistory, openHistory, renderHistory };
