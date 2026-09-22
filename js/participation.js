@@ -178,14 +178,14 @@ const Participation = (() => {
     });
 
     document.getElementById("partSeasonNote").textContent = seasons.length > 1
-      ? `시즌 ${seasons.join("+")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁률은 시즌별 값의 단순 평균.`
+      ? `시즌 ${seasons.join("+")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁참여율은 시즌별 값의 단순 평균.`
       : (seasons[0] === ss.current
           ? "현재 진행 중인 시즌의 스냅샷입니다 (로그 저장·삭제 시 갱신)."
           : `시즌 ${seasons[0]} 마감 시점의 확정 기록입니다.`);
 
     document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
     const table = document.getElementById("partSeasonTable");
-    let html = `<tr><th>닉네임</th><th>결사</th><th>직업</th><th class="num">전투력</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
+    let html = `<tr><th>닉네임</th><th>결사</th><th>직업</th><th class="num">전투력</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num jrcol">쟁참여율</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
     html += rows
       .map((r) => {
         const rateV = r.participation_rate != null ? Math.round(r.participation_rate) : null;
@@ -199,7 +199,7 @@ const Participation = (() => {
           <td class="num gtext">${(r.power || 0).toLocaleString()}</td>
           ${ACTIVITIES.map((a) => `<td class="num gtext">${r[ACTIVITY_COLS[a]] || 0}</td>`).join("")}
           <td class="num" title="${jaengTitle}"><b>${r.jaeng_count || 0}</b></td>
-          <td class="num gtext" title="${jaengTitle}">${r.jaeng_rate != null ? `${Math.round(r.jaeng_rate)}%` : "—"}</td>
+          <td class="num jrcol" title="${jaengTitle}">${r.jaeng_rate != null ? `${Math.round(r.jaeng_rate)}%` : "—"}</td>
           <td class="num"><b>${(r.participation_score || 0).toLocaleString()}</b></td>
           <td class="num">${rateHtml}</td>
           <td class="num gtext">${(r.contribution || 0).toLocaleString()}</td>
@@ -414,7 +414,7 @@ const Participation = (() => {
       .sort((a, b) => (b.participation_score || 0) - (a.participation_score || 0));
 
     const table = document.getElementById("partStatusTable");
-    let html = `<tr><th>닉네임</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁률</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
+    let html = `<tr><th>닉네임</th>${ACTIVITIES.map((a) => `<th class="num">${a}</th>`).join("")}<th class="num">쟁</th><th class="num">쟁참여율</th><th class="num">참여점수</th><th class="num">참여율</th><th class="num">기여점수</th></tr>`;
     html += rows
       .map((m) => {
         const rate = m.participation_rate != null ? `${m.participation_rate}%` : "—";
