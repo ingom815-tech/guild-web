@@ -12,6 +12,12 @@ const WarStatus = (() => {
   const RNAME = { tank: "탱커", bruiser: "브루저", mdealer: "마딜러", pdealer: "물딜러", support: "서포터", healer: "힐러" };
   const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", mdealer: "#9B59D0", pdealer: "#2E9CB8", support: "#E8A13C", healer: "#1D9E75" };
   const PAIRC = ["#1D9E75", "#5B8DD9", "#D06060", "#9B59D0", "#E8A13C", "#854F0B"];
+  // 서포터 하위 구분 (스냅샷 m.sub — 0029 이후 저장분부터 존재)
+  const SUBS = [
+    { id: "flag", name: "깃발" },
+    { id: "hwan", name: "환방" },
+  ];
+  const SUBNAME = { flag: "깃발", hwan: "환방" };
   // 저장 시점이 6종 개편 이전인 스냅샷의 'dealer' 정규화 (0023 이관 기준과 동일)
   const MAGIC_CLASSES = ["태양감시자", "주문각인사"];
   function normRole(role, cls) {
@@ -139,8 +145,7 @@ const WarStatus = (() => {
         `<div class="rh2"><span class="rn" style="color:${RCOLOR[r.id]}">${r.name}</span><span class="cnt">${list.length}명</span>` +
         `<div class="rs">신화 ${mythCnt}</div></div><div class="rbody"></div>`;
       const bodyEl = col.querySelector(".rbody");
-      if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
-      list.forEach((m) => {
+      const roleChip = (m) => {
         const lv = Number(m.main) || 0;
         const me = myNick && m.nick === myNick;
         const chip = document.createElement("div");
@@ -154,8 +159,28 @@ const WarStatus = (() => {
         chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
         chip.querySelector(".cl").textContent = m.class || "-";
         chip.title = m.nick;
-        bodyEl.appendChild(chip);
-      });
+        return chip;
+      };
+      if (r.id === "support") {
+        // 서포터 = 깃발 / 환방 하위 줄 (하위 구분 없는 서포터는 "미분류" 줄 — 있을 때만)
+        bodyEl.classList.add("subbody");
+        const groups = SUBS.map((s) => ({ ...s, list: list.filter((m) => m.sub === s.id) }));
+        const rest = list.filter((m) => !SUBNAME[m.sub]);
+        if (rest.length) groups.push({ id: "none", name: "미분류", list: rest });
+        groups.forEach((g) => {
+          const row = document.createElement("div");
+          row.className = `subrow s-${g.id}`;
+          row.innerHTML = `<div class="sublab"><b></b><span>${g.list.length}명</span></div><div class="subchips"></div>`;
+          row.querySelector(".sublab b").textContent = g.name;
+          const chipsEl = row.querySelector(".subchips");
+          if (!g.list.length) chipsEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+          g.list.forEach((m) => chipsEl.appendChild(roleChip(m)));
+          bodyEl.appendChild(row);
+        });
+      } else {
+        if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+        list.forEach((m) => bodyEl.appendChild(roleChip(m)));
+      }
       frag.appendChild(col);
     });
     board.appendChild(frag);

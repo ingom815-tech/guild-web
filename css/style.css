@@ -821,3 +821,14 @@ tr.open .chev,tr.ropen .chev{transform:rotate(180deg)}
 /* ── 시즌별 참여 기록: 쟁참여율 열 강조 ── */
 #partSeasonTable td.jrcol{background:#EFF7F2;font-weight:700;color:var(--green-dk)}
 #partSeasonTable th.jrcol{background:#EFF7F2;color:var(--green-dk);font-weight:700}
+
+/* ── 서포터 하위 구분 (깃발 / 환방 — 0029): 서포터 행 안을 하위 줄로 분할 ── */
+.warscope .rbody.subbody{display:flex;flex-direction:column;gap:6px}
+.warscope .subrow{display:flex;gap:6px;align-items:stretch}
+.warscope .subrow + .subrow{border-top:1px dashed #EBDDC4;padding-top:6px}
+.warscope .sublab{width:46px;flex:none;border-radius:8px;background:#FCF3E3;color:#B57A1F;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11.5px;line-height:1.2}
+.warscope .sublab b{font-weight:800}
+.warscope .sublab span{font-size:10.5px;font-weight:600;opacity:.85}
+.warscope .s-none .sublab{background:#EEF0F3;color:#6B7385}
+.warscope .subchips{flex:1;min-width:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-content:start}
+.warscope .subchips .empty-hint{grid-column:1/-1}

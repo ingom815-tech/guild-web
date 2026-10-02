@@ -129,7 +129,7 @@ const Api = (() => {
     getGuilds: () => call("members", { method: "GET", query: { view: "guilds" } }),
     // 전력 분석 (운영진 — 역할 배치/짝지, 즉시 저장)
     getWarBoard: () => call("members", { method: "GET", query: { view: "war" } }),
-    setWarRole: (user_id, role) => call("members", { method: "POST", query: { action: "war_role" }, body: { user_id, role } }),
+    setWarRole: (user_id, role, sub) => call("members", { method: "POST", query: { action: "war_role" }, body: { user_id, role, sub: sub || null } }),
     setWarPair: (a, b) => call("members", { method: "POST", query: { action: "war_pair" }, body: { a, b } }),
     clearWarPair: (user_id) => call("members", { method: "POST", query: { action: "war_unpair" }, body: { user_id } }),
     publishWar: (guild) => call("members", { method: "POST", query: { action: "war_publish" }, body: { guild: guild || null } }),

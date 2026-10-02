@@ -13,6 +13,16 @@ const War = (() => {
   const RNAME = { tank: "탱커", bruiser: "브루저", mdealer: "마딜러", pdealer: "물딜러", support: "서포터", healer: "힐러" };
   const RCOLOR = { tank: "#5B8DD9", bruiser: "#D06060", mdealer: "#9B59D0", pdealer: "#2E9CB8", support: "#E8A13C", healer: "#1D9E75" };
   const PAIRC = ["#1D9E75", "#5B8DD9", "#D06060", "#9B59D0", "#E8A13C", "#854F0B"];
+  // 서포터 하위 구분 (war_roles.sub — 0029). 역할 선택에서는 서포터 버튼이 이 둘로 나뉜다.
+  const SUBS = [
+    { id: "flag", name: "깃발" },
+    { id: "hwan", name: "환방" },
+  ];
+  const SUBNAME = { flag: "깃발", hwan: "환방" };
+  function roleLabel(m) {
+    if (m.role === "support" && SUBNAME[m.sub]) return `서포터·${SUBNAME[m.sub]}`;
+    return RNAME[m.role];
+  }
   // 레거시 'dealer'(6종 개편 전) 정규화 — 마법 계열 클래스는 마딜러, 그 외 물딜러 (0023 이관 기준과 동일)
   const MAGIC_CLASSES = ["태양감시자", "주문각인사"];
   function normRole(role, cls) {
@@ -59,6 +69,7 @@ const War = (() => {
         war: m.war_rate, // 쟁참여율 (null 가능)
         myth: !!m.myth,
         role: m.role ? normRole(m.role, m.class || "-") : null,
+        sub: m.sub || null, // 서포터 하위 구분 (flag/hwan)
         pair: m.pair_no != null ? m.pair_no : null,
         main: Number(m.main) || 0, // 별 0~3
         line: m.line || null, // 전력판 전위/중위/후위
@@ -159,26 +170,45 @@ const War = (() => {
     board.innerHTML = "";
     const grid = document.createElement("div");
     grid.className = "warboard";
+    const boardChip = (m) => {
+      const chip = document.createElement("div");
+      chip.className = "chip wchip" + (m.myth ? " myth" : "") + (m.main > 0 ? ` m${m.main}` : "");
+      chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
+        (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
+        `</div>` +
+        (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "");
+      chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
+      chip.querySelector(".cl").textContent = m.cls;
+      chip.title = m.nick;
+      chip.addEventListener("click", (e) => chipClick(e, m.user_id));
+      return chip;
+    };
     ROLES.forEach((r) => {
       const list = members.filter((m) => m.role === r.id && visible(m));
       const col = document.createElement("div");
       col.className = `role r-${r.id}`;
       col.innerHTML = `<div class="rh">${r.name}<span class="c">${list.length}명</span></div><div class="rbody"></div>`;
       const bodyEl = col.querySelector(".rbody");
-      if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
-      list.forEach((m) => {
-        const chip = document.createElement("div");
-        chip.className = "chip wchip" + (m.myth ? " myth" : "") + (m.main > 0 ? ` m${m.main}` : "");
-        chip.innerHTML = `<small class="cl"></small><div class="nkrow"><span class="nk"></span>` +
-          (m.pair != null ? `<span class="pairb" style="background:${PAIRC[(m.pair - 1) % PAIRC.length]}">${m.pair}</span>` : "") +
-          `</div>` +
-          (m.main > 0 ? `<span class="mainstars">${"★".repeat(m.main)}</span>` : "");
-        chip.querySelector(".nk").textContent = m.nick.length > 5 ? m.nick.slice(0, 5) + "…" : m.nick;
-        chip.querySelector(".cl").textContent = m.cls;
-        chip.title = m.nick;
-        chip.addEventListener("click", (e) => chipClick(e, m.user_id));
-        bodyEl.appendChild(chip);
-      });
+      if (r.id === "support") {
+        // 서포터 = 깃발 / 환방 하위 줄 (하위 구분 없는 기존 서포터는 "미분류" 줄 — 있을 때만)
+        bodyEl.classList.add("subbody");
+        const groups = SUBS.map((s) => ({ ...s, list: list.filter((m) => m.sub === s.id) }));
+        const rest = list.filter((m) => !SUBNAME[m.sub]);
+        if (rest.length) groups.push({ id: "none", name: "미분류", list: rest });
+        groups.forEach((g) => {
+          const row = document.createElement("div");
+          row.className = `subrow s-${g.id}`;
+          row.innerHTML = `<div class="sublab"><b></b><span>${g.list.length}명</span></div><div class="subchips"></div>`;
+          row.querySelector(".sublab b").textContent = g.name;
+          const chipsEl = row.querySelector(".subchips");
+          if (!g.list.length) chipsEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+          g.list.forEach((m) => chipsEl.appendChild(boardChip(m)));
+          bodyEl.appendChild(row);
+        });
+      } else {
+        if (!list.length) bodyEl.innerHTML = `<div class="empty-hint">비어 있음</div>`;
+        list.forEach((m) => bodyEl.appendChild(boardChip(m)));
+      }
       grid.appendChild(col);
     });
     board.appendChild(grid);
@@ -209,7 +239,7 @@ const War = (() => {
         const pr = document.createElement("span");
         pr.className = "pr";
         pr.style.color = RCOLOR[m.role];
-        pr.textContent = RNAME[m.role];
+        pr.textContent = roleLabel(m);
         const nm = document.createElement("b");
         nm.textContent = m.nick;
         el.appendChild(pr);
@@ -352,15 +382,24 @@ const War = (() => {
     return members.find((m) => m.user_id === uid);
   }
 
+  // 역할 버튼 — 서포터는 깃발/환방 두 버튼으로 나뉜다 (현재 역할은 강조)
   function roleBtnsEl(uid) {
+    const m = findM(uid);
     const grid = document.createElement("div");
     grid.className = "rbtns";
-    ROLES.forEach((r) => {
+    const addBtn = (cls, label, role, sub, cur) => {
       const b = document.createElement("div");
-      b.className = `rb ${r.id}`;
-      b.textContent = r.name;
-      b.addEventListener("click", () => setRole(uid, r.id));
+      b.className = `rb ${cls}` + (cur ? " cur" : "");
+      b.textContent = label;
+      b.addEventListener("click", () => setRole(uid, role, sub));
       grid.appendChild(b);
+    };
+    ROLES.forEach((r) => {
+      if (r.id === "support") {
+        SUBS.forEach((s) => addBtn("support", `서포터·${s.name}`, "support", s.id, m && m.role === "support" && m.sub === s.id));
+      } else {
+        addBtn(r.id, r.name, r.id, null, m && m.role === r.id);
+      }
     });
     return grid;
   }
@@ -389,7 +428,7 @@ const War = (() => {
       h.textContent = m.nick;
       const rl = document.createElement("span");
       rl.style.color = RCOLOR[m.role];
-      rl.textContent = ` · ${RNAME[m.role]}`;
+      rl.textContent = ` · ${roleLabel(m)}`;
       h.appendChild(rl);
       pop.appendChild(h);
       pop.appendChild(roleBtnsEl(uid));
@@ -443,11 +482,13 @@ const War = (() => {
     });
   }
 
-  function setRole(uid, role) {
+  function setRole(uid, role, sub) {
     closePop();
-    findM(uid).role = role;
+    const m = findM(uid);
+    m.role = role;
+    m.sub = role === "support" ? sub || null : null;
     render();
-    saveBg(Api.setWarRole(uid, role), "역할 저장 실패");
+    saveBg(Api.setWarRole(uid, role, m.sub), "역할 저장 실패");
   }
 
   function unassign(uid) {

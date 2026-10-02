@@ -277,6 +277,7 @@ Deno.serve(async (req: Request) => {
 
   // ── 전력 분석 (쟁 오더 작전판 — war_roles, 즉시 저장) ──
   const WAR_ROLES = ["tank", "bruiser", "mdealer", "pdealer", "healer", "support"];
+  const SUPPORT_SUBS = ["flag", "hwan"]; // 서포터 하위 구분: 깃발 / 환방 (0029)
 
   // 저장(공개): 현재 배치/짝지를 결사별 스냅샷으로 발행 — 전력 현황 탭이 이 시점 화면을 그대로 봄.
   // body.guild = 특정 결사만 갱신 (없으면 전체 결사 갱신). 결사별로 published_at 별도 관리.
@@ -290,7 +291,7 @@ Deno.serve(async (req: Request) => {
     const targetGuild = typeof body.guild === "string" && body.guild ? body.guild : null;
 
     const [rolesRes, memRes, curRes] = await Promise.all([
-      supabase.from("war_roles").select("member_id, role, pair_no, main_level, line"),
+      supabase.from("war_roles").select("member_id, role, sub, pair_no, main_level, line"),
       supabase.from("members").select("user_id, current_id, guild_name, class, status_check"),
       supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
     ]);
@@ -307,6 +308,7 @@ Deno.serve(async (req: Request) => {
         class: m.class,
         guild: m.guild_name,
         role: r.role,
+        sub: r.sub || null, // 서포터 하위 구분 (flag/hwan)
         pair: r.pair_no,
         main: r.main_level || 0, // 별 0~3
         line: r.line || null, // 전력판 전위/중위/후위
@@ -409,8 +411,14 @@ Deno.serve(async (req: Request) => {
         return jsonResponse({ ok: true });
       }
       if (!WAR_ROLES.includes(role)) return jsonResponse({ error: "알 수 없는 역할입니다." }, 400);
-      // upsert가 role만 갱신 — 기존 pair_no는 유지 (역할 변경해도 짝 유지)
-      const { error } = await supabase.from("war_roles").upsert({ member_id: uid, role }, { onConflict: "member_id" });
+      // 하위 구분은 서포터일 때만 — 그 외 역할로 바꾸면 비운다
+      const rawSub = typeof body.sub === "string" && body.sub ? body.sub : null;
+      if (rawSub !== null && !SUPPORT_SUBS.includes(rawSub)) {
+        return jsonResponse({ error: "서포터 구분은 flag/hwan 중 하나여야 합니다." }, 400);
+      }
+      const sub = role === "support" ? rawSub : null;
+      // upsert가 role/sub만 갱신 — 기존 pair_no는 유지 (역할 변경해도 짝 유지)
+      const { error } = await supabase.from("war_roles").upsert({ member_id: uid, role, sub }, { onConflict: "member_id" });
       if (error) return jsonResponse({ error: "역할 저장에 실패했습니다." }, 500);
       return jsonResponse({ ok: true });
     }
@@ -555,7 +563,7 @@ Deno.serve(async (req: Request) => {
           .neq("role", "관리자")
           .order("current_id", { ascending: true }),
         supabase.from("season_participation").select("user_id, participation_rate").eq("season", season),
-        supabase.from("war_roles").select("member_id, role, pair_no, main_level, line"),
+        supabase.from("war_roles").select("member_id, role, sub, pair_no, main_level, line"),
         supabase.from("app_settings").select("value").eq("key", "war_published").maybeSingle(),
       ]);
       if (memRes.error) return jsonResponse({ error: "회원 조회에 실패했습니다." }, 500);
@@ -588,6 +596,7 @@ Deno.serve(async (req: Request) => {
             war_rate: m.jaeng_rate ?? null,           // 쟁참여율
             myth: hasMythAqui(m.status_check),
             role: wr ? wr.role : null,
+            sub: wr ? wr.sub || null : null, // 서포터 하위 구분 (flag/hwan)
             pair_no: wr ? wr.pair_no : null,
             main: wr ? wr.main_level || 0 : 0, // 별 0~3
             line: wr ? wr.line || null : null, // 전력판 전위/중위/후위
