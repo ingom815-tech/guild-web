@@ -381,7 +381,7 @@ const Dashboard = (() => {
         const skills = GameData.AQUI_ITEMS[g].filter((it) => !it.id.includes("_"));
         const slotHtml = skills
           .map((it) => {
-            const grade = owned[it.id];
+            const grade = GameData.effectiveGrade(it, owned[it.id], m.class || ""); // 현재 직업에 신화 버전 없으면 전설로
             const name = GameData.skillLabel(it, m.class);
             if (!grade) return `<div class="aqslot empty"><div class="nm">미장착</div></div>`;
             const cls = grade === "m" ? "myth" : "on";

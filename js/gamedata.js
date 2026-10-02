@@ -196,6 +196,24 @@ const GameData = (() => {
     return Array.isArray(item.mythic) && !!memberClass && item.mythic.includes(memberClass);
   }
 
+  // 직업 변경 대응: 현재 직업에 그 그룹의 신화 버전이 없으면 신화를 전설로 "보이게"만 한다.
+  // DB(status_check)의 신화 값은 그대로 두므로 원래 직업으로 돌아오면 신화가 다시 살아난다.
+  function effectiveGrade(item, grade, memberClass) {
+    return grade === "m" && !canBeMythic(item, memberClass) ? "l" : grade;
+  }
+
+  // 저장 시 숨은 신화 보존: 전설로 보이던 그룹을 그대로(전설) 두고 저장하면 원래 신화 값으로 되돌려 쓴다.
+  // origOwned = 편집 시작 시점의 parseAqui 결과(보정 전 원본 등급)
+  function keepHiddenMythic(newOwned, origOwned, memberClass) {
+    const out = { ...newOwned };
+    for (const group of ["A", "B", "C"]) {
+      for (const item of AQUI_ITEMS[group]) {
+        if (origOwned[item.id] === "m" && !canBeMythic(item, memberClass) && out[item.id] === "l") out[item.id] = "m";
+      }
+    }
+    return out;
+  }
+
   // 공식 아이템 구분 5분류 (분배신청_단순화시안_v4 기준으로 표준화된 체계).
   // DB 구분 값이 이미 5분류면 그대로, 구 값(아퀴/심연석/기타/장비슬롯)이 남아 있으면
   // 이름 기반으로 환산한다 — 서버 classifyTab과 같은 우선순위(브로치 → 별빛 → 찬란 → 아퀴).
@@ -245,7 +263,7 @@ const GameData = (() => {
   return {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP, DIST_CATEGORIES,
-    normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic,
+    normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic, effectiveGrade, keepHiddenMythic,
     aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl, category5, isOpenApplyItem, isLegendSimyeonItem,
   };
 })();

@@ -7,6 +7,7 @@ const Profile = (() => {
   let activeTab = "info";
   let aquiState = {}; // {아퀴id: ""|"l"|"m"} — 칩 UI 현재 상태
   let aquiOrig = {}; // 로드 시점 상태 (변경사항 건수 계산용)
+  let aquiRaw = {}; // 로드 시점 DB 원본 등급 (직업 때문에 전설로 보이는 신화 보존용)
   let pendingFiles = { power: [], aqui: [] }; // 드롭존에서 고른 업로드 대기 파일
 
   const PANES = { info: "profilePaneInfo", equip: "profilePaneEquip", aqui: "profilePaneAqui", imgs: "profilePaneImgs", history: "profilePaneHistory" };
@@ -210,13 +211,13 @@ const Profile = (() => {
     wrap.innerHTML = "";
     const cls = data.info.class || "";
     const owned = GameData.parseAqui(data.status_check, cls);
+    aquiRaw = owned; // 저장 시 숨은 신화 보존용 원본 등급
     if (!cls) wrap.appendChild(GameData.aquiClassNoticeEl());
 
     aquiState = {};
     for (const group of ["A", "B", "C"]) {
       GameData.AQUI_ITEMS[group].forEach((item) => {
-        let cur = owned[item.id] || "";
-        if (cur === "m" && !GameData.canBeMythic(item, cls)) cur = "l"; // 원본과 동일한 레거시 보정
+        const cur = GameData.effectiveGrade(item, owned[item.id] || "", cls); // 현재 직업에 신화 버전 없으면 전설로 표시
         if (cur) aquiState[item.id] = cur;
       });
     }
@@ -503,10 +504,11 @@ const Profile = (() => {
     });
 
     document.getElementById("pfAquiSaveBtn").addEventListener("click", async () => {
-      const owned = {};
+      let owned = {};
       for (const [id, level] of Object.entries(aquiState)) {
         if (level) owned[id] = level;
       }
+      owned = GameData.keepHiddenMythic(owned, aquiRaw, (data && data.info && data.info.class) || "");
       try {
         await Api.updateProfile({ status_check: GameData.buildAquiString(owned) });
         toast("✓ 아퀴룬 저장 완료");

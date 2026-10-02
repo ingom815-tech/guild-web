@@ -1218,7 +1218,12 @@ const Members = (() => {
     });
   }
 
+  // 수정 모달 아퀴: 편집 시작 시점 DB 원본 등급 + 그리드가 그려진 직업 (직업 때문에 전설로 보이는 신화 보존용)
+  let editAquiRaw = {};
+  let aquiGridClass = "";
+
   function buildAquiEditGrid(aquiMap, memberClass) {
+    aquiGridClass = memberClass || "";
     const wrap = document.getElementById("memberAquiEdit");
     wrap.innerHTML = "";
     if (!memberClass) wrap.appendChild(GameData.aquiClassNoticeEl());
@@ -1259,10 +1264,11 @@ const Members = (() => {
     }
     const aquiWrap = document.getElementById("memberAquiEdit");
     if (aquiWrap.children.length) {
-      const owned = {};
+      let owned = {};
       aquiWrap.querySelectorAll("select[data-aqui-id]").forEach((sel) => {
         if (sel.value) owned[sel.dataset.aquiId] = sel.value;
       });
+      owned = GameData.keepHiddenMythic(owned, editAquiRaw, aquiGridClass);
       payload.status_check = GameData.buildAquiString(owned);
     }
     return payload;
@@ -1272,10 +1278,12 @@ const Members = (() => {
   function refreshAquiForClass() {
     const wrap = document.getElementById("memberAquiEdit");
     if (!wrap.children.length) return;
-    const owned = {};
+    let owned = {};
     wrap.querySelectorAll("select[data-aqui-id]").forEach((sel) => {
       if (sel.value) owned[sel.dataset.aquiId] = sel.value;
     });
+    // 이전 직업 기준으로 전설로 보이던 원본 신화를 되살린 뒤 새 직업 기준으로 다시 그림
+    owned = GameData.keepHiddenMythic(owned, editAquiRaw, aquiGridClass);
     buildAquiEditGrid(owned, document.getElementById("memberClass").value.trim());
   }
 
@@ -1302,6 +1310,7 @@ const Members = (() => {
     document.getElementById("memberAquiDetails").classList.remove("hidden");
     document.getElementById("memberAquiDetails").open = false;
     buildEquipEditGrid({});
+    editAquiRaw = {};
     buildAquiEditGrid({}, "");
     document.getElementById("memberModalBackdrop").classList.add("on");
   }
@@ -1347,7 +1356,8 @@ const Members = (() => {
     document.getElementById("memberAquiDetails").classList.remove("hidden");
     document.getElementById("memberAquiDetails").open = false;
     buildEquipEditGrid(GameData.parseEquipment(m.equipment_info));
-    buildAquiEditGrid(GameData.parseAqui(m.status_check, m.class || ""), m.class || "");
+    editAquiRaw = GameData.parseAqui(m.status_check, m.class || "");
+    buildAquiEditGrid(editAquiRaw, m.class || "");
 
     document.getElementById("memberModalBackdrop").classList.add("on");
   }

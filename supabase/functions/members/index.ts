@@ -75,14 +75,28 @@ function isAdmin(user: SessionUser | null): boolean {
 // 예전에 남은 값이라 실제로는 쓰이지 않음. 새 회원은 항상 아래 한글 값 중 하나로 명시적으로 저장한다.
 const ROLES = ["결사원", "운영진", "관리자"];
 
-// 신화 아퀴 보유 판정: status_check 우측 토큰에 ":m" 등급 또는 레거시 "M숫자" 토큰이 하나라도 있으면.
+// 그룹별 신화 버전이 있는 직업 (gamedata.js AQUI_ITEMS의 mythic과 동일 — dashboard 함수에도 같은 표)
+const MYTHIC_CAPABLE: Record<string, string[]> = {
+  A3: ["향사수", "집행관"],
+  A4: ["주문각인사"],
+  A6: ["환영검사", "태양감시자", "심연추방자"],
+  B3: ["주문각인사"],
+  B4: ["향사수", "태양감시자"],
+  C3: ["집행관", "야만투사"],
+  C4: ["환영검사"],
+  C6: ["심연추방자"],
+};
+
+// 신화 아퀴 보유 판정: ":m" 등급 토큰 중 현재 직업에 그 그룹의 신화 버전이 있는 것만 (직업 변경 시
+// 신화 버전이 없는 그룹의 신화는 제외 — DB 값은 보존) + 레거시 "M숫자" 토큰. 직업 미지정이면 등급만 본다.
 // (전력 분석 view=war / 공개 스냅샷 war_publish 공용)
-function hasMythAqui(sc: string | null): boolean {
+function hasMythAqui(sc: string | null, cls?: string | null): boolean {
   if (!sc || !sc.includes("|")) return false;
   const right = sc.split("|").slice(1).join("|");
   for (const t of right.split(",").map((x) => x.trim()).filter(Boolean)) {
     if (t.includes(":")) {
-      if (t.split(":")[1] === "m") return true;
+      const [id, g] = t.split(":");
+      if (g === "m" && (!cls || (MYTHIC_CAPABLE[id] || []).includes(cls))) return true;
     } else if (/^M\d/.test(t)) {
       return true;
     }
@@ -312,7 +326,7 @@ Deno.serve(async (req: Request) => {
         pair: r.pair_no,
         main: r.main_level || 0, // 별 0~3
         line: r.line || null, // 전력판 전위/중위/후위
-        myth: hasMythAqui(m.status_check),
+        myth: hasMythAqui(m.status_check, m.class),
       };
       const arr = perGuild.get(g);
       if (arr) arr.push(entry);
@@ -594,7 +608,7 @@ Deno.serve(async (req: Request) => {
             power: m.power,
             sch_rate: rateMap.get(m.user_id) ?? null, // 일정참여율 (현재 시즌)
             war_rate: m.jaeng_rate ?? null,           // 쟁참여율
-            myth: hasMythAqui(m.status_check),
+            myth: hasMythAqui(m.status_check, m.class),
             role: wr ? wr.role : null,
             sub: wr ? wr.sub || null : null, // 서포터 하위 구분 (flag/hwan)
             pair_no: wr ? wr.pair_no : null,

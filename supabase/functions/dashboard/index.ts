@@ -79,13 +79,28 @@ const AQUI_TARGETS = [
   { id: "B2", label: "보호의 축복", classes: ["주문각인사"], color: "#22c55e" },
 ];
 
-// 신화 아퀴 보유 판정: status_check 우측 토큰에 ":m" 등급 또는 레거시 "M숫자" 토큰 (members 함수와 동일 규칙)
-function hasMythAqui(sc: string | null): boolean {
+// 그룹별 신화 버전이 있는 직업 (gamedata.js AQUI_ITEMS의 mythic과 동일 — members 함수에도 같은 표)
+const MYTHIC_CAPABLE: Record<string, string[]> = {
+  A3: ["향사수", "집행관"],
+  A4: ["주문각인사"],
+  A6: ["환영검사", "태양감시자", "심연추방자"],
+  B3: ["주문각인사"],
+  B4: ["향사수", "태양감시자"],
+  C3: ["집행관", "야만투사"],
+  C4: ["환영검사"],
+  C6: ["심연추방자"],
+};
+
+// 신화 아퀴 보유 판정: ":m" 등급 토큰 중 현재 직업에 그 그룹의 신화 버전이 있는 것만 (직업 변경 시
+// 신화 버전이 없는 그룹의 신화는 제외 — DB 값은 보존) + 레거시 "M숫자" 토큰. 직업 미지정이면 등급만 본다.
+// (members 함수와 동일 규칙)
+function hasMythAqui(sc: string | null, cls?: string | null): boolean {
   if (!sc || !sc.includes("|")) return false;
   const right = sc.split("|").slice(1).join("|");
   for (const t of right.split(",").map((x) => x.trim()).filter(Boolean)) {
     if (t.includes(":")) {
-      if (t.split(":")[1] === "m") return true;
+      const [id, g] = t.split(":");
+      if (g === "m" && (!cls || (MYTHIC_CAPABLE[id] || []).includes(cls))) return true;
     } else if (/^M\d/.test(t)) return true;
   }
   return false;
@@ -142,7 +157,7 @@ Deno.serve(async (req: Request) => {
         nick: m.current_id || m.user_id,
         class: m.class,
         next_class: m.next_class || null,
-        myth: hasMythAqui(m.status_check),
+        myth: hasMythAqui(m.status_check, m.class),
       });
     }
     let snap: Record<string, unknown> | null = null;
