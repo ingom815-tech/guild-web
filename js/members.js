@@ -432,9 +432,10 @@ const Members = (() => {
         seasonList = res.seasons || [];
         currentSeason = res.current_season;
         if (currentSeason != null && !seasonList.includes(currentSeason)) seasonList.unshift(currentSeason);
+        seasonList = GameData.sortSeasons(seasonList); // 정규 내림차순 → 이벤트 시즌
         seasonScoreCache[res.season] = new Map((res.rows || []).map((r) => [r.user_id, r.participation_score || 0]));
         const opts = seasonList
-          .map((s) => `<option value="${s}">시즌 ${s}${s === currentSeason ? " (현재)" : ""}</option>`)
+          .map((s) => `<option value="${s}">${GameData.seasonLabel(s)}${s === currentSeason ? " (현재)" : ""}</option>`)
           .join("");
         document.getElementById("qmSeasonFrom").innerHTML = opts;
         document.getElementById("qmSeasonTo").innerHTML = opts;
@@ -458,7 +459,13 @@ const Members = (() => {
     }
     const lo = Math.min(from, to);
     const hi = Math.max(from, to);
-    const range = seasonList.filter((s) => s >= lo && s <= hi);
+    // 이벤트 시즌(1001~)은 번호가 정규와 떨어져 있어 숫자 범위로 섞으면 안 됨:
+    // 정규~정규 = 그 사이 정규만 / 이벤트~이벤트 = 그 사이 이벤트만 / 정규~이벤트 = 고른 두 시즌만
+    const evFrom = GameData.isEventSeason(from);
+    const evTo = GameData.isEventSeason(to);
+    const range = evFrom === evTo
+      ? seasonList.filter((s) => GameData.isEventSeason(s) === evFrom && s >= lo && s <= hi)
+      : seasonList.filter((s) => s === from || s === to);
     // 현재 시즌 하나만 = 실시간 값 그대로 (스냅샷 시차 없이)
     if (range.length <= 1 && (!range.length || range[0] === currentSeason)) {
       seasonSum = null;

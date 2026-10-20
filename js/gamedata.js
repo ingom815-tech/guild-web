@@ -196,6 +196,20 @@ const GameData = (() => {
     return Array.isArray(item.mythic) && !!memberClass && item.mythic.includes(memberClass);
   }
 
+  // 이벤트 시즌: 정규 순번(36, 37…)과 겹치지 않게 내부 번호 1000+회차로 저장 (1001 = 이벤트 1).
+  // 동작(출석·점수·마감·시즌 기록)은 정규 시즌과 완전히 같고, 화면 표기와 정렬만 다르다.
+  const EVENT_SEASON_BASE = 1000;
+  function isEventSeason(n) {
+    return Number(n) > EVENT_SEASON_BASE;
+  }
+  function seasonLabel(n) {
+    return isEventSeason(n) ? `이벤트 ${Number(n) - EVENT_SEASON_BASE}` : `시즌 ${n}`;
+  }
+  // 표시 순서: 정규 시즌 내림차순 → 이벤트 시즌 내림차순
+  function sortSeasons(list) {
+    return [...list].sort((a, b) => (isEventSeason(a) - isEventSeason(b)) || (b - a));
+  }
+
   // 직업 변경 대응: 현재 직업에 그 그룹의 신화 버전이 없으면 신화를 전설로 "보이게"만 한다.
   // DB(status_check)의 신화 값은 그대로 두므로 원래 직업으로 돌아오면 신화가 다시 살아난다.
   function effectiveGrade(item, grade, memberClass) {
@@ -264,6 +278,7 @@ const GameData = (() => {
     EQUIPMENT_SLOTS, EQUIPMENT_GRADES, ABSO_FULL_SLOTS, CLASS_OPTIONS, CLASS_ICONS,
     GRADE_COLORS, AQUI_GROUPS, AQUI_ITEMS, LEGACY_MYTHIC_MAP, DIST_CATEGORIES,
     normalizeGrade, parseEquipment, parseAqui, buildAquiString, skillLabel, canBeMythic, effectiveGrade, keepHiddenMythic,
+    EVENT_SEASON_BASE, isEventSeason, seasonLabel, sortSeasons,
     aquiName, aquiLabelEl, aquiClassNoticeEl, classEmblemEl, category5, isOpenApplyItem, isLegendSimyeonItem,
   };
 })();

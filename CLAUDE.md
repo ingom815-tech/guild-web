@@ -8,7 +8,7 @@
 - **저장소**: https://github.com/ingom815-tech/guild-web (public, 브랜치 master)
 - ⚠️ **push = 실서비스 자동 반영** (Pages가 1~2분 내 재배포). 커밋/푸시는 반드시 사용자 확인 후에만.
 - 결사원들에게 공개된 상태이므로 실DB 테스트 금지 — 테스트가 필요하면 사전에 사용자와 원복 계획을 합의할 것.
-- 배포된 프론트 = **v=92** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
+- 배포된 프론트 = **v=93** (커밋 표의 마지막 행). 로컬 미푸시 작업 없음.
 
 ## 아키텍처 핵심
 
@@ -107,7 +107,8 @@
 | 633ac55 | 규정 탭 결사 회의(2026-09-22) 반영: 3단 브로치 확정(캐릭터당 1회·최대 5개, 전투력 상위 순, 우선 조건 ①결사증표 ②태양석 ③전단계 풀강, 전승 간 전투력 차이 미포함) · 영웅 재해 확정(기여점수 순) · 신규 전퀴 지원 개정(라인 4종, 쟁 참여도 우선, 희망자 조사→운영진 회의, PVE/PVP 각 1개 시즌당) · 쟁 참여도 우수 보상 신설(최대 10명, 선택지 4종) · 개정 이력 줄 — 별도로 item_master에 A1/B6 라인 전설 아퀴룬 SQL 등록(드랍 매칭용, C1은 확인 안내) (v=89) |
 | 5a0d140 | 시즌별 참여 기록 기본 정렬 = 쟁참여율순(#partSeasonSort selected) + 쟁 우수 보상 카드 인원 문구 명확화("최대 10명 한도 · 10명 고정 지급 아님, 1~2명만 선정될 수도" 강조 줄) (v=90) |
 | fc4befc | **서포터 하위 구분 깃발/환방** (0029 — `war_roles.sub` flag/hwan, CHECK 제약): 역할 선택 팝오버의 서포터 버튼을 "서포터·깃발"/"서포터·환방" 2개로 분리(현재 역할 .cur 강조), 역할 보드 서포터 행 안을 깃발/환방 하위 줄(.subbody/.subrow/.sublab/.subchips)로 분할 — 하위 구분 없는 기존 서포터는 "미분류" 줄(있을 때만). 서포터 외 역할로 바꾸면 members 함수가 sub=null. 짝지 스트립·팝오버 라벨에 하위 구분 표시. 공개 스냅샷(war_publish)에 sub 포함 — 결사원 화면 반영은 운영진 재저장 후. members 함수 재배포 완료 (v=91) |
-| (최신) | **직업 변경 시 신화 아퀴 처리**: 아퀴는 그룹 슬롯 코드(A1 등)로 저장돼 전설은 직업 변경 시 같은 그룹 새 이름으로 자동 표시(기존 동작). 신화는 현재 직업에 그 그룹의 신화 버전이 있을 때만 신화로 판정·표시하고(GameData.effectiveGrade, 서버 hasMythAqui(sc, class) + MYTHIC_CAPABLE 표 — dashboard·members 함수), DB의 신화 값은 보존 — 내정보·관리자 수정 저장 시 전설로 보이던 신화를 그대로 두면 신화로 재저장(GameData.keepHiddenMythic), 직접 미보유로 지우면 삭제. 원래 직업 복귀 시 신화 재표시. dashboard·members 함수 재배포 완료 — **현재 배포 버전 (v=92)** |
+| b35a3cb | **직업 변경 시 신화 아퀴 처리**: 아퀴는 그룹 슬롯 코드(A1 등)로 저장돼 전설은 직업 변경 시 같은 그룹 새 이름으로 자동 표시(기존 동작). 신화는 현재 직업에 그 그룹의 신화 버전이 있을 때만 신화로 판정·표시하고(GameData.effectiveGrade, 서버 hasMythAqui(sc, class) + MYTHIC_CAPABLE 표 — dashboard·members 함수), DB의 신화 값은 보존 — 내정보·관리자 수정 저장 시 전설로 보이던 신화를 그대로 두면 신화로 재저장(GameData.keepHiddenMythic), 직접 미보유로 지우면 삭제. 원래 직업 복귀 시 신화 재표시. dashboard·members 함수 재배포 완료 (v=92) |
+| (최신) | **이벤트 시즌**: 정규 순번과 별개인 짧은 시즌(예: 36 마감 → 이벤트 1 → 37). 내부 번호 = 1000+회차(1001 = 이벤트 1, `GameData.EVENT_SEASON_BASE`) — DB·함수 무변경, 동작(출석·점수·참여율·마감·시즌 기록)은 정규와 동일. 참여율 관리 시즌 카드에 [정규\|이벤트] 구분 토글(#partSeasonKind, 이벤트면 "이벤트 회차" 입력). 표기 `GameData.seasonLabel`("이벤트 N"/"시즌 N"), 정렬 `sortSeasons`(정규 내림차순 → 이벤트). 결사원 관리 시즌 범위: 정규~정규/이벤트~이벤트는 같은 종류만, 섞으면 고른 두 시즌만. 이벤트 중 분배 자격도 이벤트 시즌 참여율 기준. 서버 마감 에러 문구는 내부 번호(1001) 노출 — **현재 배포 버전 (v=93)** |
 
 Edge Functions(12개): login, logout, change-password, inventory, item-master, members, treasury, dashboard, distribution, participation, profile, register.
 

@@ -81,7 +81,7 @@ const Participation = (() => {
         `시즌별 기록 조회 실패: ${e.message || ""} — participation 함수가 최신 버전인지 확인해주세요.`;
       return;
     }
-    ss.seasons = (data.seasons || []).length ? data.seasons : [data.season];
+    ss.seasons = GameData.sortSeasons((data.seasons || []).length ? data.seasons : [data.season]);
     ss.current = data.current_season;
     ss.cache.set(data.season, data.rows || []); // 현재 시즌은 진입 때마다 최신으로 갱신
     if (!ss.selected.size) ss.selected.add(data.season);
@@ -106,7 +106,7 @@ const Participation = (() => {
     const sBox = document.getElementById("partSeasonChips");
     sBox.innerHTML = "";
     ss.seasons.forEach((s) => {
-      sBox.appendChild(ssChip(`시즌 ${s}${s === ss.current ? "(현재)" : ""}`, ss.selected.has(s), async () => {
+      sBox.appendChild(ssChip(`${GameData.seasonLabel(s)}${s === ss.current ? "(현재)" : ""}`, ss.selected.has(s), async () => {
         if (ss.selected.has(s)) {
           if (ss.selected.size === 1) return; // 최소 1개 유지
           ss.selected.delete(s);
@@ -178,10 +178,10 @@ const Participation = (() => {
     });
 
     document.getElementById("partSeasonNote").textContent = seasons.length > 1
-      ? `시즌 ${seasons.join("+")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁참여율은 시즌별 값의 단순 평균.`
+      ? `${GameData.sortSeasons(seasons).map(GameData.seasonLabel).join(" + ")} 합산 기록입니다 — 점수·횟수는 합계, 참여율·쟁참여율은 시즌별 값의 단순 평균.`
       : (seasons[0] === ss.current
           ? "현재 진행 중인 시즌의 스냅샷입니다 (로그 저장·삭제 시 갱신)."
-          : `시즌 ${seasons[0]} 마감 시점의 확정 기록입니다.`);
+          : `${GameData.seasonLabel(seasons[0])} 마감 시점의 확정 기록입니다.`);
 
     document.getElementById("partSeasonEmpty").style.display = rows.length ? "none" : "block";
     const table = document.getElementById("partSeasonTable");
@@ -217,10 +217,13 @@ const Participation = (() => {
 
   function renderSeason() {
     document.getElementById("partSeasonLabel").textContent =
-      `시즌 ${status.season} ${status.closed ? "🔒 (마감됨)" : "🟢 (진행중)"}`;
+      `${GameData.seasonLabel(status.season)} ${status.closed ? "🔒 (마감됨)" : "🟢 (진행중)"}`;
     document.getElementById("partSeasonInfo").textContent =
       `이번 시즌 세션 ${status.total_sessions}회 · 쟁 ${status.total_jaeng || 0}회 입력됨 · 1회 참여 = 100점 (쟁 제외) · 참여율 = 참석 세션/전체 세션(쟁 제외)`;
-    document.getElementById("partSeasonInput").value = status.season;
+    // 입력칸은 현재 시즌의 구분(정규/이벤트)과 번호(이벤트는 회차)로 채움
+    const ev = GameData.isEventSeason(status.season);
+    setSeasonKind(ev ? "event" : "regular");
+    document.getElementById("partSeasonInput").value = ev ? status.season - GameData.EVENT_SEASON_BASE : status.season;
     document.getElementById("partResetBtn").classList.toggle("hidden", (Auth.getUser() || {}).role !== "관리자");
   }
 
@@ -475,16 +478,30 @@ const Participation = (() => {
   }
 
   // ── 시즌 설정 ──
+  // 구분 토글: 정규 = 입력 번호 그대로 / 이벤트 = 회차 입력 → 내부 번호 1000+회차
+  let seasonKind = "regular";
+  function setSeasonKind(kind) {
+    seasonKind = kind;
+    document.querySelectorAll("#partSeasonKind span").forEach((s) => s.classList.toggle("on", s.dataset.kind === kind));
+    document.getElementById("partSeasonInputLabel").textContent = kind === "event" ? "이벤트 회차" : "시즌 번호";
+  }
+
   function initSeasonActions() {
+    document.querySelectorAll("#partSeasonKind span").forEach((s) => {
+      s.addEventListener("click", () => setSeasonKind(s.dataset.kind));
+    });
+
     document.getElementById("partSetSeasonBtn").addEventListener("click", async () => {
-      const season = parseInt(document.getElementById("partSeasonInput").value, 10);
-      if (!season || season < 1) {
-        toast("시즌 번호를 확인해주세요.", true);
+      const n = parseInt(document.getElementById("partSeasonInput").value, 10);
+      const maxN = seasonKind === "event" ? 999 : GameData.EVENT_SEASON_BASE;
+      if (!n || n < 1 || n >= maxN) {
+        toast(seasonKind === "event" ? "이벤트 회차를 확인해주세요 (1~998)." : "시즌 번호를 확인해주세요.", true);
         return;
       }
+      const season = seasonKind === "event" ? GameData.EVENT_SEASON_BASE + n : n;
       try {
         await Api.participationSeasonOp("set_season", { season });
-        toast(`✓ 현재 시즌이 ${season}으로 설정되었습니다.`);
+        toast(`✓ 현재 시즌이 ${GameData.seasonLabel(season)}(으)로 설정되었습니다.`);
         await load();
       } catch (err) {
         toast(err.message || "시즌 설정 실패", true);
@@ -492,9 +509,10 @@ const Participation = (() => {
     });
 
     document.getElementById("partCloseSeasonBtn").addEventListener("click", () => {
-      openConfirm("시즌 마감", `시즌 ${status ? status.season : "?"}을(를) 마감할까요? 최종 재계산 후 마감 플래그가 저장됩니다.`, async () => {
+      const label = status ? GameData.seasonLabel(status.season) : "시즌 ?";
+      openConfirm("시즌 마감", `${label}을(를) 마감할까요? 최종 재계산 후 마감 플래그가 저장됩니다.`, async () => {
         const res = await Api.participationSeasonOp("close_season");
-        toast(`🔒 시즌 ${res.season} 마감 완료`);
+        toast(`🔒 ${GameData.seasonLabel(res.season)} 마감 완료`);
         await load();
       });
     });

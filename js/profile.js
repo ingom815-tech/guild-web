@@ -81,7 +81,7 @@ const Profile = (() => {
     shiftEl.textContent = `⚔️ 쟁 ${j.count || 0}회${j.rate != null ? ` · ${j.rate}%` : ""}`;
     shiftEl.classList.toggle("none", !(j.count > 0));
     shiftEl.title = `시간대별: 오전 ${j.morning || 0} · 오후 ${j.evening || 0} · 새벽 ${j.dawn || 0}`;
-    document.getElementById("pfSumSub").textContent = `${cls || "직업 미선택"} · ${data.user.user_id} · 시즌 ${data.season}`;
+    document.getElementById("pfSumSub").textContent = `${cls || "직업 미선택"} · ${data.user.user_id} · ${GameData.seasonLabel(data.season)}`;
     document.getElementById("pfStatContrib").textContent = (data.info.contribution_score || 0).toLocaleString();
     document.getElementById("pfStatPart").textContent = (data.info.participation_score || 0).toLocaleString();
     document.getElementById("pfStatPower").textContent = (data.info.power || 0).toLocaleString();
