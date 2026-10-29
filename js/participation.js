@@ -218,10 +218,12 @@ const Participation = (() => {
   function renderSeason() {
     document.getElementById("partSeasonLabel").textContent =
       `${GameData.seasonLabel(status.season)} ${status.closed ? "🔒 (마감됨)" : "🟢 (진행중)"}`;
-    document.getElementById("partSeasonInfo").textContent =
-      `이번 시즌 세션 ${status.total_sessions}회 · 쟁 ${status.total_jaeng || 0}회 입력됨 · 1회 참여 = 100점 (쟁 제외) · 참여율 = 참석 세션/전체 세션(쟁 제외)`;
     // 입력칸은 현재 시즌의 구분(정규/이벤트)과 번호(이벤트는 회차)로 채움
     const ev = GameData.isEventSeason(status.season);
+    // 이벤트 시즌은 쟁·긴급까지 통합 집계 (0030) — 안내 문구도 그 기준으로
+    document.getElementById("partSeasonInfo").textContent = ev
+      ? `이번 이벤트 세션 ${(status.total_sessions || 0) + (status.total_jaeng || 0)}회 (쟁 ${status.total_jaeng || 0}회 포함) · 1회 참여 = 100점 (쟁 포함) · 참여율 = 참석 세션/전체 세션(쟁 포함)`
+      : `이번 시즌 세션 ${status.total_sessions}회 · 쟁 ${status.total_jaeng || 0}회 입력됨 · 1회 참여 = 100점 (쟁 제외) · 참여율 = 참석 세션/전체 세션(쟁 제외)`;
     setSeasonKind(ev ? "event" : "regular");
     document.getElementById("partSeasonInput").value = ev ? status.season - GameData.EVENT_SEASON_BASE : status.season;
     document.getElementById("partResetBtn").classList.toggle("hidden", (Auth.getUser() || {}).role !== "관리자");

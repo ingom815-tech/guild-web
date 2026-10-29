@@ -185,7 +185,7 @@ const Dashboard = (() => {
   }
 
   // ── 필터/정렬 옵션 ──
-  const SORT_MAP = { 전투력순: "power", 참여점수순: "participation_score", 기여점수순: "contribution_score" };
+  const SORT_MAP = { 전투력순: "power", 참여점수순: "participation_score", 쟁참여율순: "jaeng_rate", 기여점수순: "contribution_score" };
 
   function initFilterOptions() {
     const members = data.members || [];
@@ -199,7 +199,7 @@ const Dashboard = (() => {
     document.getElementById("dashGuildFilter").innerHTML =
       `<option value="전체">결사 전체</option>` + guilds.map((g) => `<option value="${g}">${g}</option>`).join("");
 
-    const sorts = ["전투력순", "참여점수순", "기여점수순"]; // 전투력 전원 공개
+    const sorts = ["전투력순", "참여점수순", "쟁참여율순", "기여점수순"]; // 전투력 전원 공개
     document.getElementById("dashSort").innerHTML = sorts.map((s) => `<option value="${s}">${s}</option>`).join("");
   }
 
